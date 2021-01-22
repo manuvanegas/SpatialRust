@@ -156,12 +156,12 @@ function prune!(model::ABM)
 end
 
 function inspect!(model::ABM)
-    cofs = sample(model.coffee_ids, round(Int,length(model.coffee_ids) * 0.25), replace = false)
+    cofs = sample(model.coffee_ids, round(Int,length(model.coffee_ids) * 0.05), replace = false)
     for c in cofs
         here = get_node_agents(model[c].pos, model)
         if length(here) > 1
-            here[2].n_lesions = round(Int, here[2].n_lesions / 2)
-            here[2].area = round(Int, here[2].area / 2)
+            here[2].n_lesions = round(Int, here[2].n_lesions * 0.1)
+            here[2].area = round(Int, here[2].area * 0.1)
         end
     end
 end

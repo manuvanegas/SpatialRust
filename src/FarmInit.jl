@@ -33,7 +33,7 @@ function initialize_sim(;
     map_dims::Int = 10,
     shade_percent::Float64 = 0.3,
     fragmentation::Bool = false,
-    random::Bool = true,
+    random::Bool = false,
     harvest_cycle::Int = 182,
     p_density::Float64 = 1.0,
     fungicide_period::Int = 182,

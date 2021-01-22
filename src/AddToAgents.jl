@@ -69,6 +69,10 @@ function Agents._run!(model, pre_step!, agent_step!, model_step!, n;
     if should_we_collect(s, model, when_model)
         collect_model_data!(df_model, model, mdata, s)
     end
+
+
+    # CSV.write(projectdir("results", "track", now(), ".csv"), df_model)
+    # CSV.write(string("/scratch/mvanega1/", "track/", now(), ".csv"), df_model)
     return df_agent, df_model
 end
 
