@@ -89,8 +89,9 @@ function grow!(rust::Rust, cof::Coffee, model::ABM)
     if rust.germinated && 14 < local_temp < 30 # grow and sporulate
 
         #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
-        rust.area += (1 - rust.area) *
-            (model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
+        rust.area += rust.area * (1 - rust.area) *
+            #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
+            model.fruit_load * cof.production / model.harvest_cycle
             (-0.0178 * ((local_temp - 22.5) ^ 2.0) + 1.0)
 
         if rust.spores === 0.0

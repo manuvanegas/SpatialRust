@@ -6,7 +6,9 @@ RustDB <- read.csv("~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_raw/Monitor
 # Weather input. Getting rainy days and daily mean temp
 WeatherDB <- read.csv("~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_raw/MonitoreoClima.csv", h=T)
 WeatherDB$fDate <- as.Date(WeatherDB$Date, format="%m/%d/%y")
-WeatherDB$Rainy <- WeatherDB$RainTFS!=0
+WeatherDB$Rainy <- WeatherDB$RainTFS != 0
+# Datos de CATIE reportan como días de lluvia cuando hubo 0.1 mm o más, pero el mínimo de lectura es 0.1
+# O sea, da igual poner != 0 que >= 0.1
 
 #Plots (treatments): TFSSF, TMSSF, AMSSF, HMSSF
 
@@ -25,10 +27,13 @@ plot_rust_data <- function(t.plot) {
   treatment$fDate <- as.Date(treatment$Date, format="%m/%d/%y")
   #add ids
   treatment$branch.id <- as.factor(paste(treatment$Plant, treatment$Branch, sep = "."))
-  treatment$leaf.id <- as.factor(paste(treatment$Plant, treatment$Branch, treatment$RightLeftLeaf, sep = "."))
-  treatment$rust.id <- as.factor(paste(treatment$Plant, treatment$Branch, treatment$RightLeftLeaf, treatment$Lesion, sep = "."))
+  treatment$leaf.id <- as.factor(paste(treatment$Plant, treatment$Branch, treatment$RightLeftLeaf,
+                                       sep = "."))
+  treatment$rust.id <- as.factor(paste(treatment$Plant, treatment$Branch, treatment$RightLeftLeaf,
+                                       treatment$Lesion, sep = "."))
   # filter for infected leaves
   inf.treat <- subset(treatment, Infected==1)
+  inf.treat <- subset(inf.treat, Lesion <= 25)
   # check that there are no duplicate rust.ids
   ttt <- aggregate(inf.treat$fDate, list(inf.treat$rust.id), function(x) {max(x) - min(x)})
   plot(ttt)
@@ -41,8 +46,15 @@ plot_rust_data <- function(t.plot) {
   #aaa <- aggregate(a.tu.sun$NumArea, list(a.tu.sun$n.week, a.tu.sun$first.found), function(x) {mean(x, na.rm = T)})
   #ggplot(aaa, aes(Group.1, x, color=Group.2, group=Group.2)) + geom_point() + geom_line() 
   
-  by.leaf <- group_by(ages.treat, fDate, leaf.id) %>%
-    slice_max(NumArea, n=25) #select only the 25 rusts with the largest areas
+  by.leaf <- group_by(ages.treat, fDate, leaf.id) 
+  #%>%
+    #slice_max(NumArea, n=25) #select only the 25 rusts with the largest areas
+  #######
+  ## !! PROBLEM !!
+  ## By selecting the 25 largest each date, we may be losing consistency. Better to pick the first 25
+  ## that were id'd and follow them
+  ## slice_min(leaf.id, n=25) ??
+  #######
   
   av.areas <- group_by(by.leaf, fDate, first.found) %>%
     summarise(count=n(), m.NumArea = mean(NumArea, na.rm = T)) %>%
@@ -68,7 +80,7 @@ plot_rust_data <- function(t.plot) {
   plot1.bis <- ggplot(av.areas,
                   aes(fDate, m.NumArea, color=as.numeric(n.weeks), group=first.found)) +
     geom_point() + geom_line() +
-    xlab("Date") + ylab("Average Latent Area (cm)") + labs(colour = "First Observed") +
+    xlab("Date") + ylab("Average Latent Area (cm)") + labs(colour = "Age (weeks") +
     theme_bw()
   plot1.bis
   ggsave(paste0(plots_path,areas.name,"bis.png"), plot1.bis,
@@ -104,14 +116,16 @@ lesion.age <- function(d) {
 
 
 plot_weather_data <- function(t.plot) {
+  #t.plot options: "Sun" or "Shade". Both are plots in Turrialba
   
   data_path <- "~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_pro/"
   plots_path <- "~/Documents/ASU/Coffee Rust/SpatialRust/plots/Exp_Data/"
-  treat.name <- ifelse(t.plot == "TFSSF", "Tur_Sun", ifelse(t.plot == "TMSSF", "Tur_Shade", "Non_Tur"))
+  treat.name <- ifelse(t.plot == "Sun", "Tur_Sun", "Tur_Shade")
   w.name <- paste0(treat.name,"_Weather")
+  temp.name <- as.name(paste0("meanTa", ifelse(t.plot=="Sun", "TFS", "TMS")))
   
   # Turrialba full sun
-  w.treat <- select(WeatherDB, fDate, RainTFS, Rainy, meanTaTFS)
+  w.treat <- select(WeatherDB, fDate, RainTFS, Rainy, !!temp.name)
   saveRDS(w.treat, paste0(data_path, w.name, ".rds"))
   
   # w.tu.sun2 <- select(WeatherDB, fDate, RainTFS, Rainy, meanTfmiddleTFS, meanTfmiddleTMS)
@@ -127,7 +141,7 @@ plot_weather_data <- function(t.plot) {
   # plot.w12
   
   plot.w1<- ggplot(w.treat, aes(x = fDate)) +
-    geom_line(aes(y = meanTaTFS)) +
+    geom_line(aes(y = !!temp.name)) +
     geom_col(aes(y = as.numeric(Rainy) * 30), alpha=0.3) +
     coord_cartesian(ylim = c(15, 30)) +
     xlab("Date") + ylab("Mean Air Temperature (ºC)") +
@@ -139,7 +153,19 @@ plot_weather_data <- function(t.plot) {
          width = 6, height = 3)
 }
 
+rds_to_csv <- function(filename) {
+  data_path <- "~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_pro/"
+  file_path <- paste0(data_path, filename)
+  rds <- readRDS(file_path)
+  write.csv(rds, file = gsub('rds$','csv', file_path))
+}
 
+convert_rds_files <- function() {
+  listoffiles <- list.files("~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_pro/", pattern = ".rds")
+  for(efile in listoffiles) {
+    rds_to_csv(efile)
+  }
+}
 
 
 
