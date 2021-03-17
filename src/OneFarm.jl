@@ -22,10 +22,10 @@ function update_sunlight!(cof::Coffee, model::ABM)
     # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
 end
 
-function grow!(cof::Coffee)
+function grow!(cof::Coffee, max_cof_gr)
     # coffee plants can recover healthy tissue (dilution effect for sunlit plants)
     if 0.0 < cof.area < 25.0
-        cof.area += cof.sunlight
+        cof.area += max_cof_gr * (cof.area * cof.sunlight)
     elseif cof.area > 25.0
         cof.area = 25.0
     end

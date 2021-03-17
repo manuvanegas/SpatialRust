@@ -161,7 +161,7 @@ function agent_step!(coffee::Coffee, model::ABM)
         coffee.exh_countdown = 0
     else
         update_sunlight!(coffee, model)
-        grow!(coffee)
+        grow!(coffee, model.max_cof_gr)
         acc_production!(coffee)
     end
 end

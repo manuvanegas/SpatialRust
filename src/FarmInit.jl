@@ -24,8 +24,10 @@ struct Input
     wind_protec::Float64 # % extra wind distance due to absence of shade
     # biotic parameters
     shade_rate::Float64 # shade growth rate
+    max_cof_gr::Float64
     fruit_load::Float64 # extent of fruit load effect on rust growth (severity; 0 to 1)
     spore_pct::Float64 # % of area that sporulates
+    # when map as input
     farm_map::BitArray
 end
 
@@ -55,6 +57,7 @@ function initialize_sim(;
     diff_splash::Float64 = 2.0, # Avelino et al. 2020 "Kinetic energy was twice as high"
     wind_protec::Float64 = 1.0, #
     shade_rate::Float64 = 0.01, # look up
+    max_cof_gr::Float64 = 0.5,
     fruit_load::Float64 = 1.0, # might not be needed
     spore_pct::Float64 = 0.6)
 
@@ -86,6 +89,7 @@ function initialize_sim(;
     diff_splash,
     wind_protec,
     shade_rate,
+    max_cof_gr,
     fruit_load,
     spore_pct,
     farm_map)
