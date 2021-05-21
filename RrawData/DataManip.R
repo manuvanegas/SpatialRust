@@ -1,7 +1,11 @@
 library(dplyr)
 library(ggplot2)
 
+#Rust input
 RustDB <- read.csv("~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_raw/MonitoreoRoya.csv", h=T)
+
+#Plant data
+PlantDB <- read.csv("~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_raw/DatosPlantas.csv")
 
 # Weather input. Getting rainy days and daily mean temp
 WeatherDB <- read.csv("~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_raw/MonitoreoClima.csv", h=T)
@@ -19,6 +23,7 @@ plot_rust_data <- function(t.plot) {
   treat.name <- ifelse(t.plot == "TFSSF", "Tur_Sun", ifelse(t.plot == "TMSSF", "Tur_Shade", "Non_Tur"))
   areas.name <- paste0(treat.name,"_AvAreas")
   lesions.name <- paste0(treat.name,"_NLesions")
+  firstday <- min(WeatherDB$fDate)
   
   
   #subset treatment data
@@ -26,22 +31,52 @@ plot_rust_data <- function(t.plot) {
   treatment$NumArea <- as.numeric(as.character(treatment$TotalAreaLesion))
   treatment$fDate <- as.Date(treatment$Date, format="%m/%d/%y")
   #add ids
-  treatment$branch.id <- as.factor(paste(treatment$Plant, treatment$Branch, sep = "."))
-  treatment$leaf.id <- as.factor(paste(treatment$Plant, treatment$Branch, treatment$RightLeftLeaf,
-                                       sep = "."))
-  treatment$rust.id <- as.factor(paste(treatment$Plant, treatment$Branch, treatment$RightLeftLeaf,
-                                       treatment$Lesion, sep = "."))
+  treatment$branch.id <- as.factor(paste(treatment$DateLabel, treatment$Plant, treatment$Branch, 
+                                         sep = "."))
+  treatment$leaf.id <- as.factor(paste(treatment$DateLabel, treatment$Plant, treatment$Branch,
+                                       treatment$RightLeftLeaf, sep = "."))
+  treatment$rust.id <- as.factor(paste(treatment$DateLabel, treatment$Plant, treatment$Branch, 
+                                       treatment$RightLeftLeaf, treatment$Lesion, sep = "."))
+  treatment$dayN <- treatment$fDate - firstday
+  # Get first 25 recorded lesions
+  first.25 <- subset(treatment, Lesion <= 25)
+  
+  ## To get av. areas:
   # filter for infected leaves
-  inf.treat <- subset(treatment, Infected==1)
-  inf.treat <- subset(inf.treat, Lesion <= 25)
+  inf.treat <- subset(first.25, Infected==1)
   # check that there are no duplicate rust.ids
-  ttt <- aggregate(inf.treat$fDate, list(inf.treat$rust.id), function(x) {max(x) - min(x)})
-  plot(ttt)
+  # ttt <- aggregate(inf.treat$fDate, list(inf.treat$rust.id), function(x) {max(x) - min(x)})
+  # plot(ttt)
   
   
   
-  #treatment data with lesion a.ges
+  # calculate age of each lesion
   ages.treat <- lesion.age(inf.treat)
+  
+  # sum areas for each leaf
+  sum.by.leaf <- group_by(ages.treat, first.found, fDate, leaf.id) %>%
+    summarise(count.n=n(),sumArea = sum(NumArea, na.rm = TRUE), n.week=n.week, .groups = "drop_last")
+  
+  av.through.leaves <- summarise(sum.by.leaf, count = sum(count.n), av.area = mean(sumArea))
+  
+  
+  plot1.tris <- ggplot(av.through.leaves,
+                       aes(fDate, av.area, color=first.found, group=first.found)) +
+    geom_point() + geom_line() +
+    xlab("Date") + ylab("Average Latent Area (cm)") + labs(colour = "Age (weeks") +
+    theme_bw()
+  plot1.tris
+  
+  ggplot(inf.treat[inf.treat$fDate < "2017-07-10",],
+         aes(fDate, NumArea)) +
+    geom_line(aes(color = rust.id), show.legend = FALSE)
+  
+  ggplot(ages.treat[ages.treat$first.found == "2018-04-10",],
+         aes(fDate, NumArea)) +
+    geom_line(aes(color = rust.id), show.legend = FALSE)
+  
+  
+  
   
   #aaa <- aggregate(a.tu.sun$NumArea, list(a.tu.sun$n.week, a.tu.sun$first.found), function(x) {mean(x, na.rm = T)})
   #ggplot(aaa, aes(Group.1, x, color=Group.2, group=Group.2)) + geom_point() + geom_line() 
@@ -50,22 +85,31 @@ plot_rust_data <- function(t.plot) {
   #%>%
     #slice_max(NumArea, n=25) #select only the 25 rusts with the largest areas
   #######
-  ## !! PROBLEM !!
+  ## !! PROBLEM !! (Solved)
   ## By selecting the 25 largest each date, we may be losing consistency. Better to pick the first 25
   ## that were id'd and follow them
   ## slice_min(leaf.id, n=25) ??
   #######
   
+  
+  # pre.av.areas <- group_by(by.leaf, fDate, first.found) %>%
+  #   summarise(count=n(), m.NumArea = mean(NumArea, na.rm = T))
+  
   av.areas <- group_by(by.leaf, fDate, first.found) %>%
-    summarise(count=n(), m.NumArea = mean(NumArea, na.rm = T)) %>%
+    summarise(count=n(), m.NumArea = mean(NumArea, na.rm = T), dayN = mean(dayN)) %>%
     mutate(n.weeks = round(difftime(fDate, first.found, units = "weeks")))
   saveRDS(av.areas, paste0(data_path, areas.name,".rds"))
   
   
+  ## To get n. lesions:
+  
+  # pre.n.lesions <- group_by(by.leaf, fDate, leaf.id) %>% 
+  #   summarise(count = n())
+  
   n.lesions <- group_by(by.leaf, fDate, leaf.id) %>% 
-    summarise(count = n()) %>% #count lesions per leaf
+    summarise(count = n(), dayN = mean(dayN)) %>% #count lesions per leaf
     # mutate(occ.sites = count / 25) %>%
-    summarise(mean.occ = mean(count))
+    summarise(mean.occ = mean(count), dayN)
   saveRDS(n.lesions, paste0(data_path, lesions.name,".rds"))
   
   plot1 <- ggplot(av.areas,
@@ -85,6 +129,7 @@ plot_rust_data <- function(t.plot) {
   plot1.bis
   ggsave(paste0(plots_path,areas.name,"bis.png"), plot1.bis,
          width = 6, height = 3)
+
   
   plot2 <- ggplot(n.lesions,
                   aes(fDate, mean.occ)) + geom_point() + geom_line() +
@@ -126,6 +171,7 @@ plot_weather_data <- function(t.plot) {
   
   # Turrialba full sun
   w.treat <- select(WeatherDB, fDate, RainTFS, Rainy, !!temp.name)
+  w.treat$dayN <- w.treat$fDate - firstday
   saveRDS(w.treat, paste0(data_path, w.name, ".rds"))
   
   # w.tu.sun2 <- select(WeatherDB, fDate, RainTFS, Rainy, meanTfmiddleTFS, meanTfmiddleTMS)
@@ -167,6 +213,28 @@ convert_rds_files <- function() {
   }
 }
 
+
+####
+# Figuring out which days were data taken
+###
+
+chosenTreatment <- "TFSSF"
+
+wDates <- as.Date(WeatherDB$Date, format="%m/%d/%y")
+
+rSelected <- subset(RustDB, Treatment == chosenTreatment & Lesion <= 25 & Infected == 1)
+rDates <- as.Date(rSelected$Date, format="%m/%d/%y")
+inspPlants <- rSelected$Plant
+pSelected <- subset(PlantDB, Plant %in% inspPlants)
+pDates <- as.Date(pSelected$DateLabel, format="%m/%d/%y")
+
+firstday <- min (wDates)
+
+rDays <- rDates - firstday
+pDays <- pDates - firstday
+
+whenToCollect <- sort(unique(c(rDays,pDays)))
+write.csv(whenToCollect, "~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_pro/whentocollect.csv")
 
 
 #########################################

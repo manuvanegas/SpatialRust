@@ -4,6 +4,7 @@
 
 function grow!(tree::Shade, rate::Float64)
     tree.shade += rate * (1.0 - tree.shade / 0.9)
+    tree.age += 1
 end
 
 ###
@@ -29,6 +30,8 @@ function grow!(cof::Coffee, max_cof_gr)
     elseif cof.area > 25.0
         cof.area = 25.0
     end
+
+    cof.age += 1
 end
 
 function acc_production!(cof::Coffee) # accumulate production
@@ -77,6 +80,7 @@ function parasitize!(rust::Rust, cof::Coffee, model::ABM)
 
             rm_id = rust.id
             kill_agent!(rust, model)
+            cof.hg_id = 0
             model.rust_ids = filter(i -> i != rm_id, model.rust_ids)
         end
     end
@@ -88,11 +92,13 @@ function grow!(rust::Rust, cof::Coffee, model::ABM)
 
     if rust.germinated && 14 < local_temp < 30 # grow and sporulate
 
+        rust.age += 1
+
         #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
         rust.area += rust.area * (1 - rust.area) *
             #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
-            model.fruit_load * cof.production / model.harvest_cycle
-            (-0.0178 * ((local_temp - 22.5) ^ 2.0) + 1.0)
+            model.fruit_load * cof.production / model.harvest_cycle *
+            (-0.0178 * ((local_temp - model.opt_g_temp) ^ 2.0) + 1.0)
 
         if rust.spores === 0.0
             if rand() < (rust.area * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
@@ -318,7 +324,8 @@ function deposit_on!(target::AbstractAgent, model::ABM)
     elseif target isa Coffee
         # println("new")
         new_id = nextid(model)
-        add_agent_pos!(Rust(new_id, target.pos, false, 0.0, 0.0, 1), model)
+        add_agent_pos!(Rust(new_id, target.pos, false, 0.0, 0.0, 1, 0, target.id), model)
+        target.hg_id = new_id
         push!(model.rust_ids, new_id)
     end
 end

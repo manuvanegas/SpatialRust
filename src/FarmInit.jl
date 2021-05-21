@@ -13,9 +13,9 @@ struct Input
     # weather and abiotic parameters
     rain_distance::Float64
     wind_distance::Float64
-    rain_prob::Vector{Float64}
-    wind_prob::Vector{Float64}
-    temp_series::Vector{Float64}
+    rain_data::Vector{Bool}
+    wind_data::Vector{Bool}
+    temp_data::Vector{Float64}
     mean_temp::Float64
     uv_inact::Float64 # extent of effect of UV inactivation (0 to 1)
     rain_washoff::Float64 # " " " rain wash-off (0 to 1)
@@ -25,6 +25,7 @@ struct Input
     # biotic parameters
     shade_rate::Float64 # shade growth rate
     max_cof_gr::Float64
+    opt_g_temp::Float64 # optimal rust growth temp
     fruit_load::Float64 # extent of fruit load effect on rust growth (severity; 0 to 1)
     spore_pct::Float64 # % of area that sporulates
     # when map as input
@@ -32,6 +33,7 @@ struct Input
 end
 
 function initialize_sim(;
+    steps::Int = 10,
     map_dims::Int = 10,
     shade_percent::Float64 = 0.3,
     fragmentation::Bool = false,
@@ -47,10 +49,12 @@ function initialize_sim(;
     prune_cost::Float64 = 1.0,
     rain_distance::Float64 = 1.0,
     wind_distance::Float64 = 5.0,
-    rain_prob::Vector{Float64} = [0.5],
-    wind_prob::Vector{Float64} = [0.4],
-    temp_series::Vector{Float64} = [22.5],
+    rain_prob::Float64 = 0.5,
+    wind_prob::Float64 = 0.4,
     mean_temp::Float64 = 22.5,
+    #emp_data::Bool = false,
+    rain_data::Vector{Bool} = [true],
+    temp_data::Vector{Float64} = [22.5],
     uv_inact::Float64 = 0.1,
     rain_washoff::Float64 = 0.1,
     temp_cooling::Float64 = 2.0, # van Oijen 2010. Range of 1.5 to 5.4
@@ -58,41 +62,82 @@ function initialize_sim(;
     wind_protec::Float64 = 1.0, #
     shade_rate::Float64 = 0.01, # look up
     max_cof_gr::Float64 = 0.5,
+    opt_g_temp::Float64 = 22.5,
     fruit_load::Float64 = 1.0, # might not be needed
-    spore_pct::Float64 = 0.6)
+    spore_pct::Float64 = 0.6,
+    farm_map::BitArray = create_bitmap(map_dims, shade_percent, fragmentation, random))
 
-    rain_prob = fill(rain_prob[1], harvest_cycle)
-    wind_prob = fill(wind_prob[1], harvest_cycle)
-    temp_series = fill(mean_temp, harvest_cycle)
+    if length(rain_data) == 1 # if no weather data is provided, use probs to create own
+        rain_data = rand(Bool, steps) .< rain_prob
+        temp_data = fill(mean_temp, steps) .+ randn() .* 2
+        println("Check data! This has not been validated!")
+    elseif length(rain_data) != steps
+        println("# steps != length of rain data. Using the latter as # steps")
+    end
 
-    farm_map = create_bitmap(map_dims, shade_percent, fragmentation, random)
+
+    wind_data = rand(Bool, steps) .< wind_prob
 
     input = Input(map_dims,
-    harvest_cycle,
-    p_density,
-    fungicide_period,
-    prune_period,
-    inspect_period,
-    target_shade,
-    pruning_effort,
-    coffee_price,
-    prune_cost,
-    rain_distance,
-    wind_distance,
-    rain_prob,
-    wind_prob,
-    temp_series,
-    mean_temp,
-    uv_inact,
-    rain_washoff,
-    temp_cooling,
-    diff_splash,
-    wind_protec,
-    shade_rate,
-    max_cof_gr,
-    fruit_load,
-    spore_pct,
-    farm_map)
+        harvest_cycle,
+        p_density,
+        fungicide_period,
+        prune_period,
+        inspect_period,
+        target_shade,
+        pruning_effort,
+        coffee_price,
+        prune_cost,
+        rain_distance,
+        wind_distance,
+        rain_data, # rain data is passed instead of rain_prob
+        wind_data,
+        temp_data,
+        mean_temp,
+        uv_inact,
+        rain_washoff,
+        temp_cooling,
+        diff_splash,
+        wind_protec,
+        shade_rate,
+        max_cof_gr,
+        opt_g_temp,
+        fruit_load,
+        spore_pct,
+        farm_map)
+    # else
+    #     rain_prob = fill(rain_prob[1], harvest_cycle)
+    #     wind_prob = fill(wind_prob[1], harvest_cycle)
+    #     temp_series = fill(mean_temp, harvest_cycle)
+    #
+    #     input = Input(map_dims,
+    #     harvest_cycle,
+    #     p_density,
+    #     fungicide_period,
+    #     prune_period,
+    #     inspect_period,
+    #     target_shade,
+    #     pruning_effort,
+    #     coffee_price,
+    #     prune_cost,
+    #     rain_distance,
+    #     wind_distance,
+    #     rain_prob,
+    #     wind_prob,
+    #     temp_series,
+    #     mean_temp,
+    #     uv_inact,
+    #     rain_washoff,
+    #     temp_cooling,
+    #     diff_splash,
+    #     wind_protec,
+    #     shade_rate,
+    #     max_cof_gr,
+    #     opt_g_temp,
+    #     fruit_load,
+    #     spore_pct,
+    #     farm_map)
+    # end
 
     setup_sim(input)
 end
