@@ -52,7 +52,7 @@ function disperse!(rust::Rust, cof::Coffee, model::ABM)
         # println("obt")
         # println(target)
         if target !== rust
-            deposit_on!(target, model)
+            inoculate_rust!(model, target)
         end
     end
 
@@ -61,7 +61,7 @@ function disperse!(rust::Rust, cof::Coffee, model::ABM)
         # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
         target = try_travel(rust, cof.sunlight, model, "w")
         if target !== rust
-            deposit_on!(target, model)
+            inoculate_rust!(model, target)
         end
     end
 end
@@ -312,7 +312,26 @@ function try_travel(rust::AbstractAgent, sun::Float64, model::ABM, factor::Strin
     return potential_landing
 end
 
-function deposit_on!(target::AbstractAgent, model::ABM)
+function inoculate_rand_rust!(model::ABM, n_rusts::Int) # inoculate random coffee plants
+    # move from a random cell outside
+    # need to update the path function
+
+    rusted_ids = sample(model.coffee_ids, n_rusts, replace = false)
+
+    for rusted in rusted_ids
+        here = get_node_agents(model[rusted], model)
+        if length(here) > 1
+            here[2].n_lesions += 1
+        else
+            new_id = nextid(model)
+            add_agent_pos!(Rust(new_id, here[1].pos, true, 0.01, 0.0, 1, 0, here[1].id), model)
+            here[1].hg_id = new_id
+            push!(model.rust_ids, new_id)
+        end
+    end
+end
+
+function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target coffee
     # print("dep")
     # println(target)
     here = get_node_agents(target, model)

@@ -13,12 +13,14 @@
 end
 
 startat = 2
+less_this = 0
 
-if length(ARGS) > 1 
-    startat = ARGS[2] + 1
+if length(ARGS) > 1
+    startat = parse(Int, ARGS[2]) + 1
+    less_this = parse(Int, ARGS[3])
 end
 
-parameters = CSV.read(datadir("ABC", ARGS[1]), DataFrame, skipto = startat)
+parameters = CSV.read(datadir("ABC", ARGS[1]), DataFrame, skipto = startat, footerskip = less_this)
 
 when_collect_csv = CSV.read(datadir("exp_pro/inputs/whentocollect_sun.csv"), DataFrame)
 when_collect = Array{Int}(when_collect_csv[:, :x])
@@ -29,7 +31,7 @@ weather = CSV.read(datadir("exp_pro/inputs/Tur_Sun_Weather.csv"), DataFrame, foo
 rain_data = Array{Bool}(weather[:, :Rainy])
 temp_data = Array{Float64}(weather[:, :meanTaTFS])
 
-
+out_path = mkpath("/scratch/mvanega1/ABClessraw")
 
 #dummy run
 d_mod = initialize_sim(; map_dims = 10, shade_percent = 0.0)
@@ -37,7 +39,7 @@ d_adata, _ = run!(d_mod, pre_step!, agent_step!, model_step!, 10, adata = [:pos]
 
 println("Dummy run completed")
 
-processed = pmap(p -> run_for_abc(p, rain_data, temp_data, when_collect),
+processed = pmap(p -> run_for_abc(p, rain_data, temp_data, when_collect, out_path),
                 eachrow(parameters); retry_delays = fill(0.1, 3))
 
 

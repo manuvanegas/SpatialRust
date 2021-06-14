@@ -44,21 +44,6 @@ function count_shades!(model::ABM)
     end
 end
 
-function inoculate_rust!(model::ABM)
-    # move from a random cell outside
-    # need to update the path function
-
-    rusted_id = rand(model.coffee_ids)
-    here = get_node_agents(model[rusted_id], model)
-    if length(here) > 1
-        here[2].n_lesions += 1
-    else
-        new_id = nextid(model)
-        add_agent_pos!(Rust(new_id, here[1].pos, true, 0.01, 0.0, 1, 0, here[1].id), model)
-        here[1].hg_id = new_id
-        push!(model.rust_ids, new_id)
-    end
-end
 
 function setup_sim(input::Input)::ABM
     space = GridSpace((input.map_dims, input.map_dims), moore = true)
@@ -96,11 +81,12 @@ function setup_sim(input::Input)::ABM
     :fruit_load => input.fruit_load, # extent of fruit load effect on rust growth (severity)
     :spore_pct => input.spore_pct, # percentage of diseased area sporulating
     # record-keeping
+    :days => input.days,
+    :ticks => 0,
     :coffee_ids => Int[],
     :shade_ids => Int[],
     :rust_ids => Int[],
     :outpour => 0.0,
-    :days => 0,
     :temp_var => 0.0,
     :temperature => 22,
     :rain => true,
@@ -116,15 +102,31 @@ function setup_sim(input::Input)::ABM
         # scheduler = by_type((Shade, Cofffee, Rust), true)
         scheduler = custom_scheduler, warn = false)
 
-    id = 0
-    for patch in CartesianIndices(input.farm_map)
-        id += 1
-        if input.farm_map[patch]
-            add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
-            push!(model.coffee_ids, id)
-        else
-            add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
-            push!(model.shade_ids, id)
+    if input.days != 0
+        prod_d = truncated(Normal(input.days, input.days * 0.02), 0.0, input.days)
+        # introducing some variability, but most of the plants are expected to have accumulated (close to) optimal productivity
+        id = 0
+        for patch in CartesianIndices(input.farm_map)
+            id += 1
+            if input.farm_map[patch]
+                add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, rand(prod_d), 0, 0, 0), model)
+                push!(model.coffee_ids, id)
+            else
+                add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
+                push!(model.shade_ids, id)
+            end
+        end
+    else
+        id = 0
+        for patch in CartesianIndices(input.farm_map)
+            id += 1
+            if input.farm_map[patch]
+                add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
+                push!(model.coffee_ids, id)
+            else
+                add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
+                push!(model.shade_ids, id)
+            end
         end
     end
 
@@ -132,7 +134,7 @@ function setup_sim(input::Input)::ABM
 
     count_shades!(model)
 
-    inoculate_rust!(model)
+    inoculate_rand_rust!(model, input.n_rusts)
 
     return model
 
@@ -155,11 +157,12 @@ function pre_step!(model)
     #     model.temperature = model.temp_series[day]
     # end
     model.days += 1
-    model.rain = model.rain_data[model.days]
-    model.wind = model.wind_data[model.days]
-    model.temperature = model.temp_data[model.days]
+    model.ticks += 1
+    model.rain = model.rain_data[model.ticks]
+    model.wind = model.wind_data[model.ticks]
+    model.temperature = model.temp_data[model.ticks]
     if model.karma && rand() < sqrt(model.outpour)/(model.dims^2)
-        inoculate_rust!(model)
+        inoculate_rand_rust!(model, 1)
     end
 end
 
@@ -200,11 +203,10 @@ function model_step!(model)
     # if model.days % model.fungicide_period === 0
     #     fingicide!(model)
     # end
-    if model.days % model.prune_period === 0
-        prune!(model)
-    end
-
-    if model.days % model.inspect_period === 0
-        inspect!(model)
-    end
+    # if model.days % model.prune_period === 0
+    #     prune!(model)
+    # end
+    # if model.days % model.inspect_period === 0
+    #     inspect!(model)
+    # end
 end

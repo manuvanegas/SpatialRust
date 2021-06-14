@@ -1,6 +1,8 @@
 struct Input
     map_dims::Int
     harvest_cycle::Int # 182 or 365
+    days::Int
+    n_rusts::Int
     # farmer's strategy and finances
     p_density::Float64 # 0 to 1
     fungicide_period::Int # in days
@@ -35,10 +37,12 @@ end
 function initialize_sim(;
     steps::Int = 10,
     map_dims::Int = 10,
+    harvest_cycle::Int = 182,
+    start_at = 0,
+    n_rusts = 1,
     shade_percent::Float64 = 0.3,
     fragmentation::Bool = false,
     random::Bool = false,
-    harvest_cycle::Int = 182,
     p_density::Float64 = 1.0,
     fungicide_period::Int = 182,
     prune_period::Int = 91,
@@ -63,7 +67,7 @@ function initialize_sim(;
     shade_rate::Float64 = 0.01, # look up
     max_cof_gr::Float64 = 0.5,
     opt_g_temp::Float64 = 22.5,
-    fruit_load::Float64 = 1.0, # might not be needed
+    fruit_load::Float64 = 1.0,
     spore_pct::Float64 = 0.6,
     farm_map::BitArray = create_bitmap(map_dims, shade_percent, fragmentation, random))
 
@@ -80,6 +84,8 @@ function initialize_sim(;
 
     input = Input(map_dims,
         harvest_cycle,
+        start_at,
+        n_rusts,
         p_density,
         fungicide_period,
         prune_period,
