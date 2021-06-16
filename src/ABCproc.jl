@@ -18,6 +18,7 @@ function move_files()
             cunter = 0
             sleep(0.1)
         end
+
     end
 
 end
@@ -27,15 +28,15 @@ function load_to_select(file_path::String)
     println(outpath)
     files = readdir(file_path, join = true, sort = false)[1:50]
     howmany = length(files)
-    chunks = 2
+    chunksize = 2
 
     rowNs = collect(1:10^6)
     processedRows = Int64[]
     sizehint!(processedRows, 10^6)
 
 
-    for startat in 1:chunks:howmany
-        stopat = startat + chunks - 1 < howmany ? startat + chunks - 1 : howmany
+    for startat in 1:chunksize:howmany
+        stopat = startat + chunksize - 1 < howmany ? startat + chunksize - 1 : howmany
         out_file = DataFrame()
 
         for current in startat:stopat
@@ -46,7 +47,6 @@ function load_to_select(file_path::String)
         end
 
         CSV.write(string(outpath, "/mid_", startat, ".csv"), out_file)
-
         CSV.write(datadir("ABC", "interim_processed_rows.csv"), DataFrame(processed = processedRows))
     end
 
@@ -56,10 +56,8 @@ end
 function filter_params(file_path::String)
     files = readdir(file_path)
 
-    par_rows = map(x -> split(x, ['_', '.'])[2], files)
+    processed_rows = parse.(Int, split.(files, ['_', '.'])[:, 2])
 
-    processed_rows = parse.(Int, par_rows)
-    
     remaining = setdiff(collect(1:10^6), processed_rows)
 
     parameters = CSV.read(datadir("ABC", "parameters.csv"), DataFrame)
