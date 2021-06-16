@@ -29,7 +29,6 @@ function run_timing_exp(map_dim, repls, steps)
     out = DataFrame()
     out.map_dim = fill(map_dim,repls)
     out.rep = collect(1:repls)
-
     timesnbytes = pmap(j -> init_and_time(map_dim, steps), out.rep, retry_delay = zeros(3))
     t_n_b = reduce(vcat, timesnbytes)
     out.time = t_n_b.time

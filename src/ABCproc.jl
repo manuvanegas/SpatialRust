@@ -46,18 +46,20 @@ function load_to_select(file_path::String)
         end
 
         CSV.write(string(outpath, "/mid_", startat, ".csv"), out_file)
-        #CSV.write(datadir("ABC", "interim_missed_rows.csv"), DataFrame(missed = setdiff(rowNs,processedRows)))
+
+        CSV.write(datadir("ABC", "interim_processed_rows.csv"), DataFrame(processed = processedRows))
     end
 
-    #CSV.write(datadir("ABC", "missed_rows.csv"), DataFrame(missed = setdiff(rowNs, processedRows)))
+    CSV.write(datadir("ABC", "missed_rows.csv"), DataFrame(missed = setdiff(rowNs, processedRows)))
 end
 
 function filter_params(file_path::String)
     files = readdir(file_path)
+
     par_rows = map(x -> split(x, ['_', '.'])[2], files)
 
     processed_rows = parse.(Int, par_rows)
-
+    
     remaining = setdiff(collect(1:10^6), processed_rows)
 
     parameters = CSV.read(datadir("ABC", "parameters.csv"), DataFrame)
@@ -65,6 +67,4 @@ function filter_params(file_path::String)
     missed_parameters = parameters[ parameters.RowN .∈ Ref(remaining) , :]
 
     CSV.write(datadir("ABC", "missed_parameters.csv"), missed_parameters)
-
 end
-

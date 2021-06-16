@@ -49,14 +49,6 @@ function collect_and_plot_times()
     df = reduce(vcat, dfs)
 
     times = combine(groupby(df, :map_dim), [:time .=> f for f in [mean, minimum, maximum, std]])
-    # bytes = combine(groupby(df, :map_dim_2), [:bytes .=> f for f in [mean, minimum, maximum]])
-    #
-    # grouped = groupby(df, :map_dim)
-    #
-    # means = combine(grouped, :time .=> mean)
-    # stds = combine(grouped, :time .=> std)
-    #
-    # joined = innerjoin(means,stds, on = :map_dim)
     bytes = combine(groupby(df, :map_dim_2), [:bytes .=> f for f in [mean, minimum, maximum]])
 
 

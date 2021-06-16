@@ -462,6 +462,9 @@ lateStages <- mutate(summBranch,
 
 earlyAndLate <- bind_rows(earlyStages,lateStages)
 
+testing <- group_by(earlyAndLate, Plant, branchCycle) %>%
+  summarize(diff.av.sum = av.sum.branch[stage == "Late"] - av.sum.branch[stage == "Early"],
+            diff.max.sum = max.sum.branch[stage == "Late"] - max.sum.branch[stage == "Early"])
 firstSet <- subset(sumNodes, fDate < "2018-01-01")
 
 sumNodes2 <- mutate(firstSet,
@@ -469,12 +472,11 @@ sumNodes2 <- mutate(firstSet,
                                                     if_else(fDate < "2017-09-06", 2,
                                                             if_else(fDate < "2017-11-08", 3, 4))))
 
-prodAndRust <- left_join(sumNodes2, earlyAndLate, by = c("Plant", "branchCycle"))
+prodAndRust <- left_join(sumNodes2, testing, by = c("Plant", "branchCycle"))
 
-ggplot(prodAndRust, aes(x = sumPlantNodes,
-                        y = av.sum.branch,
-                        group = stage)) +
-  geom_point(aes(color = stage))
+ggplot(prodAndRust, aes(x = sumPlantFruits,
+                        y = diff.av.sum)) +
+  geom_point()
 ggplot(prodAndRust, aes(x = sumPlantFruits,
                         y = av.sum.branch,
                         group = stage)) +

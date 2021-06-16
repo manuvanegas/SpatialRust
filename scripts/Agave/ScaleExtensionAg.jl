@@ -29,11 +29,7 @@ end
     out = DataFrame()
     out.map_dim = fill(map_dim,repls)
     out.rep = collect(1:repls)
-<<<<<<< HEAD
-    timesnbytes = pmap(j -> init_and_time(map_dim, steps), out.rep)
-=======
     timesnbytes = pmap(j -> init_and_time(map_dim, steps), out.rep, retry_delay = zeros(3))
->>>>>>> b6f31279a19913a97cc261731e1bfd78819494c3
     t_n_b = reduce(vcat, timesnbytes)
     out.time = t_n_b.time
     out.bytes = t_n_b.bytes
@@ -52,29 +48,6 @@ function collect_and_plot_times()
     dfs = DataFrame.(CSV.File.(projectdir.("results","timing_scales",files)))
     df = reduce(vcat, dfs)
 
-<<<<<<< HEAD
-    df.map_dim .= (df.map_dim .^ 2) ./ 100
-
-    times = combine(groupby(df, :map_dim), [:time .=> f for f in [mean, minimum, maximum]])
-    #
-    # grouped = groupby(df, :map_dim)
-    #
-    # means = combine(grouped, :time .=> mean)
-    # stds = combine(grouped, :time .=> std)
-    #
-    # joined = innerjoin(means,stds, on = :map_dim)
-
-
-    times = @df joined plot(
-    :map_dim,
-    :time_mean,
-    legend = false,
-    # markershape = :circle,
-    # markersize = 4,
-    # markerstrokewidth = 0.1,
-    # ribbon = :time_std,
-    # fillalpha = 0.4,
-=======
     times = combine(groupby(df, :map_dim), [:time .=> f for f in [mean, minimum, maximum, std]])
     bytes = combine(groupby(df, :map_dim), [:bytes .=> f for f in [mean, minimum, maximum, std]])
 
@@ -89,7 +62,6 @@ function collect_and_plot_times()
     ribbon = :time_std,
     fillalpha = 0.4,
     label = "Mean (sd)",
->>>>>>> b6f31279a19913a97cc261731e1bfd78819494c3
     # linewidth = 1.6,
     # # palette = plt,
     # legend = (0.15, 0.8),
@@ -101,22 +73,14 @@ function collect_and_plot_times()
     # fg_legend = :transparent,
     # bg_legend = :transparent,
     # primary = true,
-<<<<<<< HEAD
-    xlabel = "# Farms",
-    ylabel = "Running Time"
-=======
     xlabel = "Map Side Length",
     ylabel = "Running Time (s)"
->>>>>>> b6f31279a19913a97cc261731e1bfd78819494c3
     # labelfontsize = 10,
     # ylims = (0, 1.05),
     # xticks = (collect(0:100:900)),
     # size = (450,350)
     )
 
-<<<<<<< HEAD
-    png(times, plotsdir("timing_scale_extension"))
-=======
     times_p = @df times plot!(
     :map_dim,
     :time_maximum,
@@ -156,5 +120,5 @@ function collect_and_plot_times()
 
     png(times_p, plotsdir("timing_scale_extension"))
     png(bytes_p, plotsdir("memory_scale_extension"))
->>>>>>> b6f31279a19913a97cc261731e1bfd78819494c3
 end
+
