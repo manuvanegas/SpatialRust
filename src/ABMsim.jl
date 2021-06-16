@@ -9,6 +9,8 @@ mutable struct Coffee <: AbstractAgent
     progression::Float64
     production::Float64
     exh_countdown::Int
+    age::Int
+    hg_id::Int
 end
 
 mutable struct Shade <: AbstractAgent
@@ -16,6 +18,8 @@ mutable struct Shade <: AbstractAgent
     pos::Tuple{Int,Int}
     shade::Float64 # between 20 and 90 %
     production::Float64
+    age::Int
+    hg_id::Int
 end
 
 mutable struct Rust <: AbstractAgent
@@ -25,6 +29,8 @@ mutable struct Rust <: AbstractAgent
     area::Float64 # total, equal to latent + sporulating
     spores::Float64
     n_lesions::Int
+    age::Int
+    hg_id::Int
     #successful_landings::Int # maybe useful metric?
     #parent::Int # id of rust it came from
 end
@@ -38,20 +44,6 @@ function count_shades!(model::ABM)
     end
 end
 
-function inoculate_rust!(model::ABM)
-    # move from a random cell outside
-    # need to update the path function
-
-    rusted_id = rand(model.coffee_ids)
-    here = get_node_agents(model[rusted_id], model)
-    if length(here) > 1
-        here[2].n_lesions += 1
-    else
-        new_id = nextid(model)
-        add_agent_pos!(Rust(new_id, model[rusted_id].pos, true, 0.01, 0.0, 1), model)
-        push!(model.rust_ids, new_id)
-    end
-end
 
 function setup_sim(input::Input)::ABM
     space = GridSpace((input.map_dims, input.map_dims), moore = true)
@@ -73,9 +65,9 @@ function setup_sim(input::Input)::ABM
     # weather and abiotic parameters
     :rain_distance => input.rain_distance,
     :wind_distance => input.wind_distance,
-    :rain_prob => input.rain_prob,
-    :wind_prob => input.wind_prob,
-    :temp_series => input.temp_series,
+    :rain_data => input.rain_data,
+    :wind_data => input.wind_data,
+    :temp_data => input.temp_data,
     :mean_temp => input.mean_temp,
     :uv_inact => input.uv_inact, # extent of effect of sunlight on germination (UV)
     :rain_washoff => input.rain_washoff,
@@ -84,14 +76,17 @@ function setup_sim(input::Input)::ABM
     :wind_protec => input.wind_protec, # % extra wind distance due to absence of shade
     # biotic parameters
     :shade_rate => input.shade_rate, # shade growth rate
+    :max_cof_gr => input.max_cof_gr, # coffee growth rate
+    :opt_g_temp => input.opt_g_temp,
     :fruit_load => input.fruit_load, # extent of fruit load effect on rust growth (severity)
     :spore_pct => input.spore_pct, # percentage of diseased area sporulating
     # record-keeping
+    :days => input.days,
+    :ticks => 0,
     :coffee_ids => Int[],
     :shade_ids => Int[],
     :rust_ids => Int[],
     :outpour => 0.0,
-    :days => 1,
     :temp_var => 0.0,
     :temperature => 22,
     :rain => true,
@@ -103,19 +98,35 @@ function setup_sim(input::Input)::ABM
 
 
     model = ABM(Union{Shade, Coffee, Rust}, space;
-    properties = props,
-    # scheduler = by_type((Shade, Cofffee, Rust), true)
-    scheduler = custom_scheduler, warn = false)
+        properties = props,
+        # scheduler = by_type((Shade, Cofffee, Rust), true)
+        scheduler = custom_scheduler, warn = false)
 
-    id = 0
-    for patch in CartesianIndices(input.farm_map)
-        id += 1
-        if input.farm_map[patch]
-            add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0), model)
-            push!(model.coffee_ids, id)
-        else
-            add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0), model)
-            push!(model.shade_ids, id)
+    if input.days != 0
+        prod_d = truncated(Normal(input.days, input.days * 0.02), 0.0, input.days)
+        # introducing some variability, but most of the plants are expected to have accumulated (close to) optimal productivity
+        id = 0
+        for patch in CartesianIndices(input.farm_map)
+            id += 1
+            if input.farm_map[patch]
+                add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, rand(prod_d), 0, 0, 0), model)
+                push!(model.coffee_ids, id)
+            else
+                add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
+                push!(model.shade_ids, id)
+            end
+        end
+    else
+        id = 0
+        for patch in CartesianIndices(input.farm_map)
+            id += 1
+            if input.farm_map[patch]
+                add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
+                push!(model.coffee_ids, id)
+            else
+                add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
+                push!(model.shade_ids, id)
+            end
         end
     end
 
@@ -123,7 +134,7 @@ function setup_sim(input::Input)::ABM
 
     count_shades!(model)
 
-    inoculate_rust!(model)
+    inoculate_rand_rust!(model, input.n_rusts)
 
     return model
 
@@ -132,19 +143,26 @@ end
 ## "Step" functions
 
 function pre_step!(model)
-    day = model.days % model.harvest_cycle + 1
-    rain_w = Weights([model.rain_prob[day], (1 - model.rain_prob[day])])
-    model.rain = sample(Bool[1, 0], rain_w)
-    wind_w = Weights([model.wind_prob[day], (1 - model.wind_prob[day])])
-    model.wind = sample(Bool[1, 0], wind_w)
-    model.temp_var = (randn() * 2)
-    if length(model.temp_series) < 1
-        model.temperature = model.mean_temp + model.temp_var
-    else
-        model.temperature = model.temp_series[day]
-    end
+
+    #day = model.days % model.harvest_cycle + 1
+    # rain_w = Weights([model.rain_prob[day], (1 - model.rain_prob[day])])
+    # model.rain = sample(Bool[1, 0], rain_w)
+    # # why not model.rain = rand() < model.rain_prob?
+    # wind_w = Weights([model.wind_prob[day], (1 - model.wind_prob[day])])
+    # model.wind = sample(Bool[1, 0], wind_w)
+    # model.temp_var = (randn() * 2)
+    # if length(model.temp_series) < 1
+    #     model.temperature = model.mean_temp + model.temp_var
+    # else
+    #     model.temperature = model.temp_series[day]
+    # end
+    model.days += 1
+    model.ticks += 1
+    model.rain = model.rain_data[model.ticks]
+    model.wind = model.wind_data[model.ticks]
+    model.temperature = model.temp_data[model.ticks]
     if model.karma && rand() < sqrt(model.outpour)/(model.dims^2)
-        inoculate_rust!(model)
+        inoculate_rand_rust!(model, 1)
     end
 end
 
@@ -161,7 +179,7 @@ function agent_step!(coffee::Coffee, model::ABM)
         coffee.exh_countdown = 0
     else
         update_sunlight!(coffee, model)
-        grow!(coffee)
+        grow!(coffee, model.max_cof_gr)
         acc_production!(coffee)
     end
 end
@@ -185,13 +203,10 @@ function model_step!(model)
     # if model.days % model.fungicide_period === 0
     #     fingicide!(model)
     # end
-    if model.days % model.prune_period === 0
-        prune!(model)
-    end
-
-    if model.days % model.inspect_period === 0
-        inspect!(model)
-    end
-
-    model.days += 1
+    # if model.days % model.prune_period === 0
+    #     prune!(model)
+    # end
+    # if model.days % model.inspect_period === 0
+    #     inspect!(model)
+    # end
 end

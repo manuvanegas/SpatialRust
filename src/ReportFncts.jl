@@ -1,5 +1,5 @@
 function ind_area(agent)
-    area = 0.0
+    area = NaN
     if typeof(agent) === Rust
         area = agent.area
     end
@@ -7,11 +7,11 @@ function ind_area(agent)
 end
 
 function ind_lesions(agent)
-    area = 0.0
+    lesions = NaN
     if typeof(agent) === Rust
-        area = agent.n_lesions
+        lesions = agent.n_lesions
     end
-    return area
+    return lesions
 end
 
 function rust_incid(model)

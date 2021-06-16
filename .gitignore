@@ -4,7 +4,9 @@
 
 # Folders to ignore - files may be too large, too many, etc. NOTE: EDIT IF NEEDED.
 data
+track
 videos
+results
 plots
 notebooks
 _research
@@ -412,6 +414,11 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Error and out slurm files
+*.e
+*.o
 
 ## Acknowledgements
 # Many thanks to `https://gitignore.io/`, written and maintained by Joe Blau, which contributed much material to this gitignore file.
+.Rproj.user
+.Rhistory

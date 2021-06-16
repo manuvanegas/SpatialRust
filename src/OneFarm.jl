@@ -4,6 +4,7 @@
 
 function grow!(tree::Shade, rate::Float64)
     tree.shade += rate * (1.0 - tree.shade / 0.9)
+    tree.age += 1
 end
 
 ###
@@ -22,13 +23,15 @@ function update_sunlight!(cof::Coffee, model::ABM)
     # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
 end
 
-function grow!(cof::Coffee)
+function grow!(cof::Coffee, max_cof_gr)
     # coffee plants can recover healthy tissue (dilution effect for sunlit plants)
     if 0.0 < cof.area < 25.0
-        cof.area += cof.sunlight
+        cof.area += max_cof_gr * (cof.area * cof.sunlight)
     elseif cof.area > 25.0
         cof.area = 25.0
     end
+
+    cof.age += 1
 end
 
 function acc_production!(cof::Coffee) # accumulate production
@@ -49,7 +52,7 @@ function disperse!(rust::Rust, cof::Coffee, model::ABM)
         # println("obt")
         # println(target)
         if target !== rust
-            deposit_on!(target, model)
+            inoculate_rust!(model, target)
         end
     end
 
@@ -58,7 +61,7 @@ function disperse!(rust::Rust, cof::Coffee, model::ABM)
         # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
         target = try_travel(rust, cof.sunlight, model, "w")
         if target !== rust
-            deposit_on!(target, model)
+            inoculate_rust!(model, target)
         end
     end
 end
@@ -77,6 +80,7 @@ function parasitize!(rust::Rust, cof::Coffee, model::ABM)
 
             rm_id = rust.id
             kill_agent!(rust, model)
+            cof.hg_id = 0
             model.rust_ids = filter(i -> i != rm_id, model.rust_ids)
         end
     end
@@ -88,10 +92,13 @@ function grow!(rust::Rust, cof::Coffee, model::ABM)
 
     if rust.germinated && 14 < local_temp < 30 # grow and sporulate
 
+        rust.age += 1
+
         #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
-        rust.area += (1 - rust.area) *
-            (model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
-            (-0.0178 * ((local_temp - 22.5) ^ 2.0) + 1.0)
+        rust.area += rust.area * (1 - rust.area) *
+            #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
+            model.fruit_load * cof.production / model.harvest_cycle *
+            (-0.0178 * ((local_temp - model.opt_g_temp) ^ 2.0) + 1.0)
 
         if rust.spores === 0.0
             if rand() < (rust.area * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
@@ -156,12 +163,12 @@ function prune!(model::ABM)
 end
 
 function inspect!(model::ABM)
-    cofs = sample(model.coffee_ids, round(Int,length(model.coffee_ids) * 0.25), replace = false)
+    cofs = sample(model.coffee_ids, round(Int,length(model.coffee_ids) * 0.05), replace = false)
     for c in cofs
         here = get_node_agents(model[c].pos, model)
         if length(here) > 1
-            here[2].n_lesions = round(Int, here[2].n_lesions / 2)
-            here[2].area = round(Int, here[2].area / 2)
+            here[2].n_lesions = round(Int, here[2].n_lesions * 0.1)
+            here[2].area = round(Int, here[2].area * 0.1)
         end
     end
 end
@@ -305,7 +312,26 @@ function try_travel(rust::AbstractAgent, sun::Float64, model::ABM, factor::Strin
     return potential_landing
 end
 
-function deposit_on!(target::AbstractAgent, model::ABM)
+function inoculate_rand_rust!(model::ABM, n_rusts::Int) # inoculate random coffee plants
+    # move from a random cell outside
+    # need to update the path function
+
+    rusted_ids = sample(model.coffee_ids, n_rusts, replace = false)
+
+    for rusted in rusted_ids
+        here = get_node_agents(model[rusted], model)
+        if length(here) > 1
+            here[2].n_lesions += 1
+        else
+            new_id = nextid(model)
+            add_agent_pos!(Rust(new_id, here[1].pos, true, 0.01, 0.0, 1, 0, here[1].id), model)
+            here[1].hg_id = new_id
+            push!(model.rust_ids, new_id)
+        end
+    end
+end
+
+function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target coffee
     # print("dep")
     # println(target)
     here = get_node_agents(target, model)
@@ -317,7 +343,8 @@ function deposit_on!(target::AbstractAgent, model::ABM)
     elseif target isa Coffee
         # println("new")
         new_id = nextid(model)
-        add_agent_pos!(Rust(new_id, target.pos, false, 0.0, 0.0, 1), model)
+        add_agent_pos!(Rust(new_id, target.pos, false, 0.0, 0.0, 1, 0, target.id), model)
+        target.hg_id = new_id
         push!(model.rust_ids, new_id)
     end
 end
