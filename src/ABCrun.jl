@@ -32,7 +32,7 @@ function y_pos(agent)
     return agent.pos[2]
 end
 
-## selection function
+## plant selection function
 
 function plant_sampler(df::DataFrame)
     xy_pos = unique(df[(df.agent_type .== "Coffee") .& (5 .< df.x_pos .<= 95) .& (5 .< df.y_pos .<= 95), [:x_pos, :y_pos, :id]])
@@ -90,4 +90,3 @@ function run_for_abc(parameters::DataFrameRow,
 
     return true
 end
-

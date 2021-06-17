@@ -23,33 +23,62 @@ function move_files()
 
 end
 
-function load_to_select(file_path::String)
+function interim_plant_sampler(df::DataFrame)
+    df = df[df.step .> 15]
+    xy_pos = unique(df[(df.agent_type .== "Coffee") .& (5 .< df.x_pos .<= 95) .& (5 .< df.y_pos .<= 95), [:x_pos, :y_pos, :id]])
+    # sample size is 10% of coffees within the 5-row limit (= 810)
+    # times 2 because of the new sampling in Jan
+    selected_ids = sample(xy_pos.id, 1620, replace = false)
+    first_half = selected_ids[1:810]
+    second_half = selected_ids[811:end]
+    sampled = df[(df.step .<= 230) .& ((df.id .∈ Ref(first_half)) .| (df.host_guest .∈ Ref(first_half))), :]
+    append!(sampled, df[(df.step .> 230) .& ((df.id .∈ Ref(second_half)) .| (df.host_guest .∈ Ref(second_half))), :])
+    return sampled
+end
+
+function sample_save(files::Array{String,1}, v_pos::Int, chunksize::Int)
+    processedRows = Int64[]
+    sizehint!(processedRows, chunksize)
+    out_file = DataFrame()
+    for current in 1:chunksize
+        #current_f = CSV.read(files[current], DataFrame)
+        # if files[current] == "placeholder"
+        #     break
+        # end
+        append!(out_file, interim_plant_sampler(CSV.read(files[current], DataFrame)))
+        push!(processedRows, parse(Int, split(files[current], ['_', '.'])[2]))
+    end
+    #out_file_n = Int64(last(processedRows))
+    CSV.write(string(outpath, "/mid_", v_pos, ".csv"), out_file)
+    CSV.write(datadir("ABC", "tracking_processed_rows.csv"), DataFrame(processed = processedRows))
+    return processedRows
+end
+
+function load_to_select(file_path::String, chunksize, testgroup = 0)
     outpath = mkpath("/scratch/mvanega1/ABCmiddle")
     println(outpath)
-    files = readdir(file_path, join = true, sort = false)[1:50]
-    howmany = length(files)
-    chunksize = 2
-
     rowNs = collect(1:10^6)
-    processedRows = Int64[]
-    sizehint!(processedRows, 10^6)
-
-
-    for startat in 1:chunksize:howmany
-        stopat = startat + chunksize - 1 < howmany ? startat + chunksize - 1 : howmany
-        out_file = DataFrame()
-
-        for current in startat:stopat
-            current_f = CSV.read(files[current], DataFrame)
-            append!(out_file, plant_sampler(current_f))
-
-            push!(processedRows, parse(Int, split(files[current], ['_', '.'])[2]))
-        end
-
-        CSV.write(string(outpath, "/mid_", startat, ".csv"), out_file)
-        CSV.write(datadir("ABC", "interim_processed_rows.csv"), DataFrame(processed = processedRows))
+    if testgroup == 0
+        files = readdir(file_path, join = true, sort = false)
+        howmany = length(files)
+    else
+        files = readdir(file_path, join = true, sort = false)[1:testgroup]
+        howmany = testgroup
     end
 
+    n_out_files = cld(howmany, chunksize)
+    files_v = [String[] for i = 1:n_out_files]
+
+    for v_pos in 1:n_out_files
+        stopat = chunksize * v_pos
+        startat = stopat - chunksize + 1
+        stopat = min(stopat, howmany)
+        files_v[v_pos] = [files[i] for i = startat:stopat]
+    end
+
+    processsed_rows = pmap((f, p) -> sample_save(f, p, chunksize), files_v, [v_pos in 1:n_out_files]; retry_delays = fill(0.01, 3))
+
+    processedRows = reduce(vcat, processsed_rows)
     CSV.write(datadir("ABC", "missed_rows.csv"), DataFrame(missed = setdiff(rowNs, processedRows)))
 end
 
