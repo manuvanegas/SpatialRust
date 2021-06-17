@@ -24,7 +24,7 @@ function move_files()
 end
 
 function interim_plant_sampler(df::DataFrame)
-    df = df[df.step .> 15]
+    df = df[df.step .> 15, :]
     xy_pos = unique(df[(df.agent_type .== "Coffee") .& (5 .< df.x_pos .<= 95) .& (5 .< df.y_pos .<= 95), [:x_pos, :y_pos, :id]])
     # sample size is 10% of coffees within the 5-row limit (= 810)
     # times 2 because of the new sampling in Jan
@@ -36,7 +36,7 @@ function interim_plant_sampler(df::DataFrame)
     return sampled
 end
 
-function sample_save(files::Array{String,1}, v_pos::Int, chunksize::Int)
+function sample_save(files::Array{String,1}, v_pos::Int, chunksize::Int, outpath::String)
     processedRows = Int64[]
     sizehint!(processedRows, chunksize)
     out_file = DataFrame()
@@ -54,9 +54,9 @@ function sample_save(files::Array{String,1}, v_pos::Int, chunksize::Int)
     return processedRows
 end
 
-function load_to_select(file_path::String, chunksize, testgroup = 0)
-    outpath = mkpath("/scratch/mvanega1/ABCmiddle")
-    println(outpath)
+function load_to_select(file_path::String, out_folder::String, chunksize, testgroup = 0)
+    outpath = mkpath(string("/scratch/mvanega1/", out_folder))
+    #println(outpath)
     rowNs = collect(1:10^6)
     if testgroup == 0
         files = readdir(file_path, join = true, sort = false)
@@ -76,7 +76,8 @@ function load_to_select(file_path::String, chunksize, testgroup = 0)
         files_v[v_pos] = [files[i] for i = startat:stopat]
     end
 
-    processsed_rows = pmap((f, p) -> sample_save(f, p, chunksize), files_v, [v_pos in 1:n_out_files]; retry_delays = fill(0.01, 3))
+    println("pre-pmap")
+    processsed_rows = pmap((f, p) -> sample_save(f, p, chunksize, outpath), files_v, collect(1:n_out_files); retry_delays = fill(0.01, 3))
 
     processedRows = reduce(vcat, processsed_rows)
     CSV.write(datadir("ABC", "missed_rows.csv"), DataFrame(missed = setdiff(rowNs, processedRows)))

@@ -1,4 +1,3 @@
-using Distributed
 @everywhere using DrWatson
 @everywhere @quickactivate "SpatialRust"
 
@@ -7,6 +6,6 @@ using Distributed
     #include(srcdir("ABCrun.jl"))
 
 
-load_to_select("/scratch/mvanega1/ABCraw/", 2, 50)
+load_to_select("/scratch/mvanega1/ABCveryraw/", ARGS[1], parse(Int, ARGS[2]), parse(Int, ARGS[3]))
 
 #filter_params("/scratch/mvanega1/ABCveryraw/")
