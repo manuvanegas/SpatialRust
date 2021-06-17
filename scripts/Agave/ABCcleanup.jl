@@ -1,11 +1,9 @@
-@everywhere begin
-    using DrWatson
-    @quickactivate "SpatialRust"
+@everywhere using DrWatson
+@everywhere @quickactivate "SpatialRust"
 
-    using CSV, DataFrames, Distributed, StatsBase
-    include(srcdir("ABCproc.jl"))
+@everywhere using CSV, DataFrames, Distributed, StatsBase
+@everywhere include(srcdir("ABCproc.jl"))
     #include(srcdir("ABCrun.jl"))
-end
 
 
 load_to_select("/scratch/mvanega1/ABCraw/", 2, 50)
