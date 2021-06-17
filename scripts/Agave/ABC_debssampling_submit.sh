@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --ntasks=10
+#SBATCH --ntasks=5
 #SBATCH --ntasks-per-core=1
 #SBATCH -p debug
 #SBATCH -q wildfire
