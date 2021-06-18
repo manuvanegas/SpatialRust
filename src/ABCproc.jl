@@ -36,51 +36,65 @@ function interim_plant_sampler(df::DataFrame)
     return sampled
 end
 
-function sample_save(files::Array{String,1}, v_pos::Int, chunksize::Int, outpath::String)
-    processedRows = Int64[]
-    sizehint!(processedRows, chunksize)
-    out_file = DataFrame()
-    for current in 1:chunksize
+function sample_save(file::String, chunksize::Int, outpath::String)
+    #processedRows = Int64[]
+    #sizehint!(processedRows, chunksize)
+    #out_file = DataFrame()
+    #for current in 1:chunksize
         #current_f = CSV.read(files[current], DataFrame)
         # if files[current] == "placeholder"
         #     break
         # end
-        append!(out_file, interim_plant_sampler(CSV.read(files[current], DataFrame)))
-        push!(processedRows, parse(Int, split(files[current], ['_', '.'])[2]))
-    end
+    #end
     #out_file_n = Int64(last(processedRows))
-    CSV.write(string(outpath, "/mid_", v_pos, ".csv"), out_file)
-    CSV.write(datadir("ABC", "tracking_processed_rows.csv"), DataFrame(processed = processedRows))
-    return processedRows
+    p_row = split(file, ['_', '.'])[2]
+    row_n = string("0" ^ (7 - length(p_row)), p_row)
+
+    df = CSV.read(file, DataFrame)
+
+    sums = sum(eachcol(ismissing.(df)))
+    if any(sums .> 0)
+        CSV.write(string(projectdir("results","faulty"), basename(file)), DataFrame(v = sums))
+        pritnln("aha!")
+        pritnln(string(basename(file), ": ", sums))
+    else
+        df = interim_plant_sampler(df)
+        CSV.write(string(outpath, "/mid_", row_n, ".csv"), df)
+        println(string(basename(file), ": listos"))
+    end
+
+    #CSV.write(datadir("ABC", "tracking_processed_rows.csv"), DataFrame(processed = processedRows))
+    return parse(Int, p_row)
 end
 
-function load_to_select(file_path::String, out_folder::String, chunksize, testgroup = 0)
+function load_to_select(file_path::String, out_folder::String, chunksize, ini_i = 1, fin_i = 0)
     outpath = mkpath(string("/scratch/mvanega1/", out_folder))
+    #mkpath("/scratch/mvanega1/trackRows")
     #println(outpath)
-    rowNs = collect(1:10^6)
-    if testgroup == 0
+    if fin_i == 0
         files = readdir(file_path, join = true, sort = false)
-        howmany = length(files)
     else
-        files = readdir(file_path, join = true, sort = false)[1:testgroup]
-        howmany = testgroup
+        files = readdir(file_path, join = true, sort = false)[ini_i:fin_i]
     end
 
-    n_out_files = cld(howmany, chunksize)
-    files_v = [String[] for i = 1:n_out_files]
+    howmany = length(files)
 
-    for v_pos in 1:n_out_files
-        stopat = chunksize * v_pos
-        startat = stopat - chunksize + 1
-        stopat = min(stopat, howmany)
-        files_v[v_pos] = [files[i] for i = startat:stopat]
-    end
+    # n_out_files = cld(howmany, chunksize)
+    # files_v = [String[] for i = 1:n_out_files]
+    #
+    # for v_pos in 1:n_out_files
+    #     stopat = chunksize * v_pos
+    #     startat = stopat - chunksize + 1
+    #     stopat = min(stopat, howmany)
+    #     files_v[v_pos] = [files[i] for i = startat:stopat]
+    # end
+
 
     println("pre-pmap")
-    processsed_rows = pmap((f, p) -> sample_save(f, p, chunksize, outpath), files_v, collect(1:n_out_files); retry_delays = fill(0.01, 3))
+    processsed_rows = pmap(f -> sample_save(f, chunksize, outpath), files; batch_size = chunksize, retry_delays = fill(0.01, 3))
 
-    processedRows = reduce(vcat, processsed_rows)
-    CSV.write(datadir("ABC", "missed_rows.csv"), DataFrame(missed = setdiff(rowNs, processedRows)))
+    #processedRows = reduce(vcat, processsed_rows)
+    CSV.write(datadir("ABC", "missed_rows.csv"), DataFrame(missed = setdiff(collect(1:10^6), processedRows)))
 end
 
 function filter_params(file_path::String)
@@ -101,24 +115,22 @@ function find_faulty_files()
     startedat = time()
     println(string("start:", (time() - startedat)))
     outfolder = mkpath(projectdir("results","faulty"))
-    files = readdir("/scratch/mvanega1/ABCveryraw/", join = true, sort = false)[27121:end]
+    files = readdir("/scratch/mvanega1/ABCveryraw/", join = true, sort = false)[(27121 + 36769):end]
     println(string("loadedd file names at:", (time() - startedat)))
     println(string("tot files:", length(files)))
-    
-    @everywhere begin
-        function find_missings(f, startedat, outfolder)
-            missing_vals = ismissing.(CSV.read(f, DataFrame))
-            println(basename(f))
-            now = time() - startedat
-            println(now)
-            sums = sum(eachcol(missing_vals))
-            if any(sums .> 0)
-                CSV.write(string(outfolder, basename(f)), DataFrame(v = sums))
-                pritnln("aha!")
-                pritnln(sums)
-            end
+
+    function find_missings(f, startedat, outfolder)
+        missing_vals = ismissing.(CSV.read(f, DataFrame))
+        println(basename(f))
+        now = time() - startedat
+        println(now)
+        sums = sum(eachcol(missing_vals))
+        if any(sums .> 0)
+            CSV.write(string(outfolder, basename(f)), DataFrame(v = sums))
+            pritnln("aha!")
+            pritnln(sums)
         end
     end
-    
+
     checked = pmap(f -> find_missings(f, startedat, outfolder), files; on_error=identity)
 end
