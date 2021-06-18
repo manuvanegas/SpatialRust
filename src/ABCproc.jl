@@ -96,3 +96,29 @@ function filter_params(file_path::String)
 
     CSV.write(datadir("ABC", "missed_parameters.csv"), missed_parameters)
 end
+
+function find_faulty_files()
+    startedat = time()
+    println(string("start:", (time() - startedat)))
+    outfolder = mkpath(projectdir("results","faulty"))
+    files = readdir("/scratch/mvanega1/ABCveryraw/", join = true, sort = false)[27121:end]
+    println(string("loadedd file names at:", (time() - startedat)))
+    println(string("tot files:", length(files)))
+    
+    @everywhere begin
+        function find_missings(f, startedat, outfolder)
+            missing_vals = ismissing.(CSV.read(f, DataFrame))
+            println(basename(f))
+            now = time() - startedat
+            println(now)
+            sums = sum(eachcol(missing_vals))
+            if any(sums .> 0)
+                CSV.write(string(outfolder, basename(f)), DataFrame(v = sums))
+                pritnln("aha!")
+                pritnln(sums)
+            end
+        end
+    end
+    
+    checked = pmap(f -> find_missings(f, startedat, outfolder), files; on_error=identity)
+end
