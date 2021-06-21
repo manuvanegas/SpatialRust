@@ -52,19 +52,20 @@ function sample_save(file::String, chunksize::Int, outpath::String)
 
     df = CSV.read(file, DataFrame)
 
-    sums = sum(eachcol(ismissing.(df)))
+    sums = sum(eachcol(ismissing.(df))) ## OJO should be eachrow, but sum doesn't work on DataFrameRows
     if any(sums .> 0)
-        CSV.write(string(projectdir("results","faulty"), basename(file)), DataFrame(v = sums))
-        pritnln("aha!")
-        pritnln(string(basename(file), ": ", sums))
+        println("aha!")
+        CSV.write(string(projectdir("results","faulty"), "/", basename(file)), DataFrame(v = sums))
+        println(string(basename(file), ": ", sums))
+        return 0
     else
         df = interim_plant_sampler(df)
         CSV.write(string(outpath, "/mid_", row_n, ".csv"), df)
         println(string(basename(file), ": listos"))
+        return parse(Int, p_row)
     end
 
     #CSV.write(datadir("ABC", "tracking_processed_rows.csv"), DataFrame(processed = processedRows))
-    return parse(Int, p_row)
 end
 
 function load_to_select(file_path::String, out_folder::String, chunksize, ini_i = 1, fin_i = 0)
@@ -73,6 +74,7 @@ function load_to_select(file_path::String, out_folder::String, chunksize, ini_i 
     #println(outpath)
     if fin_i == 0
         files = readdir(file_path, join = true, sort = false)
+        fin_i = 10^6
     else
         files = readdir(file_path, join = true, sort = false)[ini_i:fin_i]
     end
@@ -91,10 +93,10 @@ function load_to_select(file_path::String, out_folder::String, chunksize, ini_i 
 
 
     println("pre-pmap")
-    processsed_rows = pmap(f -> sample_save(f, chunksize, outpath), files; batch_size = chunksize, retry_delays = fill(0.01, 3))
+    processed_rows = pmap(f -> sample_save(f, chunksize, outpath), files; batch_size = chunksize, retry_delays = fill(0.01, 3))
 
-    #processedRows = reduce(vcat, processsed_rows)
-    CSV.write(datadir("ABC", "missed_rows.csv"), DataFrame(missed = setdiff(collect(1:10^6), processedRows)))
+    #processedRows = reduce(vcat, processed_rows)
+    CSV.write(datadir("ABC", string("missedrows_", ini_i, "_", fin_i,".csv")), DataFrame(missed = setdiff(collect(ini_i:fin_i), processed_rows)))
 end
 
 function filter_params(file_path::String)

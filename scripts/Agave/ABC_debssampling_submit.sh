@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --ntasks=5
+#SBATCH --ntasks=110
 #SBATCH --ntasks-per-core=1
 #SBATCH -p debug
 #SBATCH -q wildfire
@@ -14,4 +14,4 @@ module purge
 module load julia/1.5.0
 
 export SLURM_NODEFILE=`generate_pbs_nodefile`
-julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/Agave/ABCcleanup.jl
+julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/Agave/ABCcleanup.jl ABCsampled 1 400000 500000
