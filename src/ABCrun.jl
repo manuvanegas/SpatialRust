@@ -46,6 +46,22 @@ function plant_sampler(df::DataFrame)
     return sampled
 end
 
+## ABC distance functions
+# 1. nlesions, area, prod, both plant sets
+
+# 2. nlesions, area, prod, second plant set only (2018)
+
+# 3. nlesions * area, prod, both sets
+
+# 4. nlesions * area, prod, second set
+
+# 5. same but without prod
+
+function calc_ABC_distances(args)
+    body
+end
+
+
 
 ## Run fnc
 
@@ -76,7 +92,8 @@ function run_for_abc(parameters::DataFrameRow,
     adata, _ = run!(model, pre_step!, agent_step!, model_step!, steps;
                     when = when_collect, adata = areport)
                     #cat ABC-9488559.o | wc -l
-    #sampled_data = plant_sampler(adata)
+
+    distance_metrics = calc_ABC_distances(adata)
 
     insertcols!(adata, :par_row => parameters[:RowN])
 

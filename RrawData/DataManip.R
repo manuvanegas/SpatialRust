@@ -69,6 +69,7 @@ plot_rust_data <- function(t.plot = "TFSSF") {
   treatment$dayN <- treatment$fDate - firstday
   
   treatment$WasInfected <- if_else(is.na(treatment$Infected), 1, if_else(treatment$Infected == 0, 0, 1))
+  
 
   
   ### Plotting incidence at plant-branch level (because branches change every 8 weeks)
@@ -437,13 +438,28 @@ write.csv(meanNodesandFruits, paste0(data_path, "compare/", treat.name, "_CoffeP
 summBranch <- group_by(rSelected, fDate, Plant, Branch) %>%
   summarize(sumArea = sum(CorrectedArea, na.rm = T), meanArea = mean(CorrectedArea, na.rm = T))
 
-summBranch <- group_by(inf.treat, fDate, Plant, Branch) %>%
+summBranch <- group_by(first.25, fDate, Plant, Branch) %>%
   summarise(count.n=n(),
             sum.branch = sum(CorrectedArea, na.rm = T),
-            .groups = "drop_last") %>%
-  summarise(total.rust.n = sum(count.n),
-            av.sum.branch = mean(sum.branch),
-            max.sum.branch = max(sum.branch))
+            sum.fallen = sum(Fallen),
+            .groups = "drop_last")
+rustandnodes <- left_join(summBranch, pSelected, by = c("Plant", "Branch"))
+
+#rustandnodes2 <- subset(rustandnodes, Plant < 37)
+ggplot(rustandnodes, aes(x = PlantFruitNodes,
+                         y = sum.branch,
+                         group = fDate.x)) +
+  geom_point(aes(color = fDate.x))
+
+ggplot(rustandnodes, aes(x = PlantFruitNodes,
+                         y = sum.fallen,
+                         group = as.factor(Plant))) +
+  geom_point(aes(color = as.factor(Plant)))
+
+# %>%
+#   summarise(total.rust.n = sum(count.n),
+#             av.sum.branch = mean(sum.branch),
+#             max.sum.branch = max(sum.branch))
 
 earlyStages <- mutate(summBranch,
                       stage = "Early",
