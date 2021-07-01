@@ -1,3 +1,80 @@
+function step_model!(model::ABM)
+    pre_step!(model)
+
+    for shade_i in model.current.shade_ids
+        shade_step!(model.agents[shade_i], model)
+    end
+
+    for cof_i in model.current.coffee_ids
+        coffee_step!(model.agents[cof_i], model)
+    end
+
+    for rust_i in shuffle(model.rng, model.current.rust_ids)
+        rust_step!(model.agents[rust_i], model)
+    end
+
+    model_step!(model)
+end
+
+## "Step" functions
+
+function pre_step!(model)
+    model.current.rain = model.rain_data[model.current.ticks]
+    model.current.wind = model.wind_data[model.current.ticks]
+    model.current.temperature = model.temp_data[model.current.ticks]
+    if model.karma && rand(model.rng) < sqrt(model.current.outpour)/(model.dims^2)
+        inoculate_rand_rust!(model, 1)
+    end
+end
+
+function shade_step!(tree::Shade, model::ABM)
+    grow!(tree, model.shade_rate)
+end
+
+function coffee_step!(coffee::Coffee, model::ABM)
+
+    if coffee.exh_countdown > 1
+        coffee.exh_countdown -= 1
+    elseif coffee.exh_countdown == 1
+        coffee.area = 25
+        coffee.exh_countdown = 0
+    else
+        update_sunlight!(coffee, model)
+        grow!(coffee, model.max_cof_gr)
+        acc_production!(coffee)
+    end
+end
+
+function rust_step!(rust::Rust, model::ABM)
+
+    host = collect(agents_in_position(rust, model))[1]
+    if host.area > 0.0 # not exhausted
+        if rust.spores > 0.0
+            disperse!(rust, host, model)
+        end
+        parasitize!(rust, host, model)
+        grow!(rust, host, model)
+    end
+end
+
+function model_step!(model)
+    if model.current.days % model.harvest_cycle === 0
+        harvest!(model)
+    end
+
+    model.current.days += 1
+    model.current.ticks += 1
+    # if model.days % model.fungicide_period === 0
+    #     fingicide!(model)
+    # end
+    # if model.days % model.prune_period === 0
+    #     prune!(model)
+    # end
+    # if model.days % model.inspect_period === 0
+    #     inspect!(model)
+    # end
+end
+
 ###
 ## Shade
 ###
@@ -332,6 +409,7 @@ function inoculate_rand_rust!(model::ABM, n_rusts::Int) # inoculate random coffe
 end
 
 function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target coffee
+    #println("new rust")
     # print("dep")
     # println(target)
     here = collect(agents_in_position(target, model))
@@ -353,12 +431,49 @@ function calc_wetness_p(local_temp)
     w = (-0.5/16.0) * local_temp + (0.5*30.0/16.0)
 end
 
+## Needed to modify it so I could start without Shade agents
 
-function tryyy(n)
-    for i = 1:n
-        for j = 2:4
-            if j == 3 continue end
-            println(i,j)
+function Agents.multi_agent_types!(
+    types::Vector{Vector{T} where T},
+    utypes::Tuple,
+    model::ABM,
+    properties::AbstractArray,
+)
+    types[3] = Symbol[]
+
+    for (i, k) in enumerate(properties)
+        current_types = DataType[]
+        for atype in utypes
+            allatype = Iterators.filter(a -> a isa atype, allagents(model))
+            if !isempty(allatype)
+                a = first(allatype)
+            else
+                a = atype(1, (1,1), 0.2, 1.0, 1, 1) # specific to Shades
+            end
+            if k isa Symbol
+                current_type =
+                    hasproperty(a, k) ? typeof(Agents.get_data(a, k, identity)) : Missing
+            else
+                current_type = try
+                        typeof(get_data(a, k, identity))
+                catch
+                    Missing
+                end
+            end
+
+            isconcretetype(current_type) || warn(
+                "Type is not concrete when using $(k) " *
+                "on $(atype) agents. Consider narrowing the type signature of $(k).",
+            )
+            push!(current_types, current_type)
+        end
+        unique!(current_types)
+        if length(current_types) == 1
+            current_types[1] <: Missing &&
+                error("$(k) does not yield a valid agent property.")
+            types[i+3] = current_types[1][]
+        else
+            types[i+3] = Union{current_types...}[]
         end
     end
 end

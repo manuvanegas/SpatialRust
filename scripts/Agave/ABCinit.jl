@@ -7,10 +7,14 @@
     include(srcdir("FarmInit.jl"))
     include(srcdir("ABMsim.jl"))
     include(srcdir("OneFarm.jl"))
-    include(srcdir("AddToAgents.jl"))
+    include(srcdir("Scheduler.jl"))
+    #include(srcdir("AddToAgents.jl"))
     #include((srcdir("ReportFncts.jl"))
     include(srcdir("ABCrun.jl"))
 end
+
+include(srcdir("ABMsetup.jl"))
+include(srcdir("ABMstep.jl"))
 
 startat = 2
 less_this = 0
@@ -34,19 +38,24 @@ temp_data = Array{Float64}(weather[:, :meanTaTFS])
 out_path = mkpath("/scratch/mvanega1/ABCveryraw")
 
 #dummy run
-d_mod = initialize_sim(; map_dims = 10, shade_percent = 0.0)
-d_adata, _ = run!(d_mod, pre_step!, agent_step!, model_step!, 10, adata = [:pos])
+d_mod = initialize_sim(; map_dims = 20, shade_percent = 0.0, steps = 50)
+d_adata, _ = run!(d_mod, dummystep, step_model!, 50, adata = [:pos])
 
 println("Dummy run completed")
 
 processed = pmap(p -> run_for_abc(p, rain_data, temp_data, when_collect, out_path),
                 eachrow(parameters); retry_delays = fill(0.1, 3))
 
+## Benchmarking
 
-
-
-
-
+# d_mod = initialize_sim(; map_dims = 20, shade_percent = 0.0)
+# d_adata, _ = run!(d_mod, dummystep, step_model!, 10, adata = [:pos])
+#
+# function b_mark()
+#     dd_mod = initialize_sim(; map_dims = 20, shade_percent = 0.0, steps = 50)
+#     dd_adata, _ = run!(dd_mod, dummystep, step_model!, 50, adata = [:pos])
+#     return nothing
+# end
 
 
 ## Trying to decide whether growth rate is well defined.
