@@ -1,20 +1,14 @@
 @everywhere using DrWatson
 @everywhere @quickactivate "SpatialRust"
 
-@everywhere using Agents, CSV, DataFrames, Random, Distributed, Distributions, StatsBase
-
 @everywhere begin
-    include(srcdir("FarmInit.jl"))
-    include(srcdir("ABMsim.jl"))
-    include(srcdir("OneFarm.jl"))
-    include(srcdir("Scheduler.jl"))
-    #include(srcdir("AddToAgents.jl"))
-    #include((srcdir("ReportFncts.jl"))
-    include(srcdir("ABCrun.jl"))
+    using DataFrames
+    using Agents: dummystep, run!
+    using Distributed: pmap
+    using CSV: read as crd
+    include(projectdir("SpatialRust.jl"))
+    #using .SpatialRust
 end
-
-include(srcdir("ABMsetup.jl"))
-include(srcdir("ABMstep.jl"))
 
 startat = 2
 less_this = 0
@@ -24,18 +18,21 @@ if length(ARGS) > 1
     less_this = parse(Int, ARGS[3])
 end
 
-parameters = CSV.read(datadir("ABC", ARGS[1]), DataFrame, skipto = startat, footerskip = less_this)
-
-when_collect_csv = CSV.read(datadir("exp_pro/inputs/whentocollect_sun.csv"), DataFrame)
-when_collect = Array{Int}(when_collect_csv[:, :x])
+when_collect = crd(datadir("exp_pro/inputs/whentocollect_rust.csv"), DataFrame, select = [false, true])[!, 1]
+when_cycle = crd(datadir("exp_pro/inputs/whentocollect_plant.csv"), DataFrame, select = [false, true])[!, 1]
 
 # read climate data
-weather = CSV.read(datadir("exp_pro/inputs/Tur_Sun_Weather.csv"), DataFrame, footerskip = 1)
+weather = crd(datadir("exp_pro/inputs/Tur_Sun_Weather.csv"), DataFrame, footerskip = 1)
 #weather[456, :meanTaTFS] = 23.0 # fix last temp value
-rain_data = Array{Bool}(weather[:, :Rainy])
-temp_data = Array{Float64}(weather[:, :meanTaTFS])
+rain_data = Vector{Bool}(weather[!, :Rainy])
+temp_data = Vector{Float64}(weather[!, :meanTaTFS])
+
+parameters = crd(datadir("ABC", ARGS[1]), DataFrame, skipto = startat, footerskip = less_this)
 
 out_path = mkpath("/scratch/mvanega1/ABCveryraw")
+mkpath("/scratch/mvanega1/ABCveryraw/stepdata")
+mkpath("/scratch/mvanega1/ABCveryraw/substepdata")
+mkpath("/scratch/mvanega1/ABCveryraw/cycledata")
 
 #dummy run
 d_mod = initialize_sim(; map_dims = 20, shade_percent = 0.0, steps = 50)
@@ -46,16 +43,6 @@ println("Dummy run completed")
 processed = pmap(p -> run_for_abc(p, rain_data, temp_data, when_collect, out_path),
                 eachrow(parameters); retry_delays = fill(0.1, 3))
 
-## Benchmarking
-
-# d_mod = initialize_sim(; map_dims = 20, shade_percent = 0.0)
-# d_adata, _ = run!(d_mod, dummystep, step_model!, 10, adata = [:pos])
-#
-# function b_mark()
-#     dd_mod = initialize_sim(; map_dims = 20, shade_percent = 0.0, steps = 50)
-#     dd_adata, _ = run!(dd_mod, dummystep, step_model!, 50, adata = [:pos])
-#     return nothing
-# end
 
 
 ## Trying to decide whether growth rate is well defined.

@@ -32,13 +32,14 @@ struct Input
     opt_g_temp::Float64 # optimal rust growth temp
     fruit_load::Float64 # extent of fruit load effect on rust growth (severity; 0 to 1)
     spore_pct::Float64 # % of area that sporulates
-    # when map as input
+    exhaustion::Float64 # rust level that causes plant exhaustion
+    # when map is given as input
     farm_map::BitArray
 end
 
 Base.@kwdef mutable struct Books
     days::Int
-    ticks::Int = 1
+    ticks::Int = 0
     coffee_ids::Vector{Int} = Int[]
     shade_ids::Vector{Int} = Int[]
     rust_ids::Vector{Int} = Int[]
@@ -86,11 +87,12 @@ Base.@kwdef struct Parameters
     opt_g_temp::Float64 # optimal rust growth temp
     fruit_load::Float64 # extent of fruit load effect on rust growth (severity; 0 to 1)
     spore_pct::Float64 # % of area that sporulates
+    exhaustion::Float64 # rust level that causes plant exhaustion
     # record-keeping
     current::Books
 end
 
-## Agent types
+## Agent types and default constructor fcts
 @agent Coffee GridAgent{2} begin
     area::Float64 # healthy foliar area (= 25 - rust.area * rust.n_lesions)
     sunlight::Float64 # let through by shade trees
@@ -100,6 +102,7 @@ end
     exh_countdown::Int
     age::Int
     hg_id::Int
+    #fung_countdown::Int
 end
 
 @agent Shade GridAgent{2} begin
@@ -119,6 +122,14 @@ end
     #successful_landings::Int # maybe useful metric?
     #parent::Int # id of rust it came from
 end
+
+function default_agent(atype::Type{Shade})::Shade
+    return Shade(1, (1,1), 0.2, 1.0, 1, 1)
+end
+
+# function default_agent(atype::Type{Main.SpatialRust.Shade})::Shade
+#     return Shade(1, (1,1), 0.2, 1.0, 1, 1)
+# end
 
 ## Setup functions
 
@@ -153,9 +164,57 @@ function create_props(input::Input)
     opt_g_temp = input.opt_g_temp,
     fruit_load = input.fruit_load,
     spore_pct = input.spore_pct,
+    exhaustion = input.exhaustion,
     # record-keeping
     current = Books(days = input.days)
     )
+end
+
+function fill_trees!(model::ABM, farm_map::BitArray, days::Int)
+    prod_d = truncated(Normal(days, days * 0.02), 0.0, days)
+    # introducing some variability, but most of the plants are expected to have accumulated (close to) optimal productivity
+    id = 0
+    for patch in CartesianIndices(farm_map)
+        id += 1
+        if input.farm_map[patch]
+            add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, rand(prod_d), 0, 0, 0), model)
+            push!(model.current.coffee_ids, id)
+        else
+            add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
+            push!(model.current.shade_ids, id)
+        end
+    end
+end
+
+function fill_trees!(model::ABM, farm_map::BitArray, prod::Float64)
+    id = 0
+    for patch in CartesianIndices(input.farm_map)
+        id += 1
+        if input.farm_map[patch]
+            add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
+            push!(model.current.coffee_ids, id)
+        else
+            add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
+            push!(model.current.shade_ids, id)
+        end
+    end
+end
+
+function fill_trees!(model::ABM, all_c::Bool, days::Int)
+    prod_d = truncated(Normal(days, days * 0.02), 0.0, days)
+    id = 0
+    for patch in positions(model)
+        id += 1
+        add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, rand(prod_d), 0, 0, 0), model)
+    end
+end
+
+function fill_trees!(model::ABM, all_c::Bool, prod::Float64)
+    id = 0
+    for patch in positions(model)
+        id += 1
+        add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
+    end
 end
 
 function count_shades!(model::ABM)
@@ -174,32 +233,19 @@ function setup_sim(input::Input)::ABM
         #scheduler = custom_scheduler,
         warn = false)
 
+
     if input.days != 0
-        prod_d = truncated(Normal(input.days, input.days * 0.02), 0.0, input.days)
-        # introducing some variability, but most of the plants are expected to have accumulated (close to) optimal productivity
-        id = 0
-        for patch in CartesianIndices(input.farm_map)
-            id += 1
-            if input.farm_map[patch]
-                add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, rand(prod_d), 0, 0, 0), model)
-                push!(model.current.coffee_ids, id)
-            else
-                add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
-                push!(model.current.shade_ids, id)
-            end
+        if sum(input.farm_map) == input.map_dims ^ 2
+            fill_trees!(model, true, input.days)
+            model.current.coffee_ids = collect(1:input.map_dims ^ 2)
+        else
+            fill_trees!(model, input.farm_map, input.days)
         end
+    elseif sum(input.farm_map) == input.map_dims ^ 2
+        fill_trees!(model, true, 1.0)
+        model.current.coffee_ids = collect(1:input.map_dims ^ 2)
     else
-        id = 0
-        for patch in CartesianIndices(input.farm_map)
-            id += 1
-            if input.farm_map[patch]
-                add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
-                push!(model.current.coffee_ids, id)
-            else
-                add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
-                push!(model.current.shade_ids, id)
-            end
-        end
+        fill_trees!(model, input.farm_map, 1.0)
     end
 
     count_shades!(model)
@@ -207,7 +253,6 @@ function setup_sim(input::Input)::ABM
     inoculate_rand_rust!(model, input.n_rusts)
 
     return model
-
 end
 
 function initialize_sim(;
@@ -239,7 +284,7 @@ function initialize_sim(;
     temp_data::Vector{Float64} = [22.5],
     uv_inact::Float64 = 0.1,
     rain_washoff::Float64 = 0.1,
-    temp_cooling::Float64 = 2.0, # van Oijen 2010. Range of 1.5 to 5.4
+    temp_cooling::Float64 = 3.0, 
     diff_splash::Float64 = 2.0, # Avelino et al. 2020 "Kinetic energy was twice as high"
     wind_protec::Float64 = 1.0, #
     shade_rate::Float64 = 0.01, # look up
@@ -247,24 +292,25 @@ function initialize_sim(;
     opt_g_temp::Float64 = 22.5,
     fruit_load::Float64 = 1.0, # might not be needed
     spore_pct::Float64 = 0.6,
-    farm_map::BitArray = create_bitmap(map_dims, shade_percent, fragmentation, random))
+    exhaustion::Float64 = 5.0,
+    farm_map::BitArray = create_bitmap(map_dims, shade_percent, fragmentation, random))::ABM
 
     if length(rain_data) == 1 # if no weather data is provided, use probs to create own
-        rain_data = rand(Bool, steps) .< rain_prob
+        rain_data = rand(Float64, steps) .< rain_prob
         temp_data = fill(mean_temp, steps) .+ randn() .* 2
-        #println("Check data! This has not been validated!")
+        println("Check data! This has not been validated!")
     elseif length(rain_data) != steps
         println("# steps != length of rain data. Using the latter as # steps")
     end
 
 
-    wind_data = rand(Bool, steps) .< wind_prob
+    wind_data = rand(Float64, steps) .< wind_prob
 
     input = Input(
         map_dims,
         harvest_cycle,
-        start_at,
         karma,
+        start_at,
         n_rusts,
         p_density,
         fungicide_period,
@@ -291,18 +337,20 @@ function initialize_sim(;
         opt_g_temp,
         fruit_load,
         spore_pct,
+        exhaustion,
         farm_map)
 
-    setup_sim(input)
+    return setup_sim(input)
 end
 
-function create_bitmap(dims::Int, shade_percent::Float64, fragmentation::Bool, random::Bool = true)
+function create_bitmap(dims::Int, shade_percent::Float64, fragmentation::Bool = false, random::Bool = true)::BitArray
     n_shades = round(Int, shade_percent * dims ^ 2)
     if random == true # random placement of shade trees
         b_map = trues(dims, dims) # all coffees
         b_map[sample(1:(dims^2), n_shades, replace = false)] .= false
-    else #input percent to the ratio
-        if fragmentation == true # produce structured layout
+    else # produce structured layout
+        if fragmentation == true
+        # TODO: turn fragmentation into Int? -> different levels of fragmentation
             if (n_shades) > (dims * 6 - 9) # if shade trees are enough to separate space into 4 microlots
                 b_map = falses(dims,dims)
                 q_side = dims / 4
@@ -393,14 +441,9 @@ function create_bitmap(dims::Int, shade_percent::Float64, fragmentation::Bool, r
                     end
                     n_shades = n_shades - 1
                 end
-
             end
-        else # random positions of trees, according to shade_percent
+        else
             b_map = trues(dims, dims)
-            indices = sample(1:dims, (n_shades * 2) , replace = true)
-            for i in 1:2:(length(indices))
-                b_map[indices[i],indices[i+1]] = false
-            end
         end
     end
     return b_map

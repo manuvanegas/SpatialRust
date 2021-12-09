@@ -89,8 +89,8 @@ function initialize_sim(;
     input = Input(
         map_dims,
         harvest_cycle,
-        start_at,
         karma,
+        start_at,
         n_rusts,
         p_density,
         fungicide_period,

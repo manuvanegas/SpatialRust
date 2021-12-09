@@ -155,5 +155,5 @@ function custom_scheduler(model::ABM)
 end
 
 function Agents.getindex(model::ABM, ix::Array{Int64,1})
-    broadcast(x->model[x], ix)
+    broadcast(x -> model[x], ix)
 end
