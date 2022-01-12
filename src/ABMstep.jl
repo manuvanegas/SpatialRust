@@ -39,7 +39,7 @@ function coffee_step!(coffee::Coffee, model::ABM)
     if coffee.exh_countdown > 1
         coffee.exh_countdown -= 1
     elseif coffee.exh_countdown == 1
-        coffee.area = 25
+        coffee.area = 1.0
         coffee.exh_countdown = 0
     else
         update_sunlight!(coffee, model)
@@ -51,6 +51,9 @@ end
 function rust_step!(rust::Rust, model::ABM)
 
     host = collect(agents_in_position(rust, model))[1]
+
+"CHECK: effect of checking for host's area instead of exh_countdown"
+
     if host.area > 0.0 # not exhausted
         if rust.spores > 0.0
             disperse!(rust, host, model)
@@ -103,17 +106,19 @@ end
 
 function grow_coffee!(cof::Coffee, max_cof_gr)
     # coffee plants can recover healthy tissue (dilution effect for sunlit plants)
-    if 0.0 < cof.area < 25.0
+
+"This growth function has to change"
+    if 0.0 < cof.area < 1.0
         cof.area += max_cof_gr * (cof.area * cof.sunlight)
-    elseif cof.area > 25.0
-        cof.area = 25.0
+    elseif cof.area > 1.0
+        cof.area = 1.0
     end
 
     cof.age += 1
 end
 
 function acc_production!(cof::Coffee) # accumulate production
-    cof.production += (cof.area / 25.0) * cof.sunlight
+    cof.production += cof.area * cof.sunlight
 end
 
 ###
@@ -151,7 +156,7 @@ function parasitize!(rust::Rust, cof::Coffee, model::ABM)
     # # cof.progression = 1 / (1 + (0.75 / bal)^4)
     #     prog = 1 / (1 + (0.25 / bal)^4) # Hill function with steep increase
     #     cof.area = 1.0 - prog
-        cof.area = 25.0 - (rust.n_lesions * rust.area)
+        cof.area = 1.0 - (rust.n_lesions * rust.area) / 25.0
         if rust.area * rust.n_lesions >= model.exhaustion #|| bal >= 2.0
             cof.area = 0.0
             cof.exh_countdown = (model.harvest_cycle * 2) + 1
@@ -233,15 +238,17 @@ function fungicide!(model::ABM)
 end
 
 function prune!(model::ABM)
-    model.current.costs += model.n_pruned * model.prune_cost
-    pruned = partialsort(model.current.shade_ids, 1:model.n_pruned, rev=true, by = x -> model[x].shade)
+    n_pruned = trunc(model.pars.prune_effort * length(model.current.shade_ids))
+    model.current.costs += n_pruned * model.prune_cost
+    pruned = partialsort(model.current.shade_ids, 1:n_pruned, rev=true, by = x -> model[x].shade)
     for pr in pruned
         model[pr].shade = model.target_shade
     end
 end
 
 function inspect!(model::ABM)
-    cofs = sample(model.rng, model.current.coffee_ids, model.n_inspected, replace = false)
+    n_inspected = trunc(model.pars.inspect_effort * length(model.current.coffee_ids))
+    cofs = sample(model.rng, model.current.coffee_ids, n_inspected, replace = false)
     for c in cofs
         here = collect(agents_in_position(model[c].pos, model))
         if length(here) > 1
