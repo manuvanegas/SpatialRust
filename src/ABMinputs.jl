@@ -11,7 +11,7 @@ Base.@kwdef struct Parameters
     steps::Int = 500,
     start_at::Int = 0,
     n_rusts::Int = 1,
-    harvest_cycle::Int = 182,           # or 365, depending on the region
+    harvest_cycle::Int = 365,           # or 365/2, depending on the region
     karma::Bool = true,                 # producing more spores means more spores coming from elsewhere?
 
     # farm management

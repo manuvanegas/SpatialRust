@@ -118,7 +118,8 @@ end
     production::Float64
     exh_countdown::Int
     age::Int
-    hg_id::Int # "host-guest id": coffee is host, then this stores corresponding guest's id
+    hg_id::Int # "host-guest id": coffee is host, then this stores corresponding rust's id
+    sample_days::Vector{Int} # vector with days where it should be sampled
     #fung_countdown::Int
 end
 
