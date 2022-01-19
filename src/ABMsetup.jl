@@ -44,7 +44,7 @@ mutable struct Sampler
 end
 
 Base.@kwdef mutable struct Books
-    days::Int = 0
+    days::Int = 0 # same as ticks unless start_at != 0
     ticks::Int = 0
     coffee_ids::Vector{Int} = Int[]
     shade_ids::Vector{Int} = Int[]
@@ -67,9 +67,9 @@ struct Props
     current::Books
 
     # "virtual scientist" sampling (ABC)
-    sampler::Sampler
+    # sampler::Sampler
 end
-#
+
 # struct Parameters
 #     dims::Int
 #     #farm_map::BitArray
@@ -109,19 +109,21 @@ end
 #     current::Books
 # end
 
-## Agent types and default constructor fcts
+## Agent types and constructor fcts
 @agent Coffee GridAgent{2} begin
     area::Float64 # healthy foliar area (= 25 - rust.area * rust.n_lesions/25)
     sunlight::Float64 # let through by shade trees
-    shade_neighbors::Array{Int,1} # remember which neighbors are shade trees
+    shade_neighbors::Vector{Int} # remember which neighbors are shade trees
     progression::Float64
     production::Float64
     exh_countdown::Int
     age::Int
     hg_id::Int # "host-guest id": coffee is host, then this stores corresponding rust's id
-    sample_days::Vector{Int} # vector with days where it should be sampled
+    sample_days::Vector{Int} # vector with days where coffee should be sampled
     #fung_countdown::Int
 end
+
+Coffee(id, pos; production = 1.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, Int[]) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
 
 @agent Shade GridAgent{2} begin
     shade::Float64 # between 20 and 90 %
@@ -129,6 +131,8 @@ end
     age::Int
     hg_id::Int
 end
+
+Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
 
 @agent Rust GridAgent{2} begin
     germinated::Bool # has it germinated and penetrated leaf tissue?
@@ -141,13 +145,7 @@ end
     #parent::Int # id of rust it came from
 end
 
-function default_agent(atype::Type{Shade})::Shade
-    return Shade(1, (1,1), 0.2, 1.0, 1, 1)
-end
-
-# function default_agent(atype::Type{Main.SpatialRust.Shade})::Shade
-#     return Shade(1, (1,1), 0.2, 1.0, 1, 1)
-# end
+Rust(id, pos, hg_id; germinated = false, area = 0.0) = Rust(id, pos, germinated, area, 0.0, 1, 0, hg_id)
 
 ## Setup functions
 
@@ -188,52 +186,83 @@ end
 #     )
 # end
 
-function fill_trees!(model::ABM, farm_map::BitArray, days::Int)
-    prod_d = truncated(Normal(days, days * 0.02), 0.0, days)
-    # introducing some variability, but most of the plants are expected to have accumulated (close to) optimal productivity
-    id = 0
-    for patch in CartesianIndices(farm_map)
-        id += 1
-        if input.farm_map[patch]
-            add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, rand(prod_d), 0, 0, 0), model)
-            push!(model.current.coffee_ids, id)
-        else
-            add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
-            push!(model.current.shade_ids, id)
+@agent Aut GridAgent{2} begin
+end
+
+d_mod = ABM(Aut, GridSpace((3,3) , periodic = false))
+
+for p in positions(d_mod)
+   show(p)
+end
+
+function add_trees!(model::ABM, farm_map::Array{Int,2})
+    for patch in positions(model)
+        if farm_map[patch...] == 1
+            push!(model.current.coffee_ids, add_agent!(patch, Coffee, model).id)
+        elseif farm_map == 2
+            push!(model.current.shade_ids, add_agent!(patch, Shade, model; shade = model.pars.target_shade).id)
         end
     end
 end
 
-function fill_trees!(model::ABM, farm_map::BitArray, prod::Float64)
-    id = 0
-    for patch in CartesianIndices(input.farm_map)
-        id += 1
-        if input.farm_map[patch]
-            add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
-            push!(model.current.coffee_ids, id)
-        else
-            add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
-            push!(model.current.shade_ids, id)
+function add_trees!(model::ABM, farm_map::Array{Int,2}, start_at::Int)
+    prod_dist = truncated(Normal(start_at, start_at * 0.02), 0.0, start_at)
+
+    for patch in positions(model)
+        if farm_map[patch...] == 1
+            push!(model.current.coffee_ids, add_agent!(patch, Coffee, model; production = rand(prod_dist)).id)
+        elseif farm_map == 2
+            push!(model.current.shade_ids, add_agent!(patch, Shade, model; shade = model.pars.target_shade).id)
         end
     end
 end
 
-function fill_trees!(model::ABM, all_c::Bool, days::Int)
-    prod_d = truncated(Normal(days, days * 0.02), 0.0, days)
-    id = 0
-    for patch in positions(model)
-        id += 1
-        add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, rand(prod_d), 0, 0, 0), model)
-    end
-end
-
-function fill_trees!(model::ABM, all_c::Bool, prod::Float64)
-    id = 0
-    for patch in positions(model)
-        id += 1
-        add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
-    end
-end
+# function fill_trees!(model::ABM, farm_map::BitArray, days::Int)
+#     prod_d = truncated(Normal(days, days * 0.02), 0.0, days)
+#     # introducing some variability, but most of the plants are expected to have accumulated (close to) optimal productivity
+#     id = 0
+#     for patch in CartesianIndices(farm_map)
+#         id += 1
+#         if input.farm_map[patch]
+#             add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, rand(prod_d), 0, 0, 0), model)
+#             push!(model.current.coffee_ids, id)
+#         else
+#             add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
+#             push!(model.current.shade_ids, id)
+#         end
+#     end
+# end
+#
+# function fill_trees!(model::ABM, farm_map::BitArray, prod::Float64)
+#     id = 0
+#     for patch in CartesianIndices(input.farm_map)
+#         id += 1
+#         if input.farm_map[patch]
+#             add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
+#             push!(model.current.coffee_ids, id)
+#         else
+#             add_agent_pos!(Shade(id, Tuple(patch), input.target_shade, 0.0, 0, 0), model)
+#             push!(model.current.shade_ids, id)
+#         end
+#     end
+# end
+#
+# function fill_trees!(model::ABM, all_c::Bool, days::Int)
+#     prod_d = truncated(Normal(days, days * 0.02), 0.0, days)
+#     id = 0
+#     for patch in positions(model)
+#         id += 1
+#         add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, rand(prod_d), 0, 0, 0), model)
+#     end
+# end
+#
+# function fill_trees!(model::ABM, all_c::Bool, prod::Float64)
+#     id = 0
+#     for patch in positions(model)
+#         id += 1
+#         add_agent_pos!(Coffee(id, Tuple(patch), 25.0, 1.0, Int[], 0.0, 1.0, 0, 0, 0), model)
+#     end
+# end
 
 function count_shades!(model::ABM)
     for c in model.current.coffee_ids
@@ -252,26 +281,32 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
     #     warn = false)
 
     model = ABM(Union{Shade, Coffee, Rust}, space;
-        properties = Properties(parameters, Books(days = parameters.start_at), Sampler()) # ...
+        properties = Props(parameters, Books(days = parameters.start_at)),
+        warn = false) # ...
 
-
-    if input.days != 0
-        if sum(input.farm_map) == input.map_dims ^ 2
-            fill_trees!(model, true, input.days)
-            model.current.coffee_ids = collect(1:input.map_dims ^ 2)
-        else
-            fill_trees!(model, input.farm_map, input.days)
-        end
-    elseif sum(input.farm_map) == input.map_dims ^ 2
-        fill_trees!(model, true, 1.0)
-        model.current.coffee_ids = collect(1:input.map_dims ^ 2)
+    if parameters.start_at == 0 # simulation starts at the beginning of a harvest cycle
+        add_trees!(model, farm_map)
     else
-        fill_trees!(model, input.farm_map, 1.0)
+        add_trees!(model, farm_map, parameters.start_at) # simulation starts later, so accumulated production is drawn from truncated normal dist
     end
+
+    # if input.days != 0
+    #     if sum(input.farm_map) == input.map_dims ^ 2
+    #         fill_trees!(model, true, input.days)
+    #         model.current.coffee_ids = collect(1:input.map_dims ^ 2)
+    #     else
+    #         fill_trees!(model, input.farm_map, input.days)
+    #     end
+    # elseif sum(input.farm_map) == input.map_dims ^ 2
+    #     fill_trees!(model, true, 1.0)
+    #     model.current.coffee_ids = collect(1:input.map_dims ^ 2)
+    # else
+    #     fill_trees!(model, input.farm_map, 1.0)
+    # end
 
     count_shades!(model)
 
-    inoculate_rand_rust!(model, input.n_rusts)
+    inoculate_rand_rust!(model, parameters.n_rusts)
 
     return model
 end

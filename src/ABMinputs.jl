@@ -1,5 +1,7 @@
-# Input-handling functions. If necessary, create farm_map or Weather, then call
-# init_abm_obj. Returns model object
+#=
+Input-handling structs and functions. If necessary, create farm_map or Weather,
+then call init_abm_obj. Returns model object
+=#
 
 struct Weather
     rain_data::Vector{Bool}
@@ -8,49 +10,49 @@ struct Weather
 end
 
 Base.@kwdef struct Parameters
-    steps::Int = 500,
-    start_at::Int = 0,
-    n_rusts::Int = 1,
-    harvest_cycle::Int = 365,           # or 365/2, depending on the region
-    karma::Bool = true,                 # producing more spores means more spores coming from elsewhere?
+    steps::Int = 500
+    start_at::Int = 0
+    n_rusts::Int = 5
+    harvest_cycle::Int = 365           # or 365/2, depending on the region
+    karma::Bool = true                 # producing more spores means more spores coming from elsewhere?
 
     # farm management
-    fungicide_period::Int = 182,        # days
-    prune_period::Int = 91,             # days
-    inspect_period::Int = 7,            # days
-    inspect_effort::Float64 = 0.01,     # % coffees inspected each time
-    target_shade::Float64 = 0.3,        # shade provided by each, after pruning
-    pruning_effort::Float64 = 0.75,     # % shades pruned each time
-    coffee_price::Float64 = 1.0,
-    prune_cost::Float64 = 1.0,
+    fungicide_period::Int = 182        # days
+    prune_period::Int = 91             # days
+    inspect_period::Int = 7            # days
+    inspect_effort::Float64 = 0.01     # % coffees inspected each time
+    target_shade::Float64 = 0.3        # shade provided by each, after pruning
+    pruning_effort::Float64 = 0.75     # % shades pruned each time
+    coffee_price::Float64 = 1.0
+    prune_cost::Float64 = 1.0
 
     # abiotic parameters
-    rain_distance::Float64 = 1.0,
-    wind_distance::Float64 = 5.0,
-    rain_prob::Float64 = 0.5,
-    wind_prob::Float64 = 0.4,
-    mean_temp::Float64 = 22.5,
-    uv_inact::Float64 = 0.1,            # extent of effect of UV inactivation (0 to 1)
-    rain_washoff::Float64 = 0.1,        # " " " rain wash-off (0 to 1)
-    temp_cooling::Float64 = 3.0,        # temp reduction due to shade
-    diff_splash::Float64 = 2.0,         # % extra distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high")
-    wind_protec::Float64 = 1.0,         # % extra wind distance due to absence of shade
-    shade_rate::Float64 = 0.01,         # shade growth rate
+    rain_distance::Float64 = 1.0
+    wind_distance::Float64 = 5.0
+    rain_prob::Float64 = 0.5
+    wind_prob::Float64 = 0.4
+    mean_temp::Float64 = 22.5
+    uv_inact::Float64 = 0.1            # extent of effect of UV inactivation (0 to 1)
+    rain_washoff::Float64 = 0.1        # " " " rain wash-off (0 to 1)
+    temp_cooling::Float64 = 3.0        # temp reduction due to shade
+    diff_splash::Float64 = 2.0         # % extra distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high")
+    wind_protec::Float64 = 1.0         # % extra wind distance due to absence of shade
+    shade_rate::Float64 = 0.01         # shade growth rate
 
     # coffee and rust parameters
     exhaustion::Float64 = 5.0           # rust level that causes plant exhaustion
-    max_cof_gr::Float64 = 0.5,
-    opt_g_temp::Float64 = 22.5,         # optimal rust growth temp
-    fruit_load::Float64 = 1.0,          # extent of fruit load effect on rust growth (severity; 0 to 1)
-    spore_pct::Float64 = 0.6,           # % of area that sporulates
+    max_cof_gr::Float64 = 0.5
+    opt_g_temp::Float64 = 22.5         # optimal rust growth temp
+    fruit_load::Float64 = 1.0          # extent of fruit load effect on rust growth (severity; 0 to 1)
+    spore_pct::Float64 = 0.6           # % of area that sporulates
 
 
     # farm parameters (used if farm_map is not provided)
-    map_side::Int = 100,                # side size
-    shade_percent::Float64 = 0.3,
-    fragmentation::Bool = false,
-    random::Bool = true,
-    p_density::Float64 = 1.0,
+    map_side::Int = 100                # side size
+    shade_percent::Float64 = 0.3
+    fragmentation::Bool = false
+    random::Bool = true
+    p_density::Float64 = 1.0
 end
 
 
@@ -58,7 +60,7 @@ function init_spatialrust(parameters::Parameters, farm_map::Array{Int,2}, weathe
     # parameters.steps == length(Weather.rain_data) || error(
     #     "number of steps is different from length of rain data")
     model = init_abm_obj(parameters, farm_map, weather)
-    return run!()
+    return model
 end
 
 function init_spatialrust(parameters::Parameters, farm_map::Array{Int,2})
@@ -90,4 +92,12 @@ function create_weather(rain_prob::Float64, wind_prob::Float64, mean_temp::Float
 end
 
 function create_farm_map(parameters::Parameters)
+end
+
+function create_fullsun_farm_map()
+    farm_map = Int.(zeros(100,100))
+    for c in 1:2:100
+        farm_map[:,c] .= 1
+    end
+    return farm_map
 end
