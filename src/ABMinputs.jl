@@ -12,7 +12,7 @@ end
 Base.@kwdef struct Parameters
     steps::Int = 500
     start_at::Int = 0
-    n_rusts::Int = 5
+    n_rusts::Int = 5                   # n of initial rusts (has to be > 1)
     harvest_cycle::Int = 365           # or 365/2, depending on the region
     karma::Bool = true                 # producing more spores means more spores coming from elsewhere?
 
@@ -52,7 +52,7 @@ Base.@kwdef struct Parameters
     shade_percent::Float64 = 0.3
     fragmentation::Bool = false
     random::Bool = true
-    p_density::Float64 = 1.0
+    #p_density::Float64 = 1.0
 end
 
 
@@ -87,7 +87,7 @@ end
 
 
 function create_weather(rain_prob::Float64, wind_prob::Float64, mean_temp::Float64, steps::Int)
-    println("Check data! This has not been validated!")
+    #println("Check data! This has not been validated!")
     return Weather(rand(Float64, steps) .< rain_prob, rand(Float64, steps) .< wind_prob, fill(mean_temp, steps) .+ randn() .* 2)
 end
 
@@ -95,7 +95,7 @@ function create_farm_map(parameters::Parameters)
 end
 
 function create_fullsun_farm_map()
-    farm_map = Int.(zeros(100,100))
+    farm_map = zeros(Int,100,100)
     for c in 1:2:100
         farm_map[:,c] .= 1
     end
