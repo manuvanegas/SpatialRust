@@ -307,8 +307,6 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
 
     count_shades!(model)
 
-    custom_sampling!(model, 0.05, 1)
-
     init_rusts!(model, parameters.n_rusts)
 
     return model
@@ -316,94 +314,40 @@ end
 
 function custom_sampling!(model::ABM, percent::Float64, half::Int)
     n_persample = floor(Int, length(model.current.coffee_ids) * percent)
-
-    central_coffees = filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids)
-
-    first_ids = sample(model.rng, central_coffees, n_persample, replace = false)
-
-    if half == 1 # first half has 4 cycles total
-        sampled_coffees = hcat(zeros(Int, n_persample, 3))
-        for (i, id) in enumerate(first_ids)
-            model[id].sample_cycle = 1
-            # for (c, neigh) in enumerate(select_s_neighbors(model, sampled_coffees, id, 3))
-            #     model[neigh].sample_cycle = c + 1
-            #     sampled_coffees[i, c + 1] = neigh
-            # end
+    # central_coffees = filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids)
+    first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids), n_persample, replace = false)
+    sampled_coffees = hcat(first_ids, zeros(Int, n_persample, (3 * half))) # 1 half requires 3 neighs, 2 half reqs 6
+    for (i, id) in enumerate(first_ids)
+        model[id].sample_cycle = 1
+        c = 2
+        for neigh in select_s_neighbors(model, sampled_coffees, id)
+            model[neigh].sample_cycle = c
+            sampled_coffees[i, c] = neigh
+            c += 1
+            c > (3 * half) + 1 && break
         end
-    else # second half has 7 cycles total
-        sampled_coffees = hcat(zeros(Int, n_persample, 6))
-        for (i, id) in enumerate(first_ids)
-            model[id].sample_cycle = 1
-            for (c, neigh) in enumerate(select_s_neighbors(model, sampled_coffees, id, 6))
-                model[neigh].sample_cycle = c + 1
-                sampled_coffees[i, c + 1] = neigh
+        if c < (3 * half) + 1
+            for add_neigh in complete_s_neighbors(model, sampled_coffees, id, i, c) #relax requirements
+                model[add_neigh].sample_cycle = c
+                sampled_coffees[i, c] = add_neigh
+                c += 1
+                c > (3 * half) + 1 && break
             end
         end
     end
 end
-    #     foreach(f, sampled_coffees)
-    #
-    #
-    #
-    #     for (i, c_id) in enumerate(first_ids)
-    #         model[c_id].sample_cycle = 1
-    #
-    #
-    #
-    #         sampled_coffees[1, i] = model[c_id]
-    #
-    #     for c in first_ids
-    #         c.sample_days =
-    # else
-    #
-    # end
 
-function select_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::Int, cycles::Int)::Vector{Int}
-    radius = 2
-    # sampled_neighs = collect(Iterators.take(Iterators.filter(x -> model[x] isa Coffee && x ∉ sampled_coffees,
-        # shuffle(model.rng, nearby_ids(model[c_id], model, radius)))), cycles)
 
-    sampled_neighs = shuffle(model.rng, collect(Iterators.filter(x -> model[x] isa Coffee && x ∉ sampled_coffees,
-        nearby_ids(model[c_id], model, radius))))
-    if checkbounds(Bool, sampled_neighs, cycles)
-        return @inbounds sampled_neighs[1:cycles]
-    else
-        println("tryiing")
-        return push!(sampled_neighs, collect(Iterators.filter(x -> model[x] isa Coffee && x ∉ sampled_neighs,
-            shuffle(model.rng, nearby_ids(model[c_id], model, radius + 1)))))[1:cycles]
-    end
-    # if length(sampled_neighs) < cycles
-    #     push!(sampled_neighs, collect(Iterators.filter(x -> model[x] isa Coffee && x ∉ sampled_neighs,
-    #         shuffle(model.rng, nearby_ids(model[c_id], model, radius + 1)))))
-    # end
 
-    # return sampled_neighs[1:cycles]
+function select_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::Int)::Vector{Int}
+    return sampled_neighs = shuffle(model.rng, collect(Iterators.filter(x -> model[x] isa Coffee && x ∉ sampled_coffees,
+        nearby_ids(model[c_id], model, 2))))
 end
 
-# function assign_cycle(id::Int)
-#     model[id].sample_cycle =
-# end
-
-function hi(a, b)
-    return [a,b]
+function complete_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::Int, i::Int, c::Int)
+    return shuffle(model.rng, collect(Iterators.filter(x -> model[x] isa Coffee &&
+        x ∉ sampled_coffees[i,:] && x ∉ sampled_coffees[:,c], nearby_ids(model[c_id], model, 2))))
 end
-
-for arr in map(x -> hi(x, [2,5]), [1,2])
-    println(arr)
-end
-
-
-aaaa =  collect(5:13)
-
-function letstry(i)
-    try aaaa[i]
-    catch e
-        length(aaaa)
-    end
-end
-
-
-#filter(x -> x isa Coffee, collect(nearby_agents(model[50], model, 2)))
 
 # function initialize_sim(;
 #     steps::Int = 10,
