@@ -397,23 +397,6 @@ function try_travel(rust::AbstractAgent, sun::Float64, model::ABM, factor::Strin
     return potential_landing
 end
 
-function init_rusts!(model::ABM, n_rusts::Int) # inoculate random coffee plants
-    # move from a random cell outside
-    # need to update the path function
-
-    rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
-
-    for rusted in rusted_ids
-        if model[rusted].hg_id ≠ 0
-            model[rusted.hg_id].n_lesions += 1
-        else
-            new_id = add_agent!(model[rusted].pos, Rust, model, true, 0.01, model[rusted].id, model[rusted].sample_cycle).id
-            model[rusted].hg_id = new_id
-            push!(model.current.rust_ids, new_id)
-        end
-    end
-end
-
 function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target coffee
     # println(target)
     here = collect(agents_in_position(target, model))

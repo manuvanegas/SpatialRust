@@ -119,11 +119,11 @@ end
     exh_countdown::Int
     age::Int
     hg_id::Int # "host-guest id": coffee is host, then this stores corresponding rust's id
-    sample_cycle::Int # vector with days where coffee should be sampled
+    sample_cycle::Vector{Int} # vector with cycles where coffee should be sampled
     #fung_countdown::Int
 end
 
-Coffee(id, pos; production = 1.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, 0) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+Coffee(id, pos; production = 1.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, []) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
 
 @agent Shade GridAgent{2} begin
     shade::Float64 # between 20 and 90 %
@@ -141,12 +141,12 @@ Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
     n_lesions::Int
     age::Int
     hg_id::Int # "host-guest id": rust is guest, then this stores corresponding host's id
-    sample_cycle::Int # inherits days of sampling from host
+    sample_cycle::Vector{Int} # inherits days of sampling from host
     #successful_landings::Int # maybe useful metric?
     #parent::Int # id of rust it came from
 end
 
-Rust(id, pos, germinated = false, area = 0.0, hg_id = 0, sample_cycle = 0) = Rust(id, pos, germinated, area, 0.0, 1, 0, hg_id, sample_cycle)
+Rust(id, pos, germinated = false, area = 0.0, hg_id = 0, sample_cycle = []) = Rust(id, pos, germinated, area, 0.0, 1, 0, hg_id, sample_cycle)
 
 ## Setup functions
 
@@ -199,7 +199,7 @@ end
 function add_trees!(model::ABM, farm_map::Array{Int,2})
     for patch in positions(model)
         if farm_map[patch...] == 1
-            push!(model.current.coffee_ids, add_agent!(patch, Coffee, model).id) # works because add_agent! returns the new agent
+            push!(model.current.coffee_ids, add_agent!(patch, Coffee, model).id) # push! works because add_agent! returns the new agent
         elseif farm_map == 2
             push!(model.current.shade_ids, add_agent!(patch, Shade, model; shade = model.pars.target_shade).id)
         end
@@ -272,6 +272,23 @@ function count_shades!(model::ABM)
     end
 end
 
+function init_rusts!(model::ABM, n_rusts::Int) # inoculate random coffee plants
+    # move from a random cell outside
+    # need to update the path function
+
+    rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
+
+    for rusted in rusted_ids
+        if model[rusted].hg_id ≠ 0
+            model[rusted.hg_id].n_lesions += 1
+        else
+            new_id = add_agent!(model[rusted].pos, Rust, model, true, 0.01, model[rusted].id, model[rusted].sample_cycle).id
+            model[rusted].hg_id = new_id
+            push!(model.current.rust_ids, new_id)
+        end
+    end
+end
+
 function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::Weather)::ABM
     space = GridSpace((parameters.map_side, parameters.map_side), periodic = false, metric = :chebyshev)
 
@@ -310,43 +327,6 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
     init_rusts!(model, parameters.n_rusts)
 
     return model
-end
-
-function custom_sampling!(model::ABM, percent::Float64, half::Int)
-    n_persample = floor(Int, length(model.current.coffee_ids) * percent)
-    # central_coffees = filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids)
-    first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids), n_persample, replace = false)
-    sampled_coffees = hcat(first_ids, zeros(Int, n_persample, (3 * half))) # 1 half requires 3 neighs, 2 half reqs 6
-    for (i, id) in enumerate(first_ids)
-        model[id].sample_cycle = 1
-        c = 2
-        for neigh in select_s_neighbors(model, sampled_coffees, id)
-            model[neigh].sample_cycle = c
-            sampled_coffees[i, c] = neigh
-            c += 1
-            c > (3 * half) + 1 && break
-        end
-        if c < (3 * half) + 1
-            for add_neigh in complete_s_neighbors(model, sampled_coffees, id, i, c) #relax requirements
-                model[add_neigh].sample_cycle = c
-                sampled_coffees[i, c] = add_neigh
-                c += 1
-                c > (3 * half) + 1 && break
-            end
-        end
-    end
-end
-
-
-
-function select_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::Int)::Vector{Int}
-    return sampled_neighs = shuffle(model.rng, collect(Iterators.filter(x -> model[x] isa Coffee && x ∉ sampled_coffees,
-        nearby_ids(model[c_id], model, 2))))
-end
-
-function complete_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::Int, i::Int, c::Int)
-    return shuffle(model.rng, collect(Iterators.filter(x -> model[x] isa Coffee &&
-        x ∉ sampled_coffees[i,:] && x ∉ sampled_coffees[:,c], nearby_ids(model[c_id], model, 2))))
 end
 
 # function initialize_sim(;
