@@ -37,14 +37,14 @@
 #     farm_map::BitArray
 # end
 
-mutable struct Sampler
-    cycle::Int
-    all_cofs
-    all_rusts # ...
-end
+# mutable struct Sampler
+#     cycle::Int
+#     all_cofs
+#     all_rusts # ...
+# end
 
 Base.@kwdef mutable struct Books
-    days::Int = 0 # same as ticks unless start_at != 0
+    days::Int = 0 # same as ticks unless start_days_at != 0
     ticks::Int = 0
     coffee_ids::Vector{Int} = Int[]
     shade_ids::Vector{Int} = Int[]
@@ -206,12 +206,12 @@ function add_trees!(model::ABM, farm_map::Array{Int,2})
     end
 end
 
-function add_trees!(model::ABM, farm_map::Array{Int,2}, start_at::Int)
-    prod_dist = truncated(Normal(start_at, start_at * 0.02), 0.0, start_at)
+function add_trees!(model::ABM, farm_map::Array{Int,2}, start_days_at::Int)
+    prod_dist = truncated(Normal(start_days_at, start_days_at * 0.02), 0.0, start_days_at)
 
     for patch in positions(model)
         if farm_map[patch...] == 1
-            push!(model.current.coffee_ids, add_agent!(patch, Coffee, model; production = rand(prod_dist)).id)
+            push!(model.current.coffee_ids, add_agent!(patch, Coffee, model; production = rand(model.rng, prod_dist)).id)
         elseif farm_map == 2
             push!(model.current.shade_ids, add_agent!(patch, Shade, model; shade = model.pars.target_shade).id)
         end
@@ -278,14 +278,13 @@ function init_rusts!(model::ABM, n_rusts::Int) # inoculate random coffee plants
 
     rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
 
+    area_dist = Uniform(0.0, (model.pars.start_days_at / 365))
+
     for rusted in rusted_ids
-        if model[rusted].hg_id ≠ 0
-            model[rusted.hg_id].n_lesions += 1
-        else
-            new_id = add_agent!(model[rusted].pos, Rust, model, true, 0.01, model[rusted].id, model[rusted].sample_cycle).id
-            model[rusted].hg_id = new_id
-            push!(model.current.rust_ids, new_id)
-        end
+        new_id = add_agent!(model[rusted].pos, Rust, model, true, rand(model.rng, area_dist), model[rusted].id, model[rusted].sample_cycle).id
+        model[rusted].hg_id = new_id
+        model[rusted].area = model[rusted].area - model[new_id].area
+        push!(model.current.rust_ids, new_id)
     end
 end
 
@@ -299,13 +298,13 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
     #     warn = false)
 
     model = ABM(Union{Shade, Coffee, Rust}, space;
-        properties = Props(parameters, Books(days = parameters.start_at)),
+        properties = Props(parameters, Books(days = parameters.start_days_at)),
         warn = false) # ...
 
-    if parameters.start_at == 0 # simulation starts at the beginning of a harvest cycle
+    if parameters.start_days_at == 0 # simulation starts at the beginning of a harvest cycle
         add_trees!(model, farm_map)
     else
-        add_trees!(model, farm_map, parameters.start_at) # simulation starts later, so accumulated production is drawn from truncated normal dist
+        add_trees!(model, farm_map, parameters.start_days_at) # simulation starts later, so accumulated production is drawn from truncated normal dist
     end
 
     # if input.days != 0
@@ -334,7 +333,7 @@ end
 #     map_dims::Int = 10,
 #     harvest_cycle::Int = 182,
 #     karma::Bool = true,
-#     start_at = 0,
+#     start_days_at = 0,
 #     n_rusts = 1,
 #     shade_percent::Float64 = 0.3,
 #     fragmentation::Bool = false,
@@ -383,7 +382,7 @@ end
 #         map_dims,
 #         harvest_cycle,
 #         karma,
-#         start_at,
+#         start_days_at,
 #         n_rusts,
 #         p_density,
 #         fungicide_period,

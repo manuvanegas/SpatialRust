@@ -3,27 +3,66 @@ function simulate_fullsun(p_row::DataFrameRow,
         temp_data::Vector{Float64},
         when_collect::Vector{Int},
         out_path::String,
-        wind_prob::Float64)
-    pars = Parameters(
-        steps = 456,
+        wind_prob::Float64,
+        replace_at::Int)
+
+    # pars1 = Parameters(
+    #     steps = replace_at,
+    #     map_dims = 100,
+    #     start_days_at = 132,
+    #     n_rusts = 100,
+    #     opt_g_temp = p_row[:opt_g_temp],
+    #     spore_pct = p_row[:spore_pct],
+    #     fruit_load = p_row[:fruit_load],
+    #     uv_inact = p_row[:uv_inact],
+    #     rain_washoff = p_row[:rain_washoff],
+    #     rain_distance = p_row[:rain_distance],
+    #     wind_distance = p_row[:wind_distance])
+
+    model1 = init_spatialrust(Parameters(
+        steps = replace_at,
         map_dims = 100,
-        start_at = 132
+        start_days_at = 132,
         n_rusts = 100,
+        par_row = p_row[:RowN],
         opt_g_temp = p_row[:opt_g_temp],
         spore_pct = p_row[:spore_pct],
         fruit_load = p_row[:fruit_load],
         uv_inact = p_row[:uv_inact],
         rain_washoff = p_row[:rain_washoff],
         rain_distance = p_row[:rain_distance],
-        wind_distance = p_row[:wind_distance])
+        wind_distance = p_row[:wind_distance]),
 
-    weather = Weather(rain_data, rand(Float64, steps) .< wind_prob, temp_data)
+        create_fullsun_farm_map(),
 
-    model = init_spatialrust(pars, create_fullsun_farm_map(), weather)
-
-    "weather [1:n]"
+        Weather(rain_data[1:replace_at], rand(Float64, replace_at) .< wind_prob, temp_data[1:replace_at]))
 
 
+    custom_sampling!(model, 0.05, 1)
+
+    "data,  = run!(model)"
+
+    model2 = init_spatialrust(Parameters(
+        steps = 455 - replace_at,
+        map_dims = 100,
+        start_days_at = 132 + replace_at,
+        n_rusts = round(model1.current.outpur),
+        par_row = p_row[:RowN],
+        opt_g_temp = p_row[:opt_g_temp],
+        spore_pct = p_row[:spore_pct],
+        fruit_load = p_row[:fruit_load],
+        uv_inact = p_row[:uv_inact],
+        rain_washoff = p_row[:rain_washoff],
+        rain_distance = p_row[:rain_distance],
+        wind_distance = p_row[:wind_distance]),
+
+        create_fullsun_farm_map(),
+
+        Weather(rain_data[(replace_at + 1):steps], rand(Float64, (steps - replace_at)) .< wind_prob, temp_data[(replace_at + 1):steps]))
+
+    custom_sampling!(model, 0.05, 2)
+
+    "data = run!(model)"
 
 end
 

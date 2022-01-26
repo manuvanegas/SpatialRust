@@ -25,6 +25,7 @@ function pre_step!(model)
     model.current.rain = model.rain_data[model.current.ticks]
     model.current.wind = model.wind_data[model.current.ticks]
     model.current.temperature = model.temp_data[model.current.ticks]
+    model.current.outpour = model.current.outpour * 0.9
     if model.karma && rand(model.rng) < sqrt(model.current.outpour)/(model.dims^2)
         inoculate_rand_rust!(model, 1)
     end
