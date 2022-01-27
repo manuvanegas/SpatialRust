@@ -46,6 +46,7 @@
 Base.@kwdef mutable struct Books
     days::Int = 0 # same as ticks unless start_days_at != 0
     ticks::Int = 0
+    cycle::Vector{Int} = [0]
     coffee_ids::Vector{Int} = Int[]
     shade_ids::Vector{Int} = Int[]
     rust_ids::Vector{Int} = Int[]
@@ -68,6 +69,8 @@ struct Props
 
     # "virtual scientist" sampling (ABC)
     # sampler::Sampler
+
+    weather::Weather
 end
 
 # struct Parameters
@@ -123,7 +126,7 @@ end
     #fung_countdown::Int
 end
 
-Coffee(id, pos; production = 1.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, []) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+Coffee(id, pos; production = 1.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, [100]) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
 
 @agent Shade GridAgent{2} begin
     shade::Float64 # between 20 and 90 %
@@ -186,15 +189,6 @@ Rust(id, pos, germinated = false, area = 0.0, hg_id = 0, sample_cycle = []) = Ru
 #     current = Books(days = input.days)
 #     )
 # end
-
-@agent Aut GridAgent{2} begin
-end
-
-d_mod = ABM(Aut, GridSpace((3,3) , periodic = false))
-
-for p in positions(d_mod)
-   show(p)
-end
 
 function add_trees!(model::ABM, farm_map::Array{Int,2})
     for patch in positions(model)
@@ -277,8 +271,11 @@ function init_rusts!(model::ABM, n_rusts::Int) # inoculate random coffee plants
     # need to update the path function
 
     rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
-
-    area_dist = Uniform(0.0, (model.pars.start_days_at / 365))
+    if (model.pars.start_days_at / 365) > 0.0
+        area_dist = Uniform(0.0, (model.pars.start_days_at / 365))
+    else
+        area_dist = Uniform(0.0, 0.2)
+    end
 
     for rusted in rusted_ids
         new_id = add_agent!(model[rusted].pos, Rust, model, true, rand(model.rng, area_dist), model[rusted].id, model[rusted].sample_cycle).id
@@ -298,7 +295,7 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
     #     warn = false)
 
     model = ABM(Union{Shade, Coffee, Rust}, space;
-        properties = Props(parameters, Books(days = parameters.start_days_at)),
+        properties = Props(parameters, Books(days = parameters.start_days_at), weather),
         warn = false) # ...
 
     if parameters.start_days_at == 0 # simulation starts at the beginning of a harvest cycle

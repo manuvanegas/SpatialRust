@@ -15,7 +15,8 @@ Base.@kwdef struct Parameters
     n_rusts::Int = 5                   # n of initial rusts (has to be > 1)
     harvest_cycle::Int = 365           # or 365/2, depending on the region
     karma::Bool = true                 # producing more spores means more spores coming from elsewhere?
-    par_row::Int = 0
+    par_row::Int = 0                   # parameter combination number (for ABC)
+    switch_cycles::Vector{Int} = []
 
     # farm management
     fungicide_period::Int = 182        # days
