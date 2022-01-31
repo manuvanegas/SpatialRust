@@ -149,7 +149,7 @@ Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
     #parent::Int # id of rust it came from
 end
 
-Rust(id, pos, germinated = false, area = 0.0, hg_id = 0, sample_cycle = []) = Rust(id, pos, germinated, area, 0.0, 1, 0, hg_id, sample_cycle)
+Rust(id, pos; germinated = false, area = 0.0, age = model.pars.steps + 1, spores = 0.0, hg_id = 0, sample_cycle = []) = Rust(id, pos, germinated, area, spores, 1, age, hg_id, sample_cycle)
 
 ## Setup functions
 
@@ -271,14 +271,16 @@ function init_rusts!(model::ABM, n_rusts::Int) # inoculate random coffee plants
     # need to update the path function
 
     rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
-    if (model.pars.start_days_at / 365) > 0.0
-        area_dist = Uniform(0.0, (model.pars.start_days_at / 365))
-    else
-        area_dist = Uniform(0.0, 0.2)
-    end
 
     for rusted in rusted_ids
-        new_id = add_agent!(model[rusted].pos, Rust, model, true, rand(model.rng, area_dist), model[rusted].id, model[rusted].sample_cycle).id
+        area = rand(model.rng)
+        if area < 0.05
+            new_id = add_agent!(model[rusted].pos, Rust, model; hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
+        elseif area > 0.9
+            new_id = add_agent!(model[rusted].pos, Rust, model; germinated = true, area = area, spores = area * model.pars.spore_pct, hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
+        else
+            new_id = add_agent!(model[rusted].pos, Rust, model; germinated = true, area = area, spores = 0.0, hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
+        end
         model[rusted].hg_id = new_id
         model[rusted].area = model[rusted].area - model[new_id].area
         push!(model.current.rust_ids, new_id)

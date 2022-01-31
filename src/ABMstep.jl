@@ -29,8 +29,8 @@ function pre_step!(model)
     if model.pars.karma && rand(model.rng) < sqrt(model.current.outpour)/(model.pars.map_side^2)
         inoculate_rand_rust!(model, 1)
     end
-    if model.current.ticks == model.pars.switch_cycles[1]
-        popfirst!(model.pars.switch_cycles)
+    if model.current.ticks in model.pars.switch_cycles
+        # popfirst!(model.pars.switch_cycles)
         if model.current.cycle[1] < 5
             model.current.cycle[1] += 1
         elseif model.current.cycle[1] == 5
@@ -61,9 +61,9 @@ end
 
 function rust_step!(rust::Rust, model::ABM)
 
-    host = collect(agents_in_position(rust, model))[1]
+    host = model[rust.hg_id]
 
-"CHECK: effect of checking for host's area instead of exh_countdown"
+# "CHECK: effect of checking for host's area instead of exh_countdown"
 
     if host.area > 0.0 # not exhausted
         if rust.spores > 0.0
@@ -192,22 +192,25 @@ function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
 
     local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - cof.sunlight))
 
-    if rust.germinated && 14 < local_temp < 30 # grow and sporulate
+    if rust.germinated
+        if rust.age < model.pars.steps
+            rust.age += 1
+        end
+        if 14 < local_temp < 30 # grow and sporulate
 
-        rust.age += 1
+            #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
+            rust.area += rust.area * (1 - rust.area) *
+                #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
+                model.pars.fruit_load * cof.production / model.pars.harvest_cycle *
+                (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
 
-        #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
-        rust.area += rust.area * (1 - rust.area) *
-            #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
-            model.pars.fruit_load * cof.production / model.pars.harvest_cycle *
-            (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
-
-        if rust.spores === 0.0
-            if rand(model.rng) < (rust.area * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
+            if rust.spores === 0.0
+                if rand(model.rng) < (rust.area * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
+                    rust.spores = rust.area * model.pars.spore_pct
+                end
+            else
                 rust.spores = rust.area * model.pars.spore_pct
             end
-        else
-            rust.spores = rust.area * model.pars.spore_pct
         end
 
     else # try to germinate + penetrate tissue
@@ -247,7 +250,7 @@ function harvest!(model::ABM)
         #     plant.productivity = plant.productivity / 0.9
         # end
     end
-    model.current.gains += model.coffee_price * harvest
+    model.current.gains += model.pars.coffee_price * harvest
     # model.current.gains += model.coffee_price * harvest * model.pars.p_density
     model.current.yield += harvest / (model.pars.map_side^2)
 end
@@ -426,9 +429,10 @@ function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target c
             here[2].n_lesions += 1
         end
     elseif target isa Coffee
-        # println("new")
-        new_id = nextid(model)
-        add_agent_pos!(Rust(new_id, target.pos, false, 0.0, 0.0, 1, 0, target.id), model)
+        if isdisjoint(target.sample_cycle, model.current.cycle)
+            new_id = add_agent!(target.pos, Rust, model; hg_id = target.id, sample_cycle = target.sample_cycle).id
+        else
+            new_id = add_agent!(target.pos, Rust, model; age = 0, hg_id = target.id, sample_cycle = target.sample_cycle).id
         target.hg_id = new_id
         push!(model.current.rust_ids, new_id)
     end
