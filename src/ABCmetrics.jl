@@ -12,8 +12,8 @@ end
 
 function seven_weeks(df::DataFrame)::Array{Float64}
     areas = fill(-1.0, 8)
-    for (row, age) in enumerate(df[df.age .< 8, :age])
-        areas[age + 1] = df[row, :area_median]
+    for (row, _) in enumerate(df.age)
+        areas[row] = df[row, :area_median]
     end
     return areas
 end
@@ -27,7 +27,7 @@ function areas_per_age(model::ABM)::Array{Float64}
         map(r -> age_and_area(r, df), sampled_rusts)
         df2 = combine(groupby(df, :age), :area => median)
 
-        return seven_weeks(df2)
+        return seven_weeks(sort!(df2[df2.age .< 8, :], :age))
     end
 end
 
