@@ -1,8 +1,100 @@
+function step_model!(model::ABM)
+    pre_step!(model)
+
+    for shade_i in model.current.shade_ids
+        shade_step!(model.agents[shade_i], model)
+    end
+
+    for cof_i in model.current.coffee_ids
+        coffee_step!(model.agents[cof_i], model)
+    end
+
+    for rust_i in shuffle(model.rng, model.current.rust_ids)
+        rust_step!(model.agents[rust_i], model)
+    end
+
+    model_step!(model)
+end
+
+## "Step" functions
+
+function pre_step!(model)
+    model.current.days += 1
+    model.current.ticks += 1
+
+    model.current.rain = model.weather.rain_data[model.current.ticks]
+    model.current.wind = model.weather.wind_data[model.current.ticks]
+    model.current.temperature = model.weather.temp_data[model.current.ticks]
+    model.current.outpour = model.current.outpour * 0.9
+    if model.pars.karma && rand(model.rng) < sqrt(model.current.outpour)/(model.pars.map_side^2)
+        inoculate_rand_rust!(model, 1)
+    end
+    if model.current.ticks in model.pars.switch_cycles
+        # popfirst!(model.pars.switch_cycles)
+        if model.current.cycle[1] < 5
+            model.current.cycle[1] += 1
+        elseif model.current.cycle[1] == 5
+            push!(model.current.cycle, 6)
+        else
+            model.current.cycle .+= 1
+        end
+    end
+end
+
+function shade_step!(tree::Shade, model::ABM)
+    grow_shade!(tree, model.pars.shade_rate)
+end
+
+function coffee_step!(coffee::Coffee, model::ABM)
+
+    if coffee.exh_countdown > 1
+        coffee.exh_countdown -= 1
+    elseif coffee.exh_countdown == 1
+        coffee.area = 1.0
+        coffee.exh_countdown = 0
+    else
+        update_sunlight!(coffee, model)
+        grow_coffee!(coffee, model.pars.max_cof_gr)
+        acc_production!(coffee)
+    end
+end
+
+function rust_step!(rust::Rust, model::ABM)
+
+    host = model[rust.hg_id]
+
+# "CHECK: effect of checking for host's area instead of exh_countdown"
+
+    if host.area > 0.0 # not exhausted
+        if rust.spores > 0.0
+            disperse!(rust, host, model)
+        end
+        parasitize!(rust, host, model)
+        grow_rust!(rust, host, model)
+    end
+end
+
+function model_step!(model)
+    if model.current.days % model.pars.harvest_cycle === 0
+        harvest!(model)
+    end
+
+    # if model.days % model.fungicide_period === 0
+    #     fingicide!(model)
+    # end
+    # if model.days % model.prune_period === 0
+    #     prune!(model)
+    # end
+    # if model.days % model.inspect_period === 0
+    #     inspect!(model)
+    # end
+end
+
 ###
 ## Shade
 ###
 
-function grow!(tree::Shade, rate::Float64)
+function grow_shade!(tree::Shade, rate::Float64)
     tree.shade += rate * (1.0 - tree.shade / 0.9)
     tree.age += 1
 end
@@ -19,23 +111,25 @@ function update_sunlight!(cof::Coffee, model::ABM)
     # shades::Array{Float64} = getproperty.(model[cof.shade_neighbors],:shade)
     # shade = sum(shades)
 
-    cof.sunlight = 1.0 - shade / 8.0
+    #cof.sunlight = 1.0 - shade / 8.0
     # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
 end
 
-function grow!(cof::Coffee, max_cof_gr)
+function grow_coffee!(cof::Coffee, max_cof_gr)
     # coffee plants can recover healthy tissue (dilution effect for sunlit plants)
-    if 0.0 < cof.area < 25.0
+
+"This growth function has to change"
+    if 0.0 < cof.area < 1.0
         cof.area += max_cof_gr * (cof.area * cof.sunlight)
-    elseif cof.area > 25.0
-        cof.area = 25.0
+    elseif cof.area > 1.0
+        cof.area = 1.0
     end
 
     cof.age += 1
 end
 
 function acc_production!(cof::Coffee) # accumulate production
-    cof.production += (cof.area / 25.0) * cof.sunlight
+    cof.production += cof.area * cof.sunlight
 end
 
 ###
@@ -45,24 +139,32 @@ end
 function disperse!(rust::Rust, cof::Coffee, model::ABM)
     #prog = 1 / (1 + (0.25 / (rust.area + (rust.n_lesions / 25.0)))^4)
 
-    if model.current.rain && rand(model.rng) < model.p_density * rust.spores
+    # if model.current.rain && rand(model.rng) < model.pars.p_density * rust.spores
+    if model.current.rain && rand(model.rng) < rust.spores
         # model.p_density * prog  #(rust.n_lesions * rust.area) / (2 + rust.n_lesions * rust.area)
         # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
-        target = try_travel(rust, cof.sunlight, model, "r")
+
+
         # println("obt")
         # println(target)
-        if target !== rust
-            inoculate_rust!(model, target)
-        end
+
+
+        # target = try_travel(rust, cof.sunlight, model, "r")
+        # if target !== rust
+        #     inoculate_rust!(model, target)
+        # end
     end
 
-    if model.current.wind && rand(model.rng) < model.p_density * rust.spores
+    # if model.current.wind && rand(model.rng) < model.pars.p_density * rust.spores
+    if model.current.wind && rand(model.rng) < rust.spores
         # model.p_density * prog
         # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
-        target = try_travel(rust, cof.sunlight, model, "w")
-        if target !== rust
-            inoculate_rust!(model, target)
-        end
+
+
+        # target = try_travel(rust, cof.sunlight, model, "w")
+        # if target !== rust
+        #     inoculate_rust!(model, target)
+        # end
     end
 end
 
@@ -73,10 +175,10 @@ function parasitize!(rust::Rust, cof::Coffee, model::ABM)
     # # cof.progression = 1 / (1 + (0.75 / bal)^4)
     #     prog = 1 / (1 + (0.25 / bal)^4) # Hill function with steep increase
     #     cof.area = 1.0 - prog
-        cof.area = 25.0 - (rust.n_lesions * rust.area)
-        if cof.area <= 0.0 #|| bal >= 2.0
+        cof.area = 1.0 - (rust.n_lesions * rust.area) / 25.0
+        if rust.area * rust.n_lesions >= model.pars.exhaustion #|| bal >= 2.0
             cof.area = 0.0
-            cof.exh_countdown = (model.harvest_cycle * 2) + 1
+            cof.exh_countdown = (model.pars.harvest_cycle * 2) + 1
 
             rm_id = rust.id
             kill_agent!(rust, model)
@@ -86,31 +188,34 @@ function parasitize!(rust::Rust, cof::Coffee, model::ABM)
     end
 end
 
-function grow!(rust::Rust, cof::Coffee, model::ABM)
+function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
 
-    local_temp = model.current.temperature - (model.temp_cooling * (1.0 - cof.sunlight))
+    local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - cof.sunlight))
 
-    if rust.germinated && 14 < local_temp < 30 # grow and sporulate
+    if rust.germinated
+        if rust.age < model.pars.steps
+            rust.age += 1
+        end
+        if 14 < local_temp < 30 # grow and sporulate
 
-        rust.age += 1
+            #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
+            rust.area += rust.area * (1 - rust.area) *
+                #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
+                model.pars.fruit_load * cof.production / model.pars.harvest_cycle *
+                (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
 
-        #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
-        rust.area += rust.area * (1 - rust.area) *
-            #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
-            model.fruit_load * cof.production / model.harvest_cycle *
-            (-0.0178 * ((local_temp - model.opt_g_temp) ^ 2.0) + 1.0)
-
-        if rust.spores === 0.0
-            if rand(model.rng) < (rust.area * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
-                rust.spores = rust.area * model.spore_pct
+            if rust.spores === 0.0
+                if rand(model.rng) < (rust.area * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
+                    rust.spores = rust.area * model.pars.spore_pct
+                end
+            else
+                rust.spores = rust.area * model.pars.spore_pct
             end
-        else
-            rust.spores = rust.area * model.spore_pct
         end
 
     else # try to germinate + penetrate tissue
         let r = rand(model.rng)
-            if r < (cof.sunlight * model.uv_inact) || r <  (cof.sunlight * (model.current.rain ? model.rain_washoff : 0.0))
+            if r < (cof.sunlight * model.pars.uv_inact) || r <  (cof.sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
                 # higher % sunlight means more chances of inactivation by UV or rain
                 rm_id = rust.id
                 kill_agent!(rust, model)
@@ -134,7 +239,7 @@ function harvest!(model::ABM)
     harvest = 0.0
     ids = model.current.coffee_ids
     for id in ids
-        harvest += model[id].production / model.harvest_cycle
+        harvest += model[id].production / model.pars.harvest_cycle
         model[id].production = 1.0
         # if plant.fung_this_cycle
         #     plant.fung_this_cycle = false
@@ -145,8 +250,9 @@ function harvest!(model::ABM)
         #     plant.productivity = plant.productivity / 0.9
         # end
     end
-    model.current.gains += model.coffee_price * harvest * model.p_density
-    model.current.yield += harvest / (model.dims^2)
+    model.current.gains += model.pars.coffee_price * harvest
+    # model.current.gains += model.coffee_price * harvest * model.pars.p_density
+    model.current.yield += harvest / (model.pars.map_side^2)
 end
 
 function fungicide!(model::ABM)
@@ -155,15 +261,17 @@ function fungicide!(model::ABM)
 end
 
 function prune!(model::ABM)
-    model.current.costs += model.n_pruned * model.prune_cost
-    pruned = partialsort(model.current.shade_ids, 1:model.n_pruned, rev=true, by = x -> model[x].shade)
+    n_pruned = trunc(model.pars.prune_effort * length(model.current.shade_ids))
+    model.current.costs += n_pruned * model.pars.prune_cost
+    pruned = partialsort(model.current.shade_ids, 1:n_pruned, rev=true, by = x -> model[x].shade)
     for pr in pruned
-        model[pr].shade = model.target_shade
+        model[pr].shade = model.pars.target_shade
     end
 end
 
 function inspect!(model::ABM)
-    cofs = sample(model.current.coffee_ids, model.n_inspected, replace = false)
+    n_inspected = trunc(model.pars.inspect_effort * length(model.current.coffee_ids))
+    cofs = sample(model.rng, model.current.coffee_ids, n_inspected, replace = false)
     for c in cofs
         here = collect(agents_in_position(model[c].pos, model))
         if length(here) > 1
@@ -179,13 +287,13 @@ end
 
 function try_travel(rust::AbstractAgent, sun::Float64, model::ABM, factor::String)
     if factor == "r"
-        distance = abs(2 * randn(model.rng) * model.rain_distance * model.diff_splash / (1.0 + sun)) # more sun means less kinetic energy
+        distance = abs(2 * randn(model.rng) * model.pars.rain_distance * model.pars.diff_splash / (1.0 + sun)) # more sun means less kinetic energy
     else
-        distance = abs(2 * randn(model.rng) * model.wind_distance * model.wind_protec * sun) # more sun means more wind speed
+        distance = abs(2 * randn(model.rng) * model.pars.wind_distance * model.pars.wind_protec * sun) # more sun means more wind speed
     end
-    heading = rand(model.rng) * 365
+    heading = rand(model.rng) * 360
     blocked = false
-    bound = model.dims
+    bound = model.pars.map_side
     potential_landing = rust
     position = rust.pos
     if heading == 90.0 || heading == 270.0
@@ -312,27 +420,7 @@ function try_travel(rust::AbstractAgent, sun::Float64, model::ABM, factor::Strin
     return potential_landing
 end
 
-function inoculate_rand_rust!(model::ABM, n_rusts::Int) # inoculate random coffee plants
-    # move from a random cell outside
-    # need to update the path function
-
-    rusted_ids = sample(model.current.coffee_ids, n_rusts, replace = false)
-
-    for rusted in rusted_ids
-        here = collect(agents_in_position(model[rusted], model))
-        if length(here) > 1
-            here[2].n_lesions += 1
-        else
-            new_id = nextid(model)
-            add_agent_pos!(Rust(new_id, here[1].pos, true, 0.01, 0.0, 1, 0, here[1].id), model)
-            here[1].hg_id = new_id
-            push!(model.current.rust_ids, new_id)
-        end
-    end
-end
-
 function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target coffee
-    # print("dep")
     # println(target)
     here = collect(agents_in_position(target, model))
     if length(here) > 1
@@ -341,9 +429,10 @@ function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target c
             here[2].n_lesions += 1
         end
     elseif target isa Coffee
-        # println("new")
-        new_id = nextid(model)
-        add_agent_pos!(Rust(new_id, target.pos, false, 0.0, 0.0, 1, 0, target.id), model)
+        if isdisjoint(target.sample_cycle, model.current.cycle)
+            new_id = add_agent!(target.pos, Rust, model; hg_id = target.id, sample_cycle = target.sample_cycle).id
+        else
+            new_id = add_agent!(target.pos, Rust, model; age = 0, hg_id = target.id, sample_cycle = target.sample_cycle).id
         target.hg_id = new_id
         push!(model.current.rust_ids, new_id)
     end
@@ -351,14 +440,4 @@ end
 
 function calc_wetness_p(local_temp)
     w = (-0.5/16.0) * local_temp + (0.5*30.0/16.0)
-end
-
-
-function tryyy(n)
-    for i = 1:n
-        for j = 2:4
-            if j == 3 continue end
-            println(i,j)
-        end
-    end
 end

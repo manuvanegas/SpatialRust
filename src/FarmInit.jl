@@ -1,6 +1,7 @@
 struct Input
     map_dims::Int
     harvest_cycle::Int # 182 or 365
+    karma::Bool
     days::Int
     n_rusts::Int
     # farmer's strategy and finances
@@ -8,6 +9,7 @@ struct Input
     fungicide_period::Int # in days
     prune_period::Int # in days
     inspect_period::Int # days
+    inspect_effort::Float64 # % coffee plants inspected
     target_shade::Float64 # 0.2 to 0.9
     pruning_effort::Float64 # % shade trees pruned
     coffee_price::Float64 # 1 for now
@@ -38,6 +40,7 @@ function initialize_sim(;
     steps::Int = 10,
     map_dims::Int = 10,
     harvest_cycle::Int = 182,
+    karma::Bool = true,
     start_at = 0,
     n_rusts = 1,
     shade_percent::Float64 = 0.3,
@@ -47,6 +50,7 @@ function initialize_sim(;
     fungicide_period::Int = 182,
     prune_period::Int = 91,
     inspect_period::Int = 7,
+    inspect_effort::Float64 = 0.01,
     target_shade::Float64 = 0.3,
     pruning_effort::Float64 = 0.75,
     coffee_price::Float64 = 1.0,
@@ -82,14 +86,17 @@ function initialize_sim(;
 
     wind_data = rand(Bool, steps) .< wind_prob
 
-    input = Input(map_dims,
+    input = Input(
+        map_dims,
         harvest_cycle,
+        karma,
         start_at,
         n_rusts,
         p_density,
         fungicide_period,
         prune_period,
         inspect_period,
+        inspect_effort,
         target_shade,
         pruning_effort,
         coffee_price,
