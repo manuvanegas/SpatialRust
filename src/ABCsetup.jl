@@ -5,10 +5,10 @@ function simulate_fullsun(p_row::DataFrameRow,
         when_cycles::Vector{Int},
         out_path::String,
         wind_prob::Float64,
-        replace_at::Int)
+        restart_after::Int)
 
     model1 = init_spatialrust(Parameters(
-        steps = replace_at,
+        steps = restart_after,
         map_dims = 100,
         start_days_at = 132,
         switch_cycles = when_cycles,
@@ -24,7 +24,7 @@ function simulate_fullsun(p_row::DataFrameRow,
 
         create_fullsun_farm_map(),
 
-        Weather(rain_data[1:replace_at], rand(Float64, replace_at) .< wind_prob, temp_data[1:replace_at]))
+        Weather(rain_data[1:restart_after], rand(Float64, restart_after) .< wind_prob, temp_data[1:restart_after]))
 
 
     custom_sampling!(model, 0.05, 1)
@@ -32,9 +32,9 @@ function simulate_fullsun(p_row::DataFrameRow,
     "data  = run!(model)"
 
     model2 = init_spatialrust(Parameters(
-        steps = 455 - replace_at,
+        steps = 455 - restart_after,
         map_dims = 100,
-        start_days_at = 132 + replace_at,
+        start_days_at = 132 + restart_after,
         switch_cycles = when_cycles,
         n_rusts = round(model1.current.outpur),
         par_row = p_row[:RowN],
@@ -48,7 +48,7 @@ function simulate_fullsun(p_row::DataFrameRow,
 
         create_fullsun_farm_map(),
 
-        Weather(rain_data[(replace_at + 1):455], rand(Float64, (455 - replace_at)) .< wind_prob, temp_data[(replace_at + 1):455]))
+        Weather(rain_data[(restart_after + 1):455], rand(Float64, (455 - restart_after)) .< wind_prob, temp_data[(restart_after + 1):455]))
 
     custom_sampling!(model, 0.025, 2) # sampling groups in 2 half were 1/2 and overlapped with each other
 

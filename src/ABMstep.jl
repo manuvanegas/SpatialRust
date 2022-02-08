@@ -29,14 +29,12 @@ function pre_step!(model)
     if model.pars.karma && rand(model.rng) < sqrt(model.current.outpour)/(model.pars.map_side^2)
         inoculate_rand_rust!(model, 1)
     end
-    if model.current.ticks in model.pars.switch_cycles
+    if (model.current.ticks - 1) in model.pars.switch_cycles
         # popfirst!(model.pars.switch_cycles)
-        if model.current.cycle[1] < 5
-            model.current.cycle[1] += 1
-        elseif model.current.cycle[1] == 5
+        if model.current.cycle[1] == 5
             push!(model.current.cycle, 6)
         else
-            model.current.cycle .+= 1
+            model.current.cycle[1] .+= 1
         end
     end
 end

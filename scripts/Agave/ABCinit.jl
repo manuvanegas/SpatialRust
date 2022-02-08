@@ -18,12 +18,11 @@ if length(ARGS) > 1
     less_this = parse(Int, ARGS[3])
 end
 
-when_collect = crd(datadir("exp_pro/inputs/whentocollect_rust.csv"), DataFrame, select = [false, true])[!, 1]
-when_cycle = crd(datadir("exp_pro/inputs/whentocollect_plant.csv"), DataFrame, select = [false, true])[!, 1]
+when_collect = crd(datadir("exp_pro/inputs/sun_whentocollect_rust.csv"), DataFrame, select = [false, true])[!, 1]
+when_cycle = crd(datadir("exp_pro/inputs/sun_whentocollect_plant.csv"), DataFrame, select = [false, true])[!, 1]
 
 # read climate data
-weather = crd(datadir("exp_pro/inputs/Tur_Sun_Weather.csv"), DataFrame, footerskip = 1)
-#weather[456, :meanTaTFS] = 23.0 # fix last temp value
+weather = crd(datadir("exp_pro/inputs/sun_weather.csv"), DataFrame)
 rain_data = Vector{Bool}(weather[!, :Rainy])
 temp_data = Vector{Float64}(weather[!, :meanTaTFS])
 
