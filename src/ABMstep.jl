@@ -13,7 +13,7 @@ function step_model!(model::ABM)
         rust_step!(model.agents[rust_i], model)
     end
 
-    model_step!(model)
+    post_step!(model)
 end
 
 ## "Step" functions
@@ -34,13 +34,13 @@ function pre_step!(model)
         if model.current.cycle[1] == 5
             push!(model.current.cycle, 6)
         else
-            model.current.cycle[1] .+= 1
+            model.current.cycle .+= 1
         end
     end
 end
 
 function shade_step!(tree::Shade, model::ABM)
-    grow_shade!(tree, model.pars.shade_rate)
+    grow_shade!(tree, model.pars.shade_g_rate)
 end
 
 function coffee_step!(coffee::Coffee, model::ABM)
@@ -72,7 +72,7 @@ function rust_step!(rust::Rust, model::ABM)
     end
 end
 
-function model_step!(model)
+function post_step!(model)
     if model.current.days % model.pars.harvest_cycle === 0
         harvest!(model)
     end
@@ -93,7 +93,7 @@ end
 ###
 
 function grow_shade!(tree::Shade, rate::Float64)
-    tree.shade += rate * (1.0 - tree.shade / 0.9)
+    tree.shade += tree.shade + rate * (1.0 - tree.shade / 0.95) * tree.shade
     tree.age += 1
 end
 
@@ -251,9 +251,9 @@ function harvest!(model::ABM)
         #     plant.productivity = plant.productivity / 0.9
         # end
     end
-    model.current.gains += model.pars.coffee_price * harvest
+    model.current.net_rev += (model.pars.coffee_price * harvest) - model.current.costs
     # model.current.gains += model.coffee_price * harvest * model.pars.p_density
-    model.current.yield += harvest / (model.pars.map_side^2)
+    model.current.yield += harvest / length(model.current.coffee_ids)
 end
 
 function fungicide!(model::ABM)
@@ -291,16 +291,15 @@ function rust_dispersal!(model::ABM, rust::Rust, distance::Float64)
     path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
 
     for s in path
-        try
-            trees = agents_in_position(add_tuples(s, rust.pos), model)
-            if !isempty(trees) && rand(model.rng) < 0.1
-                if collect(trees)[1] isa Coffee
-                    inoculate_rust!(model, collect(trees)[1])
-                end
-                break
-            end
+        trees = try agents_in_position(add_tuples(s, rust.pos), model)
         catch
             model.current.outpour += 1
+            break
+        end
+        if !isempty(trees) && rand(model.rng) > model.pars.disp_block
+            if collect(trees)[1] isa Coffee
+                inoculate_rust!(model, collect(trees)[1])
+            end
             break
         end
 
@@ -457,18 +456,23 @@ function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target c
     here = collect(agents_in_position(target, model))
     if length(here) > 1
         # println("nlesion")
-        if here[2].n_lesions < 26
+        if here[2].n_lesions < 25
             here[2].n_lesions += 1
         end
     elseif target isa Coffee
         if isdisjoint(target.sample_cycle, model.current.cycle)
-            new_id = add_agent!(target.pos, Rust, model; hg_id = target.id, sample_cycle = target.sample_cycle).id
+            new_id = add_agent!(target.pos, Rust, model; age = (model.pars.steps + 1), hg_id = target.id, sample_cycle = target.sample_cycle).id
         else
-            new_id = add_agent!(target.pos, Rust, model; age = 0, hg_id = target.id, sample_cycle = target.sample_cycle).id
+            new_id = add_agent!(target.pos, Rust, model; hg_id = target.id, sample_cycle = target.sample_cycle).id
         end
         target.hg_id = new_id
         push!(model.current.rust_ids, new_id)
     end
+end
+
+function inoculate_rand_rust!(model::ABM)
+    cof = model[sample(model.rng, model.current.coffee_ids)]
+    inoculate_rust!(model::ABM, cof)
 end
 
 function add_tuples(t_a::Tuple{Int, Int}, t_b::Tuple{Int, Int})

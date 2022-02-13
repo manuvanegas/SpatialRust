@@ -1,48 +1,67 @@
-@everywhere using DrWatson
-@everywhere @quickactivate "SpatialRust"
+usings_time = @elapsed begin
+    using Distributed
+    @everywhere using DrWatson
+    #@everywhere Pkg.activate(".")
 
-@everywhere begin
-    using DataFrames
-    using Agents: dummystep, run!
-    using Distributed: pmap
-    using CSV: read as crd
-    include(projectdir("SpatialRust.jl"))
-    #using .SpatialRust
+    @everywhere begin
+        @quickactivate "SpatialRust"
+        using DataFrames
+        using Distributed: pmap
+        using CSV: read as crd, write as cwr
+        using Arrow: write as awr
+        include(projectdir("SpatialRust.jl"))
+        include(srcdir("ABC.jl"))
+        #using .SpatialRust
+    end
 end
 
-startat = 2
-less_this = 0
+load_time = @elapsed begin
+    startat = 2
+    less_this = 0
 
-if length(ARGS) > 1
-    startat = parse(Int, ARGS[2]) + 1
-    less_this = parse(Int, ARGS[3])
+    if length(ARGS) > 1
+        startat = parse(Int, ARGS[2]) + 1
+        less_this = parse(Int, ARGS[3])
+    end
+
+    when_rust = crd(datadir("exp_pro/inputs/sun_whentocollect_rust.csv"), DataFrame, select = [false, true])[!, 1]
+    when_plant = crd(datadir("exp_pro/inputs/sun_whentocollect_plant.csv"), DataFrame, select = [false, true])[!, 1]
+
+    # read climate data
+    weather = crd(datadir("exp_pro/inputs/sun_weather.csv"), DataFrame)
+    rain_data = Vector{Bool}(weather[!, :Rainy])
+    temp_data = Vector{Float64}(weather[!, :MeanTa])
+
+    parameters = crd(datadir("ABC", ARGS[1]), DataFrame, skipto = startat, footerskip = less_this)
+
+    mkpath("/scratch/mvanega1/ABCraw/ages/")
+    mkpath("/scratch/mvanega1/ABCraw/cycles")
+    mkpath("/scratch/mvanega1/ABCraw/prod")
+    #mkpath("/scratch/mvanega1/ABCveryraw/cycledata")
 end
 
-when_collect = crd(datadir("exp_pro/inputs/sun_whentocollect_rust.csv"), DataFrame, select = [false, true])[!, 1]
-when_cycle = crd(datadir("exp_pro/inputs/sun_whentocollect_plant.csv"), DataFrame, select = [false, true])[!, 1]
+dummy_time = @elapsed begin
+    #dummy run
+    d_mod = initialize_sim(; map_dims = 20, shade_percent = 0.0, steps = 50)
+    d_adata, _ = run!(d_mod, dummystep, step_model!, 50, adata = [:pos])
 
-# read climate data
-weather = crd(datadir("exp_pro/inputs/sun_weather.csv"), DataFrame)
-rain_data = Vector{Bool}(weather[!, :Rainy])
-temp_data = Vector{Float64}(weather[!, :meanTaTFS])
+    println("Dummy run completed")
+end
 
-parameters = crd(datadir("ABC", ARGS[1]), DataFrame, skipto = startat, footerskip = less_this)
+run_time = @elapsed begin
+    processed = pmap(p -> sim_and_write(p, rain_data, temp_data, when_rust, when_plant, 0.5),
+                    eachrow(parameters); retry_delays = fill(0.1, 3))
+    println("total: ",sum(processed))
+end
 
-out_path = mkpath("/scratch/mvanega1/ABCveryraw")
-mkpath("/scratch/mvanega1/ABCveryraw/stepdata")
-mkpath("/scratch/mvanega1/ABCveryraw/substepdata")
-mkpath("/scratch/mvanega1/ABCveryraw/cycledata")
+timings = """
+Init: $usings_time
+Loads: $load_time
+Compile: $dummy_time
+Run: $run_time
+"""
 
-#dummy run
-d_mod = initialize_sim(; map_dims = 20, shade_percent = 0.0, steps = 50)
-d_adata, _ = run!(d_mod, dummystep, step_model!, 50, adata = [:pos])
-
-println("Dummy run completed")
-
-processed = pmap(p -> run_for_abc(p, rain_data, temp_data, when_collect, out_path),
-                eachrow(parameters); retry_delays = fill(0.1, 3))
-
-
+cwr("~/SpatialRust/timing.txt", timings)
 
 ## Trying to decide whether growth rate is well defined.
 # It is. Calibrating opt_g_temp will (trasladar) the parabole to the sides

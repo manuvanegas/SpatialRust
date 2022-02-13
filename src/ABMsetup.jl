@@ -56,7 +56,7 @@ Base.@kwdef mutable struct Books
     rain::Bool = true
     wind::Bool = true
     costs::Float64 = 0.0
-    gains::Float64 = 0.0
+    net_rev::Float64 = 0.0
     yield::Float64 = 0.0
 end
 
@@ -149,7 +149,7 @@ Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
     #parent::Int # id of rust it came from
 end
 
-Rust(id, pos; germinated = false, area = 0.0, age = model.pars.steps + 1, spores = 0.0, hg_id = 0, sample_cycle = []) = Rust(id, pos, germinated, area, spores, 1, age, hg_id, sample_cycle)
+Rust(id, pos; germinated = false, area = 0.0, spores = 0.0, age = 0, hg_id = 0, sample_cycle = []) = Rust(id, pos, germinated, area, spores, 1, age, hg_id, sample_cycle)
 
 ## Setup functions
 
@@ -266,20 +266,20 @@ function count_shades!(model::ABM)
     end
 end
 
-function init_rusts!(model::ABM, n_rusts::Int) # inoculate random coffee plants
+function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee plants
     # move from a random cell outside
     # need to update the path function
-
+    n_rusts = max(round(Int, p_rusts * length(model.current.coffee_ids)), 1)
     rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
 
     for rusted in rusted_ids
         area = rand(model.rng)
         if area < 0.05
-            new_id = add_agent!(model[rusted].pos, Rust, model; hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
+            new_id = add_agent!(model[rusted].pos, Rust, model; age = (model.pars.steps + 1), hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
         elseif area > 0.9
-            new_id = add_agent!(model[rusted].pos, Rust, model; germinated = true, area = area, spores = area * model.pars.spore_pct, hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
+            new_id = add_agent!(model[rusted].pos, Rust, model; age = (model.pars.steps + 1), germinated = true, area = area, spores = area * model.pars.spore_pct, hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
         else
-            new_id = add_agent!(model[rusted].pos, Rust, model; germinated = true, area = area, spores = 0.0, hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
+            new_id = add_agent!(model[rusted].pos, Rust, model; age = (model.pars.steps + 1), germinated = true, area = area, spores = 0.0, hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
         end
         model[rusted].hg_id = new_id
         model[rusted].area = model[rusted].area - model[new_id].area
@@ -322,7 +322,7 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
 
     count_shades!(model)
 
-    init_rusts!(model, parameters.n_rusts)
+    init_rusts!(model, parameters.p_rusts)
 
     return model
 end
