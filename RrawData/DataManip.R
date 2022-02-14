@@ -69,9 +69,14 @@ plot_rust_data <- function(t.plot = "TFSSF") {
   treatment$dayN <- treatment$fDate - firstday
   
   treatment$WasInfected <- if_else(is.na(treatment$Infected), 1, if_else(treatment$Infected == 0, 0, 1))
+  
 
   
   ### Plotting incidence at plant-branch level (because branches change every 8 weeks)
+  #####
+  # But this approach is wrong! 
+  # using setdiff erases the plant ids that are partially infected
+  #####
   infs <- filter(treatment, WasInfected == 1) %>% select(fDate, Plant) %>% distinct()
   notinfs <- filter(treatment, WasInfected == 0) %>% select(fDate, Plant) %>% distinct()
   
@@ -88,6 +93,44 @@ plot_rust_data <- function(t.plot = "TFSSF") {
     labs(x = "Date", y = "Plant Number", color = "Infected", fill = "Infected")
   incidencePlants
   ggsave(paste0(plots_path, "Plant Incidence",".png"), incidencePlants, width = 6, height = 3)
+  
+  # New attempt
+  # 1. Incidence at leaf level
+  incidence_leaf <- group_by(rSelected, fDate, leaf.id) %>%
+    summarise(Infected = max(WasInfected)) %>%
+    summarise(InfLeaves = sum(Infected), TotLeaves = n()) %>%
+    mutate(Incid = InfLeaves / TotLeaves)
+  
+  # 2. Incidence at plant level, then mean
+  incidence_plant <- group_by(rSelected, fDate, Plant, leaf.id) %>%
+    summarise(Infected = max(WasInfected)) %>%
+    summarise(InfLeaves = sum(Infected), TotLeaves = n()) %>%
+    mutate(Incid = InfLeaves / TotLeaves) %>%
+    summarise(meanInfLeaves = mean(Incid))
+  plot(incidence_leaf$fDate, incidence_leaf$TotLeaves)
+  plot(incidence_leaf$fDate, incidence_leaf$Incid)
+  plot(incidence_plant)
+  # Only diff is in second half, in dates where TotLeaf is high (when 2-month cycles start). Mean of plants is slightly higher than incidence at leaf level
+  
+  # Now... what happens at the beginning of each 2-month cycle?
+  datesinpdays <- rSelected[rSelected$dayN %in% unique(pDays),]
+  areasfirstday <- group_by(datesinpdays, fDate) %>% summarise(meanar = mean(CorrectedArea, na.rm=T), num = n(), maxid = max(Lesion))
+  # For the first half, areas are reported as 0, but even 42 lesions are identified in just one leaf. How can this be?
+  totrusts <- group_by(rSelected, fDate) %>% summarise(tots = n())
+  #plot(totrust)
+  # number of rusts is constant for each 2-month cycle
+  one_branch <- subset(rSelected, branch.id == "20.B1")
+  ggplot(one_branch,
+         aes(x = fDate, y = CorrectedArea)) +
+    geom_line(aes(group = rust.id, color = RightLeftLeaf)) +
+    geom_point(aes(color = as.factor(RightLeftLeaf), shape = as.factor(Fallen)))
+  one_branch_inf <- subset(rSelected, branch.id == "20.B1" & Infected == 1 & Fallen == 0)
+  ggplot(one_branch_inf,
+         aes(x = fDate, y = CorrectedArea)) +
+    geom_line(aes(group = rust.id, color = rust.id)) +
+    geom_point(aes(shape = as.factor(RightLeftLeaf)))
+  
+  
   
   
   # Get first 25 recorded lesions
@@ -354,13 +397,15 @@ inspPlants <- rSelected$Plant
 pSelected <- subset(PlantDB, Plant %in% inspPlants)
 pDates <- as.Date(pSelected$DateLabel, format="%m/%d/%y")
 
-firstday <- min (wDates)
+firstday <- min(wDates)
 
 rDays <- rDates - firstday
 pDays <- pDates - firstday
 
-whenToCollect <- sort(unique(c(rDays,pDays)))[2:62] # leaving out 2017-05-11 because only partial data was collected. See line # 387
+whenToCollect <- sort(unique(c(rDays,pDays)))[2:62] # leaving out 2017-05-11 because only partial data was collected. See line # 390
 write.csv(whenToCollect, paste0(data_path, "inputs/whentocollect.csv"))
+write.csv(sort(unique(rDays)), paste0(data_path, "inputs/whentocollect_rust.csv"))
+write.csv(sort(unique(pDays))[2:12], paste0(data_path, "inputs/whentocollect_plant.csv"))
 
 ## Plotting data collection dates
 inspDates <- data.frame("date" = unique(rDates), "who" = "Rust", "val" = 1)
@@ -386,7 +431,7 @@ rSelected$numArea <- as.numeric(as.character(rSelected$TotalAreaLesion))
 pSelected$fDate <- as.Date(pSelected$DateLabel, format="%m/%d/%y")
 pSelected$fDate <- case_when(pSelected$fDate == "2017-05-11" ~ as.Date("2017-05-12"),
                              TRUE ~ as.Date(pSelected$fDate)) # correction is necessary because branch values are pooled
-pSelected$BranchID <- as.factor(paste(pSelected$Plant, pSelected$Branch, sep = "."))
+pSelected$branch.id <- as.factor(paste(pSelected$Plant, pSelected$Branch, sep = "."))
 pSelected <- mutate(pSelected, SampleGroup = if_else(Plant <= 36, "A", "B"))
 
 # checking that all the plants assessed for rust are present in the list of plants assessed for coffee prod
@@ -395,6 +440,35 @@ unique(rSelected$Plant) %in% unique(pSelected$Plant)
 
 sumNodes <- group_by(pSelected, fDate, Plant) %>%
   summarise(sumPlantNodes = sum(BranchFruitNodes), sumPlantFruits = sum(BranchFruits), sumNodesNodes = sum(Node, na.rm = T))
+
+meanNodes <- mutate(pSelected, normFNodes = (BranchFruitNodes/Node), normFruits = (BranchFruits / Node)) %>%
+  group_by(fDate, Plant) %>%
+  summarise(sumPlantNodes = mean(normFNodes, na.rm = T), sumPlantFruits = mean(normFruits, na.rm = T), sumNodesNodes = mean(Node, na.rm = T))
+
+ggplot(meanNodes, aes(x = fDate,
+                     y = sumPlantNodes,
+                     group = as.factor(Plant))) +
+  geom_point(aes(color = as.factor(Plant))) + 
+  geom_line(aes(color = as.factor(Plant))) +
+  labs(x = "Date", y = "Plant Nodes", color = "Plant ID")
+
+ggplot(meanNodes, aes(x = fDate,
+                     y = sumPlantFruits,
+                     group = as.factor(Plant))) +
+  geom_point(aes(color = as.factor(Plant))) + 
+  geom_line(aes(color = as.factor(Plant))) +
+  labs(x = "Date", y = "Plant Fruits", color = "Plant ID")
+
+
+second_r <- subset(rSelected, fDate > "2018-01-01")
+s_r_dates <- unique(second_r$fDate)
+length(unique(second_r$branch.id[second_r$fDate == s_p_dates[2]]))
+second_p <- subset(pSelected, fDate > "2018-01-01")
+s_p_dates <- unique(second_p$fDate)
+
+unique(second_r$branch.id[second_r$fDate == s_p_dates[3]]) %in% unique(second_r$branch.id[second_r$fDate == s_p_dates[4]])
+
+unique(second_r$branch.id[second_r$fDate == s_p_dates[3]])[!(unique(second_r$branch.id[second_r$fDate == s_p_dates[3]]) %in% unique(second_r$branch.id[second_r$fDate == s_p_dates[2]]))]
 
 plantNodes <- ggplot(sumNodes, aes(x = fDate,
                                    y = sumPlantNodes,
@@ -437,13 +511,28 @@ write.csv(meanNodesandFruits, paste0(data_path, "compare/", treat.name, "_CoffeP
 summBranch <- group_by(rSelected, fDate, Plant, Branch) %>%
   summarize(sumArea = sum(CorrectedArea, na.rm = T), meanArea = mean(CorrectedArea, na.rm = T))
 
-summBranch <- group_by(inf.treat, fDate, Plant, Branch) %>%
+summBranch <- group_by(first.25, fDate, Plant, Branch) %>%
   summarise(count.n=n(),
             sum.branch = sum(CorrectedArea, na.rm = T),
-            .groups = "drop_last") %>%
-  summarise(total.rust.n = sum(count.n),
-            av.sum.branch = mean(sum.branch),
-            max.sum.branch = max(sum.branch))
+            sum.fallen = sum(Fallen),
+            .groups = "drop_last")
+rustandnodes <- left_join(summBranch, pSelected, by = c("Plant", "Branch"))
+
+#rustandnodes2 <- subset(rustandnodes, Plant < 37)
+ggplot(rustandnodes, aes(x = PlantFruitNodes,
+                         y = sum.branch,
+                         group = fDate.x)) +
+  geom_point(aes(color = fDate.x))
+
+ggplot(rustandnodes, aes(x = PlantFruitNodes,
+                         y = sum.fallen,
+                         group = as.factor(Plant))) +
+  geom_point(aes(color = as.factor(Plant)))
+
+# %>%
+#   summarise(total.rust.n = sum(count.n),
+#             av.sum.branch = mean(sum.branch),
+#             max.sum.branch = max(sum.branch))
 
 earlyStages <- mutate(summBranch,
                       stage = "Early",
@@ -518,12 +607,48 @@ branchfruits.branchnodes <- ggplot(pSelected, aes(x = BranchFruitNodes, y = Bran
   geom_line(aes(color = Plant)) + geom_point(aes(color = Plant))
 branchfruits.branchnodes
 
-
-plot(pSelected$Plant, )
-
 range(pSelected$fDate)
 
 
+### 08/04/21
+pSelected$Stratum <- substring(pSelected$Branch, 1, 1)
+
+ggplot(data = filter(pSelected, BranchFruits > 0),
+       aes(x = as.factor(Plant), y = BranchFruits, group = as.factor(fDate))) +
+  geom_point(aes(color = as.factor(fDate)))
+
+maxFNodes <- max(pSelected$BranchFruitNodes)
+maxrelFNodes <- max(pSelected$BranchFruitNodes/pSelected$Node)
+pSelected$Node <- ifelse(is.na(pSelected$Node), 1, pSelected$Node)
+
+productivity <- ungroup(pSelected) %>%
+  mutate(relFNodes = BranchFruitNodes/Node) %>%
+  mutate(normFNodes = BranchFruitNodes/maxFNodes, normrelFNodes = relFNodes /maxrelFNodes) %>%
+  group_by(fDate) %>%
+  summarise(medNorm = median(normFNodes), medRNorm = median(normrelFNodes), meanNorm = mean(normFNodes))
+## it made sense to use FNodes relative to Node, but first half tends to have higher Node values
+
+sumsNodes <- group_by(fDate, Plant) %>%
+  summarise(sFNodes = sum(BranchFruitNodes))
+
+maxsumFNodes <- max(productivity2$sFNodes)
+
+productivity2 <- ungroup(pSelected) %>%
+  mutate(normFNodes = BranchFruitNodes/maxFNodes) %>%
+  group_by(fDate, Plant) %>%
+  summarise(meanFNodes = mean(normFNodes), sFNodes = sum(BranchFruitNodes), sumFNodes = sFNodes/maxsumFNodes) %>%
+  summarise(medNorm = median(meanFNodes), medsumNorm = median(sumFNodes), meanNorm = mean(meanFNodes), meansumNorm = mean(sumFNodes))
+
+
+productivity2 <- mutate(productivity2, normFNodes = BranchFruitNodes/maxFNodes, normsumFNodes = sFNodes / maxsumFNodes) 
+%>%
+  group_by(fDate, Plant) %>%
+  summarise(meanFNodes = mean(normFNodes),  sumFNodes = mean(normsumFNodes)) 
+  %>%
+  summarise(medNorm = median(meanFNodes), medsumNorm = median(sumFNodes), meanNorm = mean(meanFNodes), meansumNorm = mean(sumFNodes))
+  
+ggplot(productivity,
+       aes(x = fDate, y = medNor))
 
 
 #########################################
