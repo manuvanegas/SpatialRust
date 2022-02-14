@@ -1,4 +1,4 @@
-function d_per_ages(model::ABM)
+function d_per_ages(model::ABM)::DataFrame
     sampled_rusts = Iterators.filter(r -> r isa Rust && !isdisjoint(model.current.cycle, r.sample_cycle), allagents(model))
 
     if isempty(sampled_rusts)

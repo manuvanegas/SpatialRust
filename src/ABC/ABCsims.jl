@@ -1,4 +1,11 @@
-include(srcdir("ABCmetrics.jl"))
+# using Agents: init_model_dataframe, until, should_we_collect, collect_model_data!, step!, nearby_ids, ABM
+# using StatsBase: sample
+# using Random: shuffle
+
+export custom_sampling!, sim_and_write
+
+include(srcdir("ABC","ABCmetrics.jl"))
+
 
 function sim_and_write(p_row::DataFrameRow,
     rain_data::Vector{Bool},
@@ -68,7 +75,7 @@ function simulate_fullsun(p_row::DataFrameRow,
         steps = 455 - restart_after,
         start_days_at = 132 + restart_after,
         switch_cycles = when_prod,
-        p_rusts = (model1.current.outpour / length(model.current.coffee_ids)),
+        p_rusts = (model1.current.outpour / length(model1.current.coffee_ids)),
         opt_g_temp = p_row[:opt_g_temp],
         spore_pct = p_row[:spore_pct],
         fruit_load = p_row[:fruit_load],
@@ -180,7 +187,7 @@ function dewrinkle(rust_df)
     per_cycle_df = reduce(vcat, rust_df.d_per_cycles)
 
     per_age_df.day .= per_age_df.day .- 132
-    per_cycle_df.day .= per_cycle_df .- 132
+    per_cycle_df.day .= per_cycle_df.day .- 132
 
     return per_age_df, per_cycle_df
 end

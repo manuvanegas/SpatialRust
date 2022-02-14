@@ -43,6 +43,8 @@
 #     all_rusts # ...
 # end
 
+export Shade, Coffee, Rust
+
 Base.@kwdef mutable struct Books
     days::Int = 0 # same as ticks unless start_days_at != 0
     ticks::Int = 0
