@@ -31,7 +31,7 @@ wSelected <- select(WeatherDB, fDate, QuantRain = paste0("Rain", p.treatment), M
 # Datos de CATIE reportan como días de lluvia cuando hubo 0.1 mm o más, pero el mínimo de lectura es 0.1. O sea, da igual poner != 0 que >= 0.1
 wSelected$Rainy <- wSelected$QuantRain >= 0.1
 firstday <- min(wSelected$fDate)
-wSelected$dayN <- wSelected$fDate - firstday
+wSelected$dayN <- wSelected$fDate - firstday + 1
 
 
 #subset rust data for "TFSSF" treatment
@@ -46,7 +46,7 @@ rSelected$leaf.id <- as.factor(paste(rSelected$Plant, rSelected$Branch,
                                      rSelected$RightLeftLeaf, sep = "."))
 rSelected$rust.id <- as.factor(paste(rSelected$Plant, rSelected$Branch, 
                                      rSelected$RightLeftLeaf, rSelected$Lesion, sep = "."))
-rSelected$dayN <- rSelected$fDate - firstday
+rSelected$dayN <- rSelected$fDate - firstday + 1
 
 rSelected$WasInfected <- if_else(is.na(rSelected$Infected), 1, if_else(rSelected$Infected == 0, 0, 1))
 
@@ -68,7 +68,7 @@ write.csv(wSelected, paste0(data_path, "inputs/", wfilename))
 
 # write rust and plant data collection dates
 rDays <- rSelected$dayN
-pDays <- pSelected$fDate - firstday
+pDays <- pSelected$fDate - firstday + 1
 
 write.csv(sort(unique(rDays)), paste0(data_path, "inputs/whentocollect_rust.csv"))
 write.csv(sort(unique(pDays))[2:12], paste0(data_path, "inputs/whentocollect_plant.csv")) # leaving out 2017-05-11 because only partial data was collected that date. Data from that day and the next are pooled.

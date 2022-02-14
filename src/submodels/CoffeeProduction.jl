@@ -153,7 +153,7 @@ function run_g4()
 
     for day in 1:(days - 1)
         if mod(day, 365) == 190
-            buds = ress[day] * 1.0 * vegs[day] * 2 #1.2 # berrys use 60% of yearly carbon
+            buds = ress[day] * 1.0 * vegs[day] * 2 #1.2 # berries use 60% of yearly carbon
             println(buds)
         end
         if mod(day, 365) == 0

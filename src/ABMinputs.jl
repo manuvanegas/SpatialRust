@@ -3,6 +3,8 @@ Input-handling structs and functions. If necessary, create farm_map or Weather,
 then call init_abm_obj. Returns model object
 =#
 
+export Weather, Parameters, init_spatialrust, create_weather, create_farm_map, create_fullsun_farm_map
+
 struct Weather
     rain_data::Vector{Bool}
     wind_data::Vector{Bool}
@@ -12,10 +14,10 @@ end
 Base.@kwdef struct Parameters
     steps::Int = 500
     start_days_at::Int = 0
-    n_rusts::Int = 5                   # n of initial rusts (has to be > 1)
+    p_rusts::Float64 = 0.01            # % of initial rusts
     harvest_cycle::Int = 365           # or 365/2, depending on the region
     karma::Bool = true                 # producing more spores means more spores coming from elsewhere?
-    par_row::Int = 0                   # parameter combination number (for ABC)
+    #par_row::Int = 0                   # parameter combination number (for ABC)
     switch_cycles::Vector{Int} = []
 
     # farm management
@@ -39,10 +41,11 @@ Base.@kwdef struct Parameters
     temp_cooling::Float64 = 3.0        # temp reduction due to shade
     diff_splash::Float64 = 2.0         # % extra distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high")
     wind_protec::Float64 = 1.0         # % extra wind distance due to absence of shade
-    shade_rate::Float64 = 0.01         # shade growth rate
+    disp_block::Float64 = 0.9          # prob a tree will block rust dispersal
+    shade_g_rate::Float64 = 0.1        # shade growth rate
 
     # coffee and rust parameters
-    exhaustion::Float64 = 5.0           # rust level that causes plant exhaustion
+    exhaustion::Float64 = 5.0          # rust level that causes plant exhaustion
     max_cof_gr::Float64 = 0.5
     opt_g_temp::Float64 = 22.5         # optimal rust growth temp
     fruit_load::Float64 = 1.0          # extent of fruit load effect on rust growth (severity; 0 to 1)
@@ -52,8 +55,9 @@ Base.@kwdef struct Parameters
     # farm parameters (used if farm_map is not provided)
     map_side::Int = 100                # side size
     shade_percent::Float64 = 0.3
-    fragmentation::Bool = false
-    random::Bool = true
+    shade_arrangement::Symbol = :rand  # :fragment or :regular
+    # fragmentation::Bool = false
+    # random::Bool = true
     #p_density::Float64 = 1.0
 end
 
