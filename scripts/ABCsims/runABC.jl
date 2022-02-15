@@ -13,12 +13,12 @@ usings_time = @elapsed begin
     end                                                                         
 end                                       
 
-# ARGS: params file, slurm job array id, chunk size
+# ARGS: params file, slurm job array id, # cores, # sims per core
 println(ARGS)
 
 load_time = @elapsed begin
-    n_rows = parse(Int, ARGS[3])
-    startat = parse(Int, ARGS[2]) == 1 ? 2 : (parse(Int, ARGS[2]) - 1) * n_rows + 1
+    n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
+    startat = (parse(Int, ARGS[2]) - 1) * n_rows + 2
 
     when_rust = crd(datadir("exp_pro/inputs/sun_whentocollect_rust.csv"), DataFrame, select = [false, true])[!, 1]
     when_plant = crd(datadir("exp_pro/inputs/sun_whentocollect_plant.csv"), DataFrame, select = [false, true])[!, 1]
@@ -65,6 +65,5 @@ Compile: $dummy_time
 Run: $run_time
 """
 
-println(ARGS[2])
-println(timings)
+println(string("array #: ", ARGS[2],"\n", timings))
 #cwr(string("~/SpatialRust/scripts/ABCsims/timing", ARGS[2],".txt"), timings)
