@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH --ntasks=201
+#SBATCH --array=1-10
+#SBATCH --ntasks=100
 #SBATCH --ntasks-per-core=1
-#SBATCH -J ABC-%A-%a
-#SBATCH -o %x.o
-#SBATCH -e %x.e
+#SBATCH -J init-ABC
+#SBATCH -o outs.%x-%A.o
+#SBATCH -e outs.%x-%A.e
 #SBATCH -t 0-04:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mvanega1@asu.edu
