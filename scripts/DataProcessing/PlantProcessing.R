@@ -2,10 +2,6 @@ library(dplyr)
 library(ggplot2)
 library(wesanderson)
 
-"TODO:
-1) see RustProcessing
-2) calculate first and third quartiles so the plots have more info"
-
 # Two options: "Sun" or "Shade" (both in Turrialba)
 SunOrShade <- "Sun"
 
@@ -45,9 +41,14 @@ med_prod <- mutate(med_product,
                    rel.nodes = sum.nodes / maxsumnodes) %>%
   group_by(f.date, day.n) %>%
   summarise(median.relfruits = median(rel.fruits, na.rm = T),
+            q1.relfruits = quantile(rel.fruits, 1/4, na.rm = T),
+            q3.relfruits = quantile(rel.fruits, 3/4, na.rm = T),
             median.relnodes = median(rel.nodes, na.rm = T),
-            iqr.relfuits = IQR(rel.fruits, na.rm = T),
-            iqr.relnodes = IQR(rel.nodes, na.rm = T)) %>%
+            q1.relnodes = quantile(rel.nodes, 1/4, na.rm = T),
+            q3.relnodes = quantile(rel.nodes, 3/4, na.rm = T)
+            #iqr.relfuits = IQR(rel.fruits, na.rm = T),
+            #iqr.relnodes = IQR(rel.nodes, na.rm = T)
+            ) %>%
   filter(day.n < unique(pSelected$day.n)[5] | day.n >= unique(pSelected$day.n)[6])
   #filter: see rust sampling patterns section. not enough observations in cycle 5
 
@@ -63,10 +64,14 @@ write.csv(med_prod, paste0(data_path, ifelse(SunOrShade == "Sun", "compare/Sun_P
 ##############################################################
 rfilename <- ifelse(SunOrShade == "Sun", "sun_plant", "shade_plant")
 
+zissoublues <- wes_palette("Zissou1",2)
+rocketblue <- wes_palette("BottleRocket2", 3)[3]
+
 fruits_plot <- ggplot(med_prod, 
                       aes(x = f.date, y = median.relfruits)) +
-  geom_point(size = 2.5, color = wes_palette("Zissou1", 1)) +
-  #geom_errorbar(ymax =) +
+  geom_point(size = 2.5, color = rocketblue, alpha = 0.9) +
+  geom_errorbar(aes(ymax = q3.relfruits, ymin = q1.relfruits),
+                    width = 5, color = rocketblue, alpha = 0.7) +
   labs(x = "Date", y = "Median Relative Production") +
   theme_bw()
 fruits_plot
@@ -76,7 +81,9 @@ fruits_plot
 
 nodes_plot <- ggplot(med_prod, 
                       aes(x = f.date, y = median.relnodes)) +
-  geom_point(size = 2.5, color = wes_palette("Zissou1", 1)) +
+  geom_point(size = 2.5, color = rocketblue, alpha = 0.9) +
+  geom_errorbar(aes(ymax = q3.relnodes, ymin = q1.relnodes),
+                width = 5, color = rocketblue, alpha = 0.7) +
   labs(x = "Date", y = "Median Relative Production") +
   theme_bw()
 nodes_plot
