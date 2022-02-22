@@ -2,33 +2,44 @@
 # using StatsBase: sample
 # using Random: shuffle
 
-export custom_sampling!, sim_and_write
+export ABCOuts, sim_abc, custom_sampling!, struct_cat
 
 include(srcdir("ABC","ABCmetrics.jl"))
 
+struct ABCOuts
+    per_age::DataFrame
+    per_cycle::DataFrame
+    prod_df::DataFrame
+end
 
-function sim_and_write(p_row::DataFrameRow,
+function sim_abc(p_row::DataFrameRow,
     rain_data::Vector{Bool},
     temp_data::Vector{Float64},
     when_rust::Vector{Int},
     when_prod::Vector{Int},
     wind_prob::Float64,
-    restart_after::Int = 231#,
+    restart_after::Int = 231,
     #out_path::String,
-    #rust_exp::DataFrame,
-    #plant_exp::DataFrame
+    rust_exp::DataFrame,
+    plant_exp::DataFrame
     )
 
     rust_df, plant_df = simulate_fullsun(p_row, rain_data, temp_data, when_rust, when_prod, wind_prob, restart_after)
 
     rust_df.step[end] != 455 && error("last recorded step is $(rust_df.step[end])")
 
+    # calc_diffs(rust_df, plant_df)
+
     per_age_df, per_cycle_df = dewrinkle(rust_df) # "wrinkles" being the nested DataFrames
 
     per_age_df.p_row .= p_row[:RowN]
     per_cycle_df.p_row .= p_row[:RowN]
     plant_df.p_row .= p_row[:RowN]
-    plant_df.day .= plant_df.day .= 132
+    plant_df.day .= plant_df.day .- 132
+
+    return ABCOuts(per_age_df, per_cycle_df, plant_df)
+
+
 
     # awr(string("/scratch/mvanega1/ABCraw/ages/r" * p_row[:RowN] * ".arrow"), per_age_df)
     # awr(string("/scratch/mvanega1/ABCraw/cycles/r" * p_row[:RowN] * ".arrow"), per_cycle_df)
@@ -36,7 +47,7 @@ function sim_and_write(p_row::DataFrameRow,
 
     #return outerjoin(rust_df, plant_df, on = [:step, :cycle])
     #the result of pmap will be a vector of 1-row dataframes
-    return true
+    # return true
 end
 
 function simulate_fullsun(p_row::DataFrameRow,
@@ -178,6 +189,20 @@ end
 
 ## DataFrame post processing
 
+function calc_diffs(rust_df, plant_df)
+    per_age_df, per_cycle_df = dewrinkle(rust_df) # "wrinkles" being the nested DataFrames
+
+    per_age_df.p_row .= p_row[:RowN]
+    per_cycle_df.p_row .= p_row[:RowN]
+    plant_df.p_row .= p_row[:RowN]
+    plant_df.day .= plant_df.day .- 132
+
+    # awr(string("/scratch/mvanega1/ABCraw/ages/r" * p_row[:RowN] * ".arrow"), per_age_df)
+    # awr(string("/scratch/mvanega1/ABCraw/cycles/r" * p_row[:RowN] * ".arrow"), per_cycle_df)
+    # awr(string("/scratch/mvanega1/ABCraw/prod/r" * p_row[:RowN] * ".arrow"), plant_df)
+
+end
+
 function dewrinkle(rust_df)
     # areas_per_age = reduce(vcat, rust_df.areas_per_age) #age, area, day
     # spores_per_age = reduce(vcat, rust_df.spores_per_age) #age, spores, day
@@ -191,36 +216,89 @@ function dewrinkle(rust_df)
 
     return per_age_df, per_cycle_df
 end
-#
+
+## Custom cat for ABCOuts struct
+
+function struct_cat(s1::ABCOuts, s2::ABCOuts)
+    return ABCOuts(
+    vcat(s1.per_age, s2.per_age),
+    vcat(s1.per_cycle, s2.per_cycle),
+    vcat(s1.prod_df, s2.prod_df)
+    )
+end
+
+
+# Figuring out how to concatenate multiple df outputs
 #
 # tinput = DataFrame(one=collect(1:10), two=collect(2:2:20))
 #
-# function tfn(row::DataFrameRow, x::Int)
-#     df1 = DataFrame(a = DataFrame(aa = fill(row[1],3), ab = fill(row[1] * x, 3)),
-#         b = DataFrame(ba = fill(row[2],5), bb = fill(row[2] * x, 5)) )
-#
-#     df2 = DataFrame(hi = [row[1], row[2]], hello = [row[2], row[1]])
-#     return df1, df2
+# struct ttTDFstruct
+#     df1::DataFrame
+#     df2::DataFrame
+#     x1::Vector{Int}
+#     x2::Vector{Int}
 # end
 #
-# function tfn(row::DataFrameRow, x::Int)
-#     df1 = DataFrame(aa = fill(row[1],3), ab = fill(row[1] * x, 3))
-#     df2 = DataFrame(ba = fill(row[2],5), bb = fill(row[2] * x, 5))
-#
-#     df3 = DataFrame(hi = [row[1], row[2]], hello = [row[2], row[1]])
-#     return df1, df2, df3
+# function tstrdf(row::DataFrameRow, x::Int)
+#     return ttTDFstruct(
+#         DataFrame(aa = fill(row[1],3), ab = fill(row[1] * x, 3)),
+#         DataFrame(ba = fill(row[2],5), bb = fill(row[2] * x, 5)),
+#         [x],
+#         [x ^ 2])
 # end
 #
-# toutput1, toutput2
+# tmystr = tstrdf(tinput[1,:], 2)
 #
-# ttoutput = map(x -> tfn(x, 2), eachrow(tinput))
+# ttoutput = map(x -> tstrdf(x, 2), eachrow(tinput))
 #
-# typeof(tinput[1,:])
-#
-# function tfn2(tout::Vector)
-#     df1 = reduce(vcat, tup[1].a for tup in tout)
-#     df2 = reduce(vcat, tup[1].b for tup in tout)
-#     df3 = reduce(vcat, tup[2] for tup in tout)
-#
-#     return df1, df2, df3
+# function tassoc(st1::ttTDFstruct, st2::ttTDFstruct)
+#     return ttTDFstruct(
+#     vcat(st1.df1, st2.df1),
+#     vcat(st1.df2, st2.df2),
+#     vcat(st1.x1, st2.x1),
+#     vcat(st1.x2, st2.x2)
+#     )
 # end
+#
+# tfinal = reduce(tassoc, ttoutput)
+#
+# #
+# #
+# # function tdfindf(row::DataFrameRow, x::Int)
+# #     df1 = DataFrame(a = DataFrame(aa = fill(row[1],3), ab = fill(row[1] * x, 3)),
+# #         b = DataFrame(ba = fill(row[2],5), bb = fill(row[2] * x, 5)) )
+# #
+# #     return df1
+# # end
+# #
+# # tdf = tdfindf(tinput[1,:],2)
+# #
+# # function tfn(row::DataFrameRow, x::Int)
+# #     df1 = DataFrame(a = DataFrame(aa = fill(row[1],3), ab = fill(row[1] * x, 3)),
+# #         b = DataFrame(ba = fill(row[2],5), bb = fill(row[2] * x, 5)) )
+# #
+# #     df2 = DataFrame(hi = [row[1], row[2]], hello = [row[2], row[1]])
+# #     return df1, df2
+# # end
+# #
+# # function tfn(row::DataFrameRow, x::Int)
+# #     df1 = DataFrame(aa = fill(row[1],3), ab = fill(row[1] * x, 3))
+# #     df2 = DataFrame(ba = fill(row[2],5), bb = fill(row[2] * x, 5))
+# #
+# #     df3 = DataFrame(hi = [row[1], row[2]], hello = [row[2], row[1]])
+# #     return df1, df2, df3
+# # end
+# #
+# # toutput1, toutput2
+# #
+# # ttoutput = map(x -> tfn(x, 2), eachrow(tinput))
+# #
+# # typeof(tinput[1,:])
+# #
+# # function tfn2(tout::Vector)
+# #     df1 = reduce(vcat, tup[1].a for tup in tout)
+# #     df2 = reduce(vcat, tup[1].b for tup in tout)
+# #     df3 = reduce(vcat, tup[2] for tup in tout)
+# #
+# #     return df1, df2, df3
+# # end

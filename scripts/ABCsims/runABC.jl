@@ -2,16 +2,16 @@ usings_time = @elapsed begin
     @everywhere using DrWatson
     @everywhere @quickactivate "SpatialRust"
     @everywhere begin
-        using DataFrames                                                        
-        using Distributed: pmap                                                 
-        using CSV: read as crd, write as cwr                                    
-        using Arrow: write as awr                                               
+        using DataFrames
+        using Distributed: pmap
+        using CSV: read as crd, write as cwr
+        using Arrow: write as awr
         include(projectdir("SpatialRust.jl"))
-    end                                                                         
-    @everywhere begin                                                           
-        using .SpatialRust                                                      
-    end                                                                         
-end                                       
+    end
+    @everywhere begin
+        using .SpatialRust
+    end
+end
 
 # ARGS: params file, slurm job array id, # cores, # sims per core
 println(ARGS)
@@ -41,21 +41,28 @@ end
 # custom_sampling!(model, 0.05, 1)
 # paramss = crd(datadir("ABC", "parameters_10.csv"), DataFrame)
 # for rr in eachrow(paramss)[1:2]
-#     sim_and_write(rr, rain_data, temp_data, when_rust, when_plant, 0.5, 231)
+#     sim_abc(rr, rain_data, temp_data, when_rust, when_plant, 0.5, 231)
 # end
 
-println(parameters)
+# println(parameters)
 
 dummy_time = @elapsed begin
     #dummy run
-    sim_and_write(parameters[1,:], rain_data, temp_data, when_rust, when_plant, 0.5)
+    sim_abc(parameters[1,:], rain_data, temp_data, when_rust, when_plant, 0.5)
     println("Dummy run completed")
 end
 
 run_time = @elapsed begin
-    processed = pmap(p -> sim_and_write(p, rain_data, temp_data, when_rust, when_plant, 0.5),
+    outputs = pmap(p -> sim_abc(p, rain_data, temp_data, when_rust, when_plant, 0.5),
                     eachrow(parameters); retry_delays = fill(0.1, 3))
-    println("total: ",sum(processed))
+    println("total: ", length(outputs))
+end
+
+cat_time = @elapsed begin
+    cat_outs = reduce(struct_cat, outputs)
+    awr(string("/scratch/mvanega1/ABCraw/ages/m_" * ARGS[2] * ".arrow"), cat_outs.per_age)
+    awr(string("/scratch/mvanega1/ABCraw/cycles/m_" * ARGS[2] * ".arrow"), cat_outs.per_cycle)
+    awr(string("/scratch/mvanega1/ABCraw/prod/m_" * ARGS[2] * ".arrow"), cat_outs.prod_df)
 end
 
 timings = """
@@ -63,6 +70,7 @@ Init: $usings_time
 Loads: $load_time
 Compile: $dummy_time
 Run: $run_time
+Write: $cat_time
 """
 
 println(string("array #: ", ARGS[2],"\n", timings))

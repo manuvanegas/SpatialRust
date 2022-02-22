@@ -27,7 +27,7 @@ function pre_step!(model)
     model.current.temperature = model.weather.temp_data[model.current.ticks]
     model.current.outpour = model.current.outpour * 0.9
     if model.pars.karma && rand(model.rng) < sqrt(model.current.outpour)/(model.pars.map_side^2)
-        inoculate_rand_rust!(model, 1)
+        inoculate_rand_rust!(model)
     end
     if (model.current.ticks - 1) in model.pars.switch_cycles
         # popfirst!(model.pars.switch_cycles)
