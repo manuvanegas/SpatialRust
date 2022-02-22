@@ -44,7 +44,7 @@ end
 #     sim_and_write(rr, rain_data, temp_data, when_rust, when_plant, 0.5, 231)
 # end
 
-println(parameters)
+# println(parameters)
 
 dummy_time = @elapsed begin
     #dummy run
