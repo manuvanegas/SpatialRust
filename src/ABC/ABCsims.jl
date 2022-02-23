@@ -2,7 +2,7 @@
 # using StatsBase: sample
 # using Random: shuffle
 
-export ABCOuts, sim_abc, custom_sampling!, struct_cat
+export ABCOuts, sim_abc, struct_cat
 
 include(srcdir("ABC","ABCmetrics.jl"))
 
@@ -18,38 +18,18 @@ function sim_abc(p_row::DataFrameRow,
     when_rust::Vector{Int},
     when_prod::Vector{Int},
     wind_prob::Float64,
-    restart_after::Int = 231#,
-    #out_path::String,
-    #rust_exp::DataFrame,
-    #plant_exp::DataFrame
-    )
+    restart_after::Int = 231)
 
     rust_df, plant_df = simulate_fullsun(p_row, rain_data, temp_data, when_rust, when_prod, wind_prob, restart_after)
 
-    rust_df.step[end] != 455 && error("last recorded step is $(rust_df.step[end])")
-
-    # calc_diffs(rust_df, plant_df)
 
     per_age_df, per_cycle_df = dewrinkle(rust_df) # "wrinkles" being the nested DataFrames
 
     per_age_df.p_row .= p_row[:RowN]
     per_cycle_df.p_row .= p_row[:RowN]
     plant_df.p_row .= p_row[:RowN]
-    
-    # rename!(plant_df, :c_day => :day)
-    plant_df[:, :c_day] .= plant_df.c_day .- 132
 
-    return ABCOuts(per_age_df, per_cycle_df, plant_df)
-
-
-
-    # awr(string("/scratch/mvanega1/ABCraw/ages/r" * p_row[:RowN] * ".arrow"), per_age_df)
-    # awr(string("/scratch/mvanega1/ABCraw/cycles/r" * p_row[:RowN] * ".arrow"), per_cycle_df)
-    # awr(string("/scratch/mvanega1/ABCraw/prod/r" * p_row[:RowN] * ".arrow"), plant_df)
-
-    #return outerjoin(rust_df, plant_df, on = [:step, :cycle])
-    #the result of pmap will be a vector of 1-row dataframes
-    # return true
+    return ABCOuts(per_age_df, per_cycle_df, plant_df[:, 2:4])
 end
 
 function simulate_fullsun(p_row::DataFrameRow,
@@ -77,7 +57,7 @@ function simulate_fullsun(p_row::DataFrameRow,
         Weather(rain_data[1:restart_after], rand(Float64, restart_after) .< wind_prob, temp_data[1:restart_after]))
 
 
-    custom_sampling!(model1, 0.05, 1)
+    custom_sampling_first!(model1, 0.05)
 
     rust_df, plant_df = abc_run!(model1, step_model!, restart_after;
         when_rust = when_rust, when_prod = when_prod, rust_data = [d_per_ages, d_per_cycles], prod_data = prod_metrics)
@@ -101,24 +81,20 @@ function simulate_fullsun(p_row::DataFrameRow,
 
         Weather(rain_data, rand(Float64, 455) .< wind_prob, temp_data) )
 
-    custom_sampling!(model2, 0.025, 2) # sampling groups in 2nd half were 1/2 and overlapped with each other
+    custom_sampling_second!(model2, 0.025) # sampling groups in 2nd half were 1/2 and overlapped with each other
 
     rust_df2, plant_df2 = abc_run!(model2, step_model!, (455 - restart_after);
-        when_rust = when_rust, when_prod = when_prod, rust_data = [d_per_ages, d_per_cycles], prod_data = prod_metrics)
-
-    rust_df2.step = rust_df2.step .+ restart_after
-    plant_df2.step = plant_df2.step .+ restart_after
+        when_rust = when_rust2, when_prod = when_prod2, rust_data = [d_per_ages, d_per_cycles], prod_data = prod_metrics)
 
     return vcat(rust_df, rust_df2), vcat(plant_df, plant_df2)
 end
 
-## selecting sampled locations for each cycle
+## Selecting sampled locations for each cycle
 
-function custom_sampling!(model::ABM, percent::Float64, half::Int)
+function custom_sampling_first!(model::ABM, percent::Float64)
     n_persample = floor(Int, length(model.current.coffee_ids) * percent)
-    # central_coffees = filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids)
     first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids), n_persample, replace = false)
-    sampled_coffees = hcat(first_ids, zeros(Int, n_persample, (3 * half))) # 1 half requires 3 neighs, 2 half reqs 6
+    sampled_coffees = hcat(first_ids, zeros(Int, n_persample, 3)) # 1 half requires 3 neighs, 2 half reqs 5
     for (i, id) in enumerate(first_ids)
         push!(model[id].sample_cycle, 1)
         c = 2
@@ -126,14 +102,39 @@ function custom_sampling!(model::ABM, percent::Float64, half::Int)
             push!(model[neigh].sample_cycle, c)
             sampled_coffees[i, c] = neigh
             c += 1
-            c > (3 * half) + 1 && break
+            c > 4 && break # break if # of selected neighs is greater than 4
         end
-        if c < (3 * half) + 1
-            for add_neigh in complete_s_neighbors(model, sampled_coffees, id, i, c) #relax requirements
+        if c < 4 # if # of selected neighs was not enough, relax requirements
+            for add_neigh in complete_s_neighbors(model, sampled_coffees, id, i, c)
                 push!(model[add_neigh].sample_cycle, c)
                 sampled_coffees[i, c] = add_neigh
                 c += 1
-                c > (3 * half) + 1 && break
+                c > 4 && break
+            end
+        end
+    end
+end
+
+
+function custom_sampling_second!(model::ABM, percent::Float64)
+    n_persample = floor(Int, length(model.current.coffee_ids) * percent)
+    first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids), n_persample, replace = false)
+    sampled_coffees = hcat(first_ids, zeros(Int, n_persample, 5))
+    for (i, id) in enumerate(first_ids)
+        push!(model[id].sample_cycle, 5) # second half starts with cycle 5
+        c = 6
+        for neigh in select_s_neighbors(model, sampled_coffees, id)
+            push!(model[neigh].sample_cycle, c)
+            sampled_coffees[i, (c - 4)] = neigh
+            c += 1
+            c > 10 && break
+        end
+        if c < 10
+            for add_neigh in complete_s_neighbors(model, sampled_coffees, id, i, (c - 4))
+                push!(model[add_neigh].sample_cycle, c)
+                sampled_coffees[i, (c - 4)] = add_neigh
+                c += 1
+                c > 10 && break
             end
         end
     end
@@ -149,7 +150,7 @@ function complete_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::I
         x ∉ sampled_coffees[i,:] && x ∉ sampled_coffees[:,c], nearby_ids(model[c_id], model, 2))))
 end
 
-## custom run
+## Custom run
 
 function abc_run!(model::ABM,
     model_step!,
@@ -191,30 +192,10 @@ end
 
 ## DataFrame post processing
 
-function calc_diffs(rust_df, plant_df)
-    per_age_df, per_cycle_df = dewrinkle(rust_df) # "wrinkles" being the nested DataFrames
-
-    per_age_df.p_row .= p_row[:RowN]
-    per_cycle_df.p_row .= p_row[:RowN]
-    plant_df.p_row .= p_row[:RowN]
-    plant_df.day .= plant_df.day .- 132
-
-    # awr(string("/scratch/mvanega1/ABCraw/ages/r" * p_row[:RowN] * ".arrow"), per_age_df)
-    # awr(string("/scratch/mvanega1/ABCraw/cycles/r" * p_row[:RowN] * ".arrow"), per_cycle_df)
-    # awr(string("/scratch/mvanega1/ABCraw/prod/r" * p_row[:RowN] * ".arrow"), plant_df)
-
-end
-
 function dewrinkle(rust_df)
-    # areas_per_age = reduce(vcat, rust_df.areas_per_age) #age, area, day
-    # spores_per_age = reduce(vcat, rust_df.spores_per_age) #age, spores, day
-    # outerjoin(areas_per_age, spores_per_age, on = [:day, :age])
 
     per_age_df = reduce(vcat, rust_df.d_per_ages)
     per_cycle_df = reduce(vcat, rust_df.d_per_cycles)
-
-    per_age_df[:, :day] .= per_age_df.day .- 132
-    per_cycle_df[:, :day] .= per_cycle_df.day .- 132
 
     return per_age_df, per_cycle_df
 end

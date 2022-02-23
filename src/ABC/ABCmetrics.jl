@@ -2,7 +2,7 @@ function d_per_ages(model::ABM)::DataFrame
     sampled_rusts = Iterators.filter(r -> r isa Rust && !isdisjoint(model.current.cycle, r.sample_cycle), allagents(model))
 
     if isempty(sampled_rusts)
-        df2 = DataFrame(age = -1.0, area_m = -1.0, spores_m = -1.0, day = model.current.days)
+        df2 = DataFrame(age = -1.0, area_m = -1.0, spores_m = -1.0, ticks = model.current.ticks)
         # return df2
     else
         age_area_spores!(rust::Rust, df::DataFrame) = push!(df, (round(Int, (rust.age / 7)), rust.area, rust.spores))
@@ -10,13 +10,13 @@ function d_per_ages(model::ABM)::DataFrame
         df = DataFrame(age = Int[], area = Float64[], spores = Float64[])
         map(r -> age_area_spores!(r, df), sampled_rusts)
         df2 = combine(groupby(df, :age), [:area => median => :area_m, :spores => median => :spores_m])
-        df2.day .= model.current.days
+        df2.ticks .= model.current.ticks
 
         #return seven_weeks(sort!(df2[df2.age .< 8, :], :age))
         # return df2[df2.age .< 8, :]
         df2 = df2[df2.age .< 8, :]
-        if size(df)[1] == 0
-            df2 = DataFrame(age = -1.0, area_m = -1.0, spores_m = -1.0, day = model.current.days)
+        if size(df2)[1] == 0
+            df2 = DataFrame(age = -1.0, area_m = -1.0, spores_m = -1.0, ticks = model.current.ticks)
         end
     end
     return df2
@@ -31,7 +31,7 @@ function d_per_cycles(model::ABM)::DataFrame
             sampled_cs = Iterators.filter(c -> cycle in c.sample_cycle && c isa Coffee, allagents(model))
             push!(df, [cycle, count(cc -> cc.exh_countdown > 0, sampled_cs) / length(collect(sampled_cs)) ] )
         end
-        df.day .= model.current.days
+        df.ticks .= model.current.ticks
         df.area_m .= -1.0
         df.spores_m .= -1.0
         # return falls
@@ -45,19 +45,19 @@ function d_per_cycles(model::ABM)::DataFrame
             sampled_cs = Iterators.filter(c -> cycle in c.sample_cycle && c isa Coffee, allagents(model))
             push!(df, [cycle, med_area(c_sampled_rusts), med_spores(c_sampled_rusts), p_fallen(sampled_cs)])
         end
-        df.day .= model.current.days
+        df.ticks .= model.current.ticks
         # return df
     end
     return df
 end
 
 function prod_metrics(model::ABM)::Array{Function}
-    c_day(model::ABM)::Int = model.current.days
+    ticks(model::ABM)::Int = model.current.ticks
 
     function coffee_production(model::ABM)::Float64
         return median(map(cc -> cc.production, Iterators.filter(c -> c isa Coffee && (maximum(model.current.cycle) + 1) ∈ c.sample_cycle, allagents(model))))
     end
-    return [c_day, coffee_production]
+    return [ticks, coffee_production]
 end
 
 ## ABC distances

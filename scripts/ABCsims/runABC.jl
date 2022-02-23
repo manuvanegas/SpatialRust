@@ -2,10 +2,8 @@ usings_time = @elapsed begin
     @everywhere using DrWatson
     @everywhere @quickactivate "SpatialRust"
     @everywhere begin
-        using DataFrames
+        using DataFrames, Arrow
         using Distributed: pmap
-        using CSV: read as crd, write as cwr
-        using Arrow: write as awr
         include(projectdir("SpatialRust.jl"))
     end
     @everywhere begin
@@ -18,22 +16,21 @@ println(ARGS)
 
 load_time = @elapsed begin
     n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
-    startat = (parse(Int, ARGS[2]) - 1) * n_rows + 2
+    startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
 
-    when_rust = crd(datadir("exp_pro/inputs/sun_whentocollect_rust.csv"), DataFrame, select = [false, true])[!, 1]
-    when_plant = crd(datadir("exp_pro/inputs/sun_whentocollect_plant.csv"), DataFrame, select = [false, true])[!, 1]
+    when_rust = Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1]
+    when_plant = Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1]
 
     # read climate data
-    weather = crd(datadir("exp_pro/inputs/sun_weather.csv"), DataFrame)
-    rain_data = Vector{Bool}(weather[!, :Rainy])
-    temp_data = Vector{Float64}(weather[!, :MeanTa])
+    weather = Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")
+    # rain_data = Vector{Bool}(weather[!, :Rainy])
+    # temp_data = Vector{Float64}(weather[!, :MeanTa])
 
-    parameters = crd(datadir("ABC", ARGS[1]), DataFrame, header = 1, skipto = startat, limit = n_rows, threaded = false)
+    parameters = DataFrame(Arrow.Table("data/ABC/parameters.arrow"))[startat : (startat + n_rows - 1)]
 
-    mkpath("/scratch/mvanega1/ABCraw/ages/")
-    mkpath("/scratch/mvanega1/ABCraw/cycles")
-    mkpath("/scratch/mvanega1/ABCraw/prod")
-    #mkpath("/scratch/mvanega1/ABCveryraw/cycledata")
+    mkpath("/scratch/mvanega1/ABC/sims/ages")
+    mkpath("/scratch/mvanega1/ABC/sims/cycles")
+    mkpath("/scratch/mvanega1/ABC/sims/prod")
 end
 
 # pars = Parameters(steps = 231, map_side = 100, switch_cycles = copy(when_plant))
