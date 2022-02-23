@@ -15,6 +15,9 @@ function d_per_ages(model::ABM)::DataFrame
         #return seven_weeks(sort!(df2[df2.age .< 8, :], :age))
         # return df2[df2.age .< 8, :]
         df2 = df2[df2.age .< 8, :]
+        if size(df)[1] == 0
+            df2 = DataFrame(age = -1.0, area_m = -1.0, spores_m = -1.0, day = model.current.days)
+        end
     end
     return df2
 end
@@ -49,12 +52,12 @@ function d_per_cycles(model::ABM)::DataFrame
 end
 
 function prod_metrics(model::ABM)::Array{Function}
-    current_days(model::ABM)::Int = model.current.days
+    c_day(model::ABM)::Int = model.current.days
 
     function coffee_production(model::ABM)::Float64
         return median(map(cc -> cc.production, Iterators.filter(c -> c isa Coffee && (maximum(model.current.cycle) + 1) ∈ c.sample_cycle, allagents(model))))
     end
-    return [current_days, coffee_production]
+    return [c_day, coffee_production]
 end
 
 ## ABC distances

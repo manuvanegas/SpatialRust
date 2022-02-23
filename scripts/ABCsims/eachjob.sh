@@ -3,8 +3,8 @@
 #SBATCH --ntasks=20
 #SBATCH --ntasks-per-core=1
 #SBATCH -J init-ABC
-#SBATCH -o outs.%x-%A.o
-#SBATCH -e outs.%x-%A.e
+#SBATCH -o logs/outs.%x-%A.o
+#SBATCH -e logs/outs.%x-%A.e
 #SBATCH -t 0-00:12:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mvanega1@asu.edu

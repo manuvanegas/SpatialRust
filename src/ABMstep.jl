@@ -31,7 +31,7 @@ function pre_step!(model)
     end
     if (model.current.ticks - 1) in model.pars.switch_cycles
         # popfirst!(model.pars.switch_cycles)
-        if model.current.cycle[1] == 5
+        if model.current.cycle[1] == 5 && !isassigned(model.current.cycle, 2)
             push!(model.current.cycle, 6)
         else
             model.current.cycle .+= 1

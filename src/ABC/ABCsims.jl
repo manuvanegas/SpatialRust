@@ -18,10 +18,10 @@ function sim_abc(p_row::DataFrameRow,
     when_rust::Vector{Int},
     when_prod::Vector{Int},
     wind_prob::Float64,
-    restart_after::Int = 231,
+    restart_after::Int = 231#,
     #out_path::String,
-    rust_exp::DataFrame,
-    plant_exp::DataFrame
+    #rust_exp::DataFrame,
+    #plant_exp::DataFrame
     )
 
     rust_df, plant_df = simulate_fullsun(p_row, rain_data, temp_data, when_rust, when_prod, wind_prob, restart_after)
@@ -35,7 +35,9 @@ function sim_abc(p_row::DataFrameRow,
     per_age_df.p_row .= p_row[:RowN]
     per_cycle_df.p_row .= p_row[:RowN]
     plant_df.p_row .= p_row[:RowN]
-    plant_df.day .= plant_df.day .- 132
+    
+    # rename!(plant_df, :c_day => :day)
+    plant_df[:, :c_day] .= plant_df.c_day .- 132
 
     return ABCOuts(per_age_df, per_cycle_df, plant_df)
 
@@ -211,8 +213,8 @@ function dewrinkle(rust_df)
     per_age_df = reduce(vcat, rust_df.d_per_ages)
     per_cycle_df = reduce(vcat, rust_df.d_per_cycles)
 
-    per_age_df.day .= per_age_df.day .- 132
-    per_cycle_df.day .= per_cycle_df.day .- 132
+    per_age_df[:, :day] .= per_age_df.day .- 132
+    per_cycle_df[:, :day] .= per_cycle_df.day .- 132
 
     return per_age_df, per_cycle_df
 end

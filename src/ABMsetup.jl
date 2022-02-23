@@ -298,9 +298,15 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
     #     #scheduler = custom_scheduler,
     #     warn = false)
 
-    model = ABM(Union{Shade, Coffee, Rust}, space;
-        properties = Props(parameters, Books(days = parameters.start_days_at), weather),
-        warn = false) # ...
+    if parameters.start_days_at <= 132
+        model = ABM(Union{Shade, Coffee, Rust}, space;
+            properties = Props(parameters, Books(days = parameters.start_days_at), weather),
+            warn = false) # ...
+    else
+        model = ABM(Union{Shade, Coffee, Rust}, space;                          
+            properties = Props(parameters, Books(days = parameters.start_days_at, ticks = parameters.start_days_at - 132, cycle = [5]), weather),
+            warn = false) # ...
+    end
 
     if parameters.start_days_at == 0 # simulation starts at the beginning of a harvest cycle
         add_trees!(model, farm_map)

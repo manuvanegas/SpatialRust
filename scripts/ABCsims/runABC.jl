@@ -48,7 +48,7 @@ end
 
 dummy_time = @elapsed begin
     #dummy run
-    sim_abc(parameters[1,:], rain_data, temp_data, when_rust, when_plant, 0.5)
+    sim_abc(parameters[10,:], rain_data, temp_data, when_rust, when_plant, 0.5)
     println("Dummy run completed")
 end
 

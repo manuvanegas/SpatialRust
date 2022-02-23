@@ -5,8 +5,8 @@
 #SBATCH -p debug
 #SBATCH -q wildfire
 #SBATCH -J debug-ABC
-#SBATCH -o outs/outs.%x-%A-%a.o
-#SBATCH -e outs/outs.%x-%A.e
+#SBATCH -o logs/outs.%x-%A-%a.o
+#SBATCH -e logs/outs.%x-%A.e
 #SBATCH -t 0-00:15:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mvanega1@asu.edu
