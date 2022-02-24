@@ -18,15 +18,16 @@ load_time = @elapsed begin
     n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
     startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
 
-    when_rust = Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1]
-    when_plant = Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1]
+    when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
+    when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
 
     # read climate data
-    weather = Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")
+    rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1])
+    temp_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[2])
     # rain_data = Vector{Bool}(weather[!, :Rainy])
     # temp_data = Vector{Float64}(weather[!, :MeanTa])
 
-    parameters = DataFrame(Arrow.Table("data/ABC/parameters.arrow"))[startat : (startat + n_rows - 1)]
+    parameters = DataFrame(Arrow.Table("data/ABC/parameters.arrow"))[startat : (startat + n_rows - 1),:]
 
     mkpath("/scratch/mvanega1/ABC/sims/ages")
     mkpath("/scratch/mvanega1/ABC/sims/cycles")
@@ -57,9 +58,9 @@ end
 
 cat_time = @elapsed begin
     cat_outs = reduce(struct_cat, outputs)
-    awr(string("/scratch/mvanega1/ABCraw/ages/m_" * ARGS[2] * ".arrow"), cat_outs.per_age)
-    awr(string("/scratch/mvanega1/ABCraw/cycles/m_" * ARGS[2] * ".arrow"), cat_outs.per_cycle)
-    awr(string("/scratch/mvanega1/ABCraw/prod/m_" * ARGS[2] * ".arrow"), cat_outs.prod_df)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/ages/m_" * ARGS[2] * ".arrow"), cat_outs.per_age)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/cycles/m_" * ARGS[2] * ".arrow"), cat_outs.per_cycle)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_" * ARGS[2] * ".arrow"), cat_outs.prod_df)
 end
 
 timings = """
