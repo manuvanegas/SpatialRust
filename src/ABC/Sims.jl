@@ -29,7 +29,7 @@ function sim_abc(p_row::DataFrameRow,
     per_cycle_df.p_row .= p_row[:RowN]
     plant_df.p_row .= p_row[:RowN]
 
-    return ABCOuts(per_age_df, per_cycle_df, plant_df[:, 2:4])
+    return ABCOuts(per_age_df, per_cycle_df, plant_df[:, Not(:step)])
 end
 
 function simulate_fullsun(p_row::DataFrameRow,

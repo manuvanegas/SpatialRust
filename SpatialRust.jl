@@ -17,7 +17,7 @@ include(srcdir("ABMsetup.jl"))
 include(srcdir("ABMstep.jl"))
 
 # module ABCSims
-include(srcdir("ABC", "ABCsims.jl"))
+include(srcdir("ABC", "Sims.jl"))
 # export custom_sampling!, sim_and_write
 # end
 

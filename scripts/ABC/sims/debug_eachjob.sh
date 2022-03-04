@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --array=1-2
-#SBATCH --ntasks=20
+#SBATCH --ntasks=21
 #SBATCH --ntasks-per-core=1
 #SBATCH -p debug
 #SBATCH -q wildfire

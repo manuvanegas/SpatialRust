@@ -19,11 +19,15 @@ Arrow.write("data/exp_pro/inputs/sun_weather.arrow", DataFrame(rainy = rain_data
 Arrow.write("data/ABC/parameters.arrow", parameters)
 
 # test read
-a_rust = Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1]
+a_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
 a_rain = Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1]
 @time a_pars = DataFrame(Arrow.Table("data/ABC/parameters.arrow"))
 @time a_chunk = copy(a_pars[1:8000,:])
 @time a2_chunk = @view a_pars[1:8000,:]
 @time a3_chunk = DataFrame(Arrow.Table("data/ABC/parameters.arrow"))[1:8000, :]
 @time c_chunk = crd("data/ABC/parameters.csv", DataFrame, header = 1, skipto = 2, limit = 8000, threaded = false)
-# csv is 5 times slower
+# csv is still 3-5 times slower
+
+a3_chunk2 = Arrow.Table("data/ABC/parameters.arrow") |> DataFrame
+# DataFrame(Arrow.Table) is different than Arrow.Table |> DataFrame
+# First returns a df with the normal vector types, while df from second has Arrow vectors

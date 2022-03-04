@@ -2,7 +2,8 @@ usings_time = @elapsed begin
     @everywhere using DrWatson
     @everywhere @quickactivate "SpatialRust"
     @everywhere begin
-        using DataFrames, Arrow
+        using DataFrames
+        using Arrow: Arrow.Table, Arrow.write
         using Distributed: pmap
         include(projectdir("SpatialRust.jl"))
     end

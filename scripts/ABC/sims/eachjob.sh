@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --array=1-2 # 125
-#SBATCH --ntasks=20
+#SBATCH --ntasks=21
 #SBATCH --ntasks-per-core=1
 #SBATCH -J init-ABC
 #SBATCH -o logs/outs.%x-%A.o

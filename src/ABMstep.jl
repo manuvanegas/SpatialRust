@@ -205,7 +205,7 @@ function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
                 model.pars.fruit_load * cof.production / model.pars.harvest_cycle *
                 (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
 
-            if rust.spores === 0.0
+            if rust.spores == 0.0
                 if rand(model.rng) < (rust.area * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
                     rust.spores = rust.area * model.pars.spore_pct
                 end
