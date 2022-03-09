@@ -4,7 +4,7 @@
 
 export ABCOuts, sim_abc, struct_cat
 
-include(srcdir("ABC","ABCmetrics.jl"))
+include(srcdir("ABC","Metrics.jl"))
 
 struct ABCOuts
     per_age::DataFrame

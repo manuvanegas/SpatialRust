@@ -1,34 +1,52 @@
 ## Get variances
-function σ2(folder::Symbol)::Vector{Float64}
-    files = readdir(string("/scratch/mvanega1/ABC/", folder), join = true, sort = false)
-    if folder == :ages
-        @inline v_itr(arr) = ((r.ticks, r.age) => (r.area_m, r.spores_m) for r in eachrow(DataFrame(arr)))
-        vars = @distributed merge for f in files
-            fit!(GroupBy(Tuple, Series(2Variance(), 2Counter())), v_itr(Arrow.Table(f)))
-        end
-    elseif folder == :cycles
-        @inline v_itr(arr) = ((r.ticks, r.cycle) => (r.area_m, r.spores_m, r.fallen) for r in eachrow(DataFrame(arr)))
-        vars = @distributed merge for f in files
-            fit!(GroupBy(Tuple, Series(3Variance(), 3Counter())), v_itr(Arrow.Table(f)))
-        end
-    else
-        @inline v_itr(arr) = (r.ticks => r.coffee_production for r in eachrow(DataFrame(arr)))
-        vars = @distributed merge for f in files
-            fit!(GroupBy(Int, Series(Variance(), Counter())), v_itr(Arrow.Table(f)))
-        end
+function σ2(folder::String)
+    v_a = σ2_a(folder)
+    v_c = σ2_c(folder)
+    v_p = σ2_p(folder)
+
+    return v_a, v_c, v_p
+end
+
+function σ2_a(folder::String)
+    files = readdir(string(folder,"ages"), join = true, sort = false)
+    @inline v_itr(arr) = ((r.tick, r.cycle, r.age) => (r.area_m, r.spores_m) for r in eachrow(arr))
+    vars = @distributed merge for f in files
+        fit!(GroupBy(Tuple, Series(2Variance(), 2Counter())), v_itr(DataFrame(Arrow.Table(f))) )
     end
-    return dfize(vars, folder)
+
+    return dfize(vars, :ages)
+end
+
+function σ2_c(folder::String)
+    files = readdir(string(folder,"cycles"), join = true, sort = false)
+    @inline v_itr(arr) = ((r.tick, r.cycle) => (r.area_m, r.spores_m, r.fallen) for r in eachrow(arr))
+    vars = @distributed merge for f in files
+        fit!(GroupBy(Tuple, Series(3Variance(), 3Counter())), v_itr(DataFrame(Arrow.Table(f))) )
+    end
+
+    return dfize(vars, :cycles)
+end
+
+function σ2_p(folder::String)
+    files = readdir(string(folder,"prod"), join = true, sort = false)
+    @inline v_itr(arr) = (r.tick => r.coffee_production for r in eachrow(arr))
+    vars = @distributed merge for f in files
+        fit!(GroupBy(Int, Series(Variance(), Counter())), v_itr(DataFrame(Arrow.Table(f))) )
+    end
+
+    return dfize(vars, :prod)
 end
 
 function dfize(ostats::GroupBy, folder::Symbol) # "dataframe-ize"
     groups = keys(value(ostats))
     if folder == :ages
         var_df = DataFrame(tick = Int64[],
+                            cycle = Int64[],
                             age = Int64[],
-                            v_age = Float64[],
+                            v_area = Float64[],
                             v_spore = Float64[],
-                            n_age = Float64[],
-                            n_spore = Float64[])
+                            n_area = Int64[],
+                            n_spore = Int64[])
         for k in keys(value(ostats))
             row::Vector{Union{Int64, Float64}} = collect(k)
             append!(row, collect(value.(value(ostats[k].stats[1]))))
@@ -38,12 +56,12 @@ function dfize(ostats::GroupBy, folder::Symbol) # "dataframe-ize"
     elseif folder == :cycles
         var_df = DataFrame(tick = Int64[],
                             cycle = Int64[],
-                            v_age = Float64[],
+                            v_area = Float64[],
                             v_spore = Float64[],
                             v_fallen = Float64[],
-                            n_age = Float64[],
-                            n_spore = Float64[],
-                            n_fallen = Float64[])
+                            n_area = Int64[],
+                            n_spore = Int64[],
+                            n_fallen = Int64[])
         for k in keys(value(ostats))
             row::Vector{Union{Int64, Float64}} = collect(k)
             append!(row, collect(value.(value(ostats[k].stats[1]))))
@@ -51,14 +69,27 @@ function dfize(ostats::GroupBy, folder::Symbol) # "dataframe-ize"
             push!(var_df, row)
         end
     else
-        var_df = DataFrame(tick = Int64[], v_prod = Float64[], n_prod = Float64[])
+        var_df = DataFrame(tick = Int64[],
+                            v_prod = Float64[],
+                            n_prod = Int64[])
         for k in keys(value(ostats))
-            row::Vector{Union{Int64, Float64}} = collect(k)
-            append!(row, collect(value.(value(ostats[k].stats[1]))))
-            append!(row, collect(value.(value(ostats[k].stats[2]))))
+            row::Vector{Union{Int64, Float64}} = [k]
+            append!(row, collect(value(ostats[k].stats[1])))
+            append!(row, collect(value(ostats[k].stats[2])))
             push!(var_df, row)
         end
     end
 
     return var_df
+end
+
+## sanity check: is there a variance value for each empirical data point?
+function find_missings(df::DataFrame)
+    if "median_spores" in names(df)
+        df = df[:, Not(:median_spores)]
+    end
+    for r in eachrow(df)
+        ismissing(sum(r)) && return true
+    end
+    return false
 end

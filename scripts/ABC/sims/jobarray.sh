@@ -14,5 +14,5 @@ module purge
 module load julia/1.7.2
 
 export SLURM_NODEFILE=`generate_pbs_nodefile`
-julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABCsims/runABC.jl parameters.csv $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 100 #400
+julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl parameters.csv $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 100 #400
 # ARGS: params file, slurm job array id, # cores, # sims per core

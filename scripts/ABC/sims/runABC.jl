@@ -3,7 +3,7 @@ usings_time = @elapsed begin
     @everywhere @quickactivate "SpatialRust"
     @everywhere begin
         using DataFrames
-        using Arrow: Arrow.Table, Arrow.write
+        using Arrow
         using Distributed: pmap
         include(projectdir("SpatialRust.jl"))
     end
@@ -16,7 +16,7 @@ end
 println(ARGS)
 
 load_time = @elapsed begin
-    n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
+    n_rows = (parse(Int, ARGS[3]) - 1) * parse(Int, ARGS[4])
     startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
 
     when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
