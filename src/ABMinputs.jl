@@ -38,6 +38,7 @@ Base.@kwdef struct Parameters
     mean_temp::Float64 = 22.5
     uv_inact::Float64 = 0.1            # extent of effect of UV inactivation (0 to 1)
     rain_washoff::Float64 = 0.1        # " " " rain wash-off (0 to 1)
+    # shade-related
     temp_cooling::Float64 = 3.0        # temp reduction due to shade
     diff_splash::Float64 = 2.0         # % extra distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high")
     wind_protec::Float64 = 1.0         # % extra wind distance due to absence of shade

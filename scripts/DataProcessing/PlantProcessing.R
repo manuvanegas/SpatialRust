@@ -57,7 +57,8 @@ pDays <- unique(pSelected$day.n)[-5] # see rust sampling patterns section
 write.csv(sort(pDays), paste0(data_path, "inputs/sun_whentocollect_plant.csv"))
 
 # write production data
-write.csv(med_prod, paste0(data_path, ifelse(SunOrShade == "Sun", "compare/Sun_Plant_Production.csv", "compare/Shade_Plant_Production.csv")))
+colnames(med_prod) <- gsub("\\.", "_", colnames(med_prod))
+write.csv(select(ungroup(med_prod), c(2,3,6)), paste0(data_path, ifelse(SunOrShade == "Sun", "compare/Sun_Plant_Production.csv", "compare/Shade_Plant_Production.csv")))
 
 ##############################################################
 # Plots

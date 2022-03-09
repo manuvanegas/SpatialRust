@@ -16,6 +16,12 @@ SunOrShade <- "Sun"
 data_path <- "~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_pro/"
 plots_path <- "~/Documents/ASU/Coffee Rust/SpatialRust/plots/Exp_Data/"
 
+WeatherDB <- read.csv("~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_raw/MonitoreoClima.csv", h=T)
+WeatherDB$fDate <- as.Date(WeatherDB$Date, format="%m/%d/%y")
+p.treatment <- ifelse(SunOrShade == "Sun", "TFS", "TMS") 
+wSelected <- select(WeatherDB, fDate, QuantRain = "RainTFS", MeanTa = paste0("meanTa", p.treatment))
+firstday <- min(wSelected$fDate)
+
 #subset, add id, date, age variables
 rSelected <- subset.n.prepare(SunOrShade)
 
@@ -127,15 +133,20 @@ areas_and_fallen <- left_join(app_areas, fallen_leaves) %>% ungroup()
 # Write rust data 
 rDays <- unique(union(union(areas_per_age$day.n, app_areas$day.n), fallen_leaves$day.n))
 write.csv(rDays, paste0(data_path, "inputs/sun_whentocollect_rust.csv"))
-write.csv(select(lesion_per_age, c(1,6,7)),
+
+colnames(lesion_per_age) <- gsub("\\.", "_", colnames(lesion_per_age))
+write.csv(select(lesion_per_age, c(1,5,6,7)),
           paste0(data_path, ifelse(SunOrShade == "Sun",
                                    "compare/Sun_Areas_Age.csv",
                                    "compare/Shade_Areas_Age.csv")))
-write.csv(select(spore_per_age, c(1,6,10)),
+colnames(spore_per_age) <- gsub("\\.", "_", colnames(spore_per_age))
+write.csv(select(spore_per_age, c(1,5,6,10)),
           paste0(data_path, ifelse(SunOrShade == "Sun",
                                    "compare/Sun_Spore_Age.csv", 
                                    "compare/Shade_Spore_Age.csv")))
-write.csv(select(areas_and_fallen, c(1,4,5,8,12)),
+
+ colnames(areas_and_fallen) <- gsub("\\.", "_", colnames(areas_and_fallen))
+write.csv(select(areas_and_fallen, c(1,4,5,6,8)),
           paste0(data_path, ifelse(SunOrShade == "Sun", 
                                    "compare/Sun_Appr_Areas_Fallen.csv",
                                    "compare/Shade_Appr_Areas_Fallen.csv")))
