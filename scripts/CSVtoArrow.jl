@@ -10,13 +10,13 @@ weather = crd("data/exp_pro/inputs/sun_weather.csv", DataFrame)
 rain_data = Vector{Bool}(weather[!, :Rainy])
 temp_data = Vector{Float64}(weather[!, :MeanTa])
 
-parameters = crd("data/ABC/parameters.csv", DataFrame, header = 1)
+parameters = crd("data/ABC/parameters_1000000.csv", DataFrame, header = 1)
 
 # write arrow files
 Arrow.write("data/exp_pro/inputs/sun_whentocollect_rust.arrow", DataFrame(when = when_rust))
 Arrow.write("data/exp_pro/inputs/sun_whentocollect_plant.arrow", DataFrame(when = when_plant))
 Arrow.write("data/exp_pro/inputs/sun_weather.arrow", DataFrame(rainy = rain_data, meanT = temp_data))
-Arrow.write("data/ABC/parameters.arrow", parameters)
+Arrow.write("data/ABC/parameters_1000000.arrow", parameters)
 
 # test read
 a_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])

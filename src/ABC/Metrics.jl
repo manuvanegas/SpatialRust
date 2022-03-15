@@ -59,7 +59,7 @@ function prod_metrics(model::ABM)::Array{Function}
     tick(model::ABM)::Int = model.current.ticks
 
     function coffee_production(model::ABM)::Float64
-        return median(map(cc -> cc.production, Iterators.filter(c -> c isa Coffee && (maximum(model.current.cycle) + 1) ∈ c.sample_cycle, allagents(model))))
+        return median(map(cc -> (cc.production / model.pars.harvest_cycle) , Iterators.filter(c -> c isa Coffee && (maximum(model.current.cycle) + 1) ∈ c.sample_cycle, allagents(model))))
     end
     return [tick, coffee_production]
 end

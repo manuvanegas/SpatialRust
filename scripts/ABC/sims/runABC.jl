@@ -28,7 +28,7 @@ load_time = @elapsed begin
     # rain_data = Vector{Bool}(weather[!, :Rainy])
     # temp_data = Vector{Float64}(weather[!, :MeanTa])
 
-    parameters = DataFrame(Arrow.Table("data/ABC/parameters.arrow"))[startat : (startat + n_rows - 1),:]
+    parameters = DataFrame(Arrow.Table(string("data/ABC/", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
 
     mkpath("/scratch/mvanega1/ABC/sims/ages")
     mkpath("/scratch/mvanega1/ABC/sims/cycles")
