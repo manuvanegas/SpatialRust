@@ -61,7 +61,7 @@ function rust_step!(rust::Rust, model::ABM)
 
     host = model[rust.hg_id]
 
-# "CHECK: effect of checking for host's area instead of exh_countdown"
+# TODO: CHECK effect of checking for host's area instead of exh_countdown
 
     if host.area > 0.0 # not exhausted
         if rust.spores > 0.0
@@ -138,46 +138,44 @@ function disperse!(rust::Rust, cof::Coffee, model::ABM)
     #prog = 1 / (1 + (0.25 / (rust.area + (rust.n_lesions / 25.0)))^4)
 
     # if model.current.rain && rand(model.rng) < model.pars.p_density * rust.spores
-    if model.current.rain && rand(model.rng) < rust.spores
+    if model.current.rain && rand(model.rng) < maximum(rust.spores)
         # model.p_density * prog  #(rust.n_lesions * rust.area) / (2 + rust.n_lesions * rust.area)
         # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
 
+        # option 1
+        events = sum(rust.spores) >= 0.5 ? Int(div(sum(rust.spores), 0.5)) : 1
+        for ns in 1:events
+            distance = abs(2 * randn(model.rng) * model.pars.rain_distance) * ((cof.sunlight - 0.55)^2 * (1 - model.pars.diff_splash) / 0.2025 + model.pars.diff_splash)
+            rust_dispersal!(model, rust, distance, false)
+        end
 
-        # println("obt")
-        # println(target)
-
-
-        # target = try_travel(rust, cof.sunlight, model, "r")
-        # if target !== rust
-        #     inoculate_rust!(model, target)
-        # end
-
-        distance = abs(2 * randn(model.rng) * model.pars.rain_distance * model.pars.diff_splash / (1.0 + cof.sunlight))
-        rust_dispersal!(model, rust, distance)
+        # option 2 is put for outside if current rain && rand
+        if model.current.rain
+            for lesion in 1:rust.n_lesions
+                 if rand(model.rng) < rust.spores[lesion]
     end
 
     # if model.current.wind && rand(model.rng) < model.pars.p_density * rust.spores
-    if model.current.wind && rand(model.rng) < rust.spores
+    if model.current.wind && rand(model.rng) < maximum(rust.spores)
         # model.p_density * prog
         # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
 
-
-        # target = try_travel(rust, cof.sunlight, model, "w")
-        # if target !== rust
-        #     inoculate_rust!(model, target)
-        # end
+        "need to think about this again"
+        distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * cof.sunlight)
+        rust_dispersal!(model, rust, distance, true)
     end
 end
 
 function parasitize!(rust::Rust, cof::Coffee, model::ABM)
 
-    if rust.germinated
+    if any(rust.germinated)
         # bal = rust.area + (rust.n_lesions / 25.0) # between 0.0 and 2.0
     # # cof.progression = 1 / (1 + (0.75 / bal)^4)
     #     prog = 1 / (1 + (0.25 / bal)^4) # Hill function with steep increase
     #     cof.area = 1.0 - prog
-        cof.area = 1.0 - (rust.n_lesions * rust.area) / 25.0
-        if rust.area * rust.n_lesions >= model.pars.exhaustion #|| bal >= 2.0
+        cof.area = 1.0 - sum(rust.area) / model.pars.max_lesions
+        #if rust.area * rust.n_lesions >= model.pars.exhaustion #|| bal >= 2.0
+        if sum(rust.area) / model.pars.max_lesions >= model.pars.exhaustion
             cof.area = 0.0
             cof.exh_countdown = (model.pars.harvest_cycle * 2) + 1
 
@@ -192,39 +190,40 @@ end
 function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
 
     local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - cof.sunlight))
-
-    if rust.germinated
-        if rust.age < model.pars.steps
-            rust.age += 1
-        end
-        if 14 < local_temp < 30 # grow and sporulate
-
-            #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
-            rust.area += rust.area * (1 - rust.area) *
-                #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
-                model.pars.fruit_load * cof.production / model.pars.harvest_cycle *
-                (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
-
-            if rust.spores == 0.0
-                if rand(model.rng) < (rust.area * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
-                    rust.spores = rust.area * model.pars.spore_pct
-                end
-            else
-                rust.spores = rust.area * model.pars.spore_pct
+    for les in 1:rust.n_lesions
+        if rust.germinated[les]
+            if rust.age[les] < model.pars.steps
+                rust.age[les] += 1
             end
-        end
+            if 14 < local_temp < 30 # grow and sporulate
 
-    else # try to germinate + penetrate tissue
-        let r = rand(model.rng)
-            if r < (cof.sunlight * model.pars.uv_inact) || r <  (cof.sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
-                # higher % sunlight means more chances of inactivation by UV or rain
-                rm_id = rust.id
-                kill_agent!(rust, model)
-                model.current.rust_ids = filter(i -> i != rm_id, model.current.rust_ids)
-            else
-                if rand(model.rng) < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
-                    rust.germinated = true
-                    rust.area = 0.01
+                #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
+                rust.area[les] += rust.area[les] * (1 - rust.area[les]) *
+                    #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
+                    model.pars.fruit_load * cof.production / model.pars.harvest_cycle *
+                    (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
+
+                if rust.spores[les] == 0.0
+                    if rand(model.rng) < (rust.area[les] * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
+                        rust.spores[les] = rust.area[les] * model.pars.spore_pct
+                    end
+                else
+                    rust.spores[les] = rust.area[les] * model.pars.spore_pct
+                end
+            end
+
+        else # try to germinate + penetrate tissue
+            let r = rand(model.rng)
+                if r < (cof.sunlight * model.pars.uv_inact) || r <  (cof.sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
+                    # higher % sunlight means more chances of inactivation by UV or rain
+                    rm_id = rust.id
+                    kill_agent!(rust, model)
+                    model.current.rust_ids = filter(i -> i != rm_id, model.current.rust_ids)
+                else
+                    if rand(model.rng) < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
+                        rust.germinated[les] = true
+                        rust.area[les] = 0.01
+                    end
                 end
             end
         end
@@ -286,9 +285,12 @@ end
 ## Secondary fnctns
 ####
 
-function rust_dispersal!(model::ABM, rust::Rust, distance::Float64)
+function rust_dispersal!(model::ABM, rust::Rust, distance::Float64, bywind::Bool)
+    blockedwind = false
     heading = rand(model.rng) * 360
     path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
+    #TODO: distance is small so it's just auto-infection. leaving just the code below "underestimates"
+    # auto-infection because it also has to get a rand > than disp_block, which doesn't make much sense
 
     for s in path
         trees = try agents_in_position(add_tuples(s, rust.pos), model)
@@ -297,8 +299,13 @@ function rust_dispersal!(model::ABM, rust::Rust, distance::Float64)
             break
         end
         if !isempty(trees) && rand(model.rng) > model.pars.disp_block
-            if collect(trees)[1] isa Coffee
-                inoculate_rust!(model, collect(trees)[1])
+            if bywind && !blockedwind
+                blockedwind = true
+                continue
+            else
+                if collect(trees)[1] isa Coffee
+                    inoculate_rust!(model, collect(trees)[1])
+                end
             end
             break
         end

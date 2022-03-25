@@ -54,18 +54,44 @@ end
 Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
 
 @agent Rust GridAgent{2} begin
-    germinated::Bool # has it germinated and penetrated leaf tissue?
-    area::Float64 # total, equal to latent + sporulating
-    spores::Float64
+    germinated::Vector{Bool} # has it germinated and penetrated leaf tissue?
+    area::Vector{Float64} # total, equal to latent + sporulating
+    spores::Vector{Float64}
+    age::Vector{Int}
     n_lesions::Int
-    age::Int
     hg_id::Int # "host-guest id": rust is guest, then this stores corresponding host's id
     sample_cycle::Vector{Int} # inherits days of sampling from host
     #successful_landings::Int # maybe useful metric?
     #parent::Int # id of rust it came from
 end
 
-Rust(id, pos; germinated = false, area = 0.0, spores = 0.0, age = 0, hg_id = 0, sample_cycle = []) = Rust(id, pos, germinated, area, spores, 1, age, hg_id, sample_cycle)
+function Rust(id, pos;
+    germinated = fill(false, model.pars.max_lesions),
+    area = fill(0.0, model.pars.max_lesions),
+    spores = fill(0.0, model.pars.max_lesions),
+    age = fill((model.pars.steps + 1), model.pars.max_lesions),
+    n_lesions = 1,
+    hg_id = 0,
+    sample_cycle = [])
+
+    Rust(id, pos, germinated, area, spores, age, n_lesions, hg_id, sample_cycle)
+end
+
+function Rust(id, pos;
+    germinated = false,
+    area = 0.0,
+    spores = 0.0,
+    age = 0,
+    hg_id = 0,
+    sample_cycle = [])
+    Rust(id, pos;
+    germinated = vcat(germinated, fill(false, model.pars.max_lesions - 1)),
+    area = vcat(area, fill(0.0, model.pars.max_lesions - 1)),
+    spores = vcat(spores, fill(0.0, model.pars.max_lesions - 1)),
+    age = vcat(age, fill((model.pars.steps + 1), model.pars.max_lesions - 1)),
+    hg_id = hg_id,
+    sample_cycle = sample_cycle)
+end
 
 ## Setup functions
 
@@ -106,6 +132,7 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
 
     for rusted in rusted_ids
         area = rand(model.rng)
+        nlesions = sample(model.rng, 1:model.pars.max_lesions)
         if area < 0.05
             new_id = add_agent!(model[rusted].pos, Rust, model; age = (model.pars.steps + 1), hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle).id
         elseif area > 0.9

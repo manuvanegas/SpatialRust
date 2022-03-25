@@ -1,6 +1,4 @@
-# using Agents: init_model_dataframe, until, should_we_collect, collect_model_data!, step!, nearby_ids, ABM
-# using StatsBase: sample
-# using Random: shuffle
+# Simulations to run the Approx Bayesian Computation approach
 
 export ABCOuts, sim_abc, struct_cat
 

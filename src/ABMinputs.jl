@@ -16,8 +16,8 @@ Base.@kwdef struct Parameters
     start_days_at::Int = 0
     p_rusts::Float64 = 0.01            # % of initial rusts
     harvest_cycle::Int = 365           # or 365/2, depending on the region
-    karma::Bool = true                 # producing more spores means more spores coming from elsewhere?
-    #par_row::Int = 0                   # parameter combination number (for ABC)
+    karma::Bool = true                 # does producing more spores means more spores coming from elsewhere?
+    #par_row::Int = 0                  # parameter combination number (for ABC)
     switch_cycles::Vector{Int} = []
 
     # farm management
@@ -40,14 +40,15 @@ Base.@kwdef struct Parameters
     rain_washoff::Float64 = 0.1        # " " " rain wash-off (0 to 1)
     # shade-related
     temp_cooling::Float64 = 3.0        # temp reduction due to shade
-    diff_splash::Float64 = 2.0         # % extra distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high")
-    wind_protec::Float64 = 1.0         # % extra wind distance due to absence of shade
+    diff_splash::Float64 = 2.0         # % extra distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high"+Gagliardi)
+    diff_wind::Float64 = 1.0           # % extra wind distance due to increased openness
     disp_block::Float64 = 0.9          # prob a tree will block rust dispersal
     shade_g_rate::Float64 = 0.1        # shade growth rate
 
     # coffee and rust parameters
-    exhaustion::Float64 = 5.0          # rust level that causes plant exhaustion
-    max_cof_gr::Float64 = 0.5
+    exhaustion::Float64 = 0.8          # rust level (relative to max) that causes plant exhaustion
+    max_cof_gr::Float64 = 0.5          # maximum coffee area growth rate
+    max_lesions::Int64 = 25            # maximum number of rust lesions
     opt_g_temp::Float64 = 22.5         # optimal rust growth temp
     fruit_load::Float64 = 1.0          # extent of fruit load effect on rust growth (severity; 0 to 1)
     spore_pct::Float64 = 0.6           # % of area that sporulates
