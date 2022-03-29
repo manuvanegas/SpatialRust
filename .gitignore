@@ -12,6 +12,7 @@ notebooks
 _research
 .DS_Store
 ExpDataProcessing
+src/Older
 
 ################################################################################
 #                                    Julia                                     #

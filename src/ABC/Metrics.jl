@@ -4,7 +4,7 @@ function age_area_spores!(rust::Rust, cycle::Int, df::DataFrame)
     let r::Rust = rust, c::Int = cycle
         for i in 1:r.n_lesions
             if r.age[i] < 53
-                push!(df, r.age[i], c, r.area[i], r.spores[i]))
+                push!(df, (r.age[i], c, r.area[i], r.spores[i]))
             end
         end
     end

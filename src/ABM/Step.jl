@@ -1,16 +1,19 @@
 function step_model!(model::ABM)
+    if model.current.ticks == 0
+        kill_agent!(pop!(model.current.shade_ids), model)
+    end
     pre_step!(model)
 
     for shade_i in model.current.shade_ids
-        shade_step!(model.agents[shade_i], model)
+        shade_step!(model[shade_i], model)
     end
 
     for cof_i in model.current.coffee_ids
-        coffee_step!(model.agents[cof_i], model)
+        coffee_step!(model[cof_i], model)
     end
 
     for rust_i in shuffle(model.rng, model.current.rust_ids)
-        rust_step!(model.agents[rust_i], model)
+        rust_step!(model[rust_i], model)
     end
 
     post_step!(model)
@@ -27,7 +30,7 @@ function pre_step!(model)
     model.current.temperature = model.weather.temp_data[model.current.ticks]
     model.current.outpour = model.current.outpour * 0.9
     if model.pars.karma && rand(model.rng) < sqrt(model.current.outpour)/(model.pars.map_side^2)
-        inoculate_rand_rust!(model)
+        outside_spores!(model)
     end
     if (model.current.ticks - 1) in model.pars.switch_cycles
         # popfirst!(model.pars.switch_cycles)
@@ -37,6 +40,8 @@ function pre_step!(model)
             model.current.cycle .+= 1
         end
     end
+
+    # println(median(getproperty.((model[id] for id in model.current.rust_ids), :n_lesions)))
 end
 
 function shade_step!(tree::Shade, model::ABM)
@@ -64,7 +69,7 @@ function rust_step!(rust::Rust, model::ABM)
 # TODO: CHECK effect of checking for host's area instead of exh_countdown
 
     if host.area > 0.0 # not exhausted
-        if rust.spores > 0.0
+        if any(rust.spores .> 0.0)
             disperse!(rust, host, model)
         end
         parasitize!(rust, host, model)
@@ -144,25 +149,39 @@ function disperse!(rust::Rust, cof::Coffee, model::ABM)
 
         # option 1
         events = sum(rust.spores) >= 0.5 ? Int(div(sum(rust.spores), 0.5)) : 1
+        println("rain : rust $(rust.id) has $events disps")
         for ns in 1:events
-            distance = abs(2 * randn(model.rng) * model.pars.rain_distance) * ((cof.sunlight - 0.55)^2 * (1 - model.pars.diff_splash) / 0.2025 + model.pars.diff_splash)
-            rust_dispersal!(model, rust, distance, false)
+
+            r_rust_dispersal!(model, rust, cof.sunlight)
         end
 
-        # option 2 is put for outside if current rain && rand
+        # option 2 is put for outside if rand
         if model.current.rain
             for lesion in 1:rust.n_lesions
                  if rand(model.rng) < rust.spores[lesion]
+                 end
+             end
+         end
     end
 
     # if model.current.wind && rand(model.rng) < model.pars.p_density * rust.spores
     if model.current.wind && rand(model.rng) < maximum(rust.spores)
         # model.p_density * prog
         # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
+        # option 1
+        events = sum(rust.spores) >= 0.5 ? Int(div(sum(rust.spores), 0.5)) : 1
+        for ns in 1:events
 
-        "need to think about this again"
-        distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * cof.sunlight)
-        rust_dispersal!(model, rust, distance, true)
+            w_rust_dispersal!(model, rust, cof.sunlight)
+        end
+
+        # option 2 is put for outside if rand
+        if model.current.rain
+            for lesion in 1:rust.n_lesions
+                 if rand(model.rng) < rust.spores[lesion]
+                 end
+             end
+         end
     end
 end
 
@@ -173,16 +192,12 @@ function parasitize!(rust::Rust, cof::Coffee, model::ABM)
     # # cof.progression = 1 / (1 + (0.75 / bal)^4)
     #     prog = 1 / (1 + (0.25 / bal)^4) # Hill function with steep increase
     #     cof.area = 1.0 - prog
-        cof.area = 1.0 - sum(rust.area) / model.pars.max_lesions
+        cof.area = 1.0 - (sum(rust.area) / model.pars.max_lesions)
         #if rust.area * rust.n_lesions >= model.pars.exhaustion #|| bal >= 2.0
-        if sum(rust.area) / model.pars.max_lesions >= model.pars.exhaustion
+        if (sum(rust.area) / model.pars.max_lesions) >= model.pars.exhaustion
             cof.area = 0.0
             cof.exh_countdown = (model.pars.harvest_cycle * 2) + 1
-
-            rm_id = rust.id
-            kill_agent!(rust, model)
-            cof.hg_id = 0
-            model.current.rust_ids = filter(i -> i != rm_id, model.current.rust_ids)
+            kill_rust!(rust, cof, model)
         end
     end
 end
@@ -216,13 +231,16 @@ function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
             let r = rand(model.rng)
                 if r < (cof.sunlight * model.pars.uv_inact) || r <  (cof.sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
                     # higher % sunlight means more chances of inactivation by UV or rain
-                    rm_id = rust.id
-                    kill_agent!(rust, model)
-                    model.current.rust_ids = filter(i -> i != rm_id, model.current.rust_ids)
+                    if rust.n_lesions > 1
+                        rust.n_lesions -= 1
+                    else
+                        kill_rust!(rust, cof, model)
+                    end
                 else
                     if rand(model.rng) < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
                         rust.germinated[les] = true
                         rust.area[les] = 0.01
+                        rust.age[les] = 0
                     end
                 end
             end
@@ -282,204 +300,148 @@ function inspect!(model::ABM)
 end
 
 ####
-## Secondary fnctns
+## Secondary functions
 ####
 
-function rust_dispersal!(model::ABM, rust::Rust, distance::Float64, bywind::Bool)
-    blockedwind = false
+function outside_spores!(model::ABM)
+    starting = Tuple(shuffle(model.rng, [sample(model.rng, 1:100), sample(model.rng, [1,100])]))
+    if starting[1] == 1
+        heading = 0
+    elseif starting[2] == 1
+        heading = 270
+    elseif starting[1] == 100
+        heading = 180
+    else
+        heading = 90
+    end
+
+    distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind # sunlight is taken as 1.0
+    path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
+    wind_travel!(model, starting, path)
+end
+
+function r_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
+    distance = abs(2 * randn(model.rng) * model.pars.rain_distance) *
+    ((sunlight - 0.55)^2 * (1 - model.pars.diff_splash) / 0.2025 + model.pars.diff_splash)
     heading = rand(model.rng) * 360
     path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
-    #TODO: distance is small so it's just auto-infection. leaving just the code below "underestimates"
-    # auto-infection because it also has to get a rand > than disp_block, which doesn't make much sense
 
-    for s in path
-        trees = try agents_in_position(add_tuples(s, rust.pos), model)
-        catch
-            model.current.outpour += 1
-            break
-        end
-        if !isempty(trees) && rand(model.rng) > model.pars.disp_block
-            if bywind && !blockedwind
-                blockedwind = true
-                continue
-            else
-                if collect(trees)[1] isa Coffee
-                    inoculate_rust!(model, collect(trees)[1])
-                end
+    # println("path length $(length(path))")
+    if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions  # self-infected
+        rust.n_lesions += 1
+        # println("nlesions: $(rust.n_lesions)")
+    else
+        for s in path[2:end]
+            trees = try collect(agents_in_position(add_tuples(s, rust.pos), model))
+            catch
+                model.current.outpour += 1
+                # println("out")
+                break
             end
-            break
+            if isempty(trees)
+                # println("empty at $s")
+                continue
+            elseif first(trees) isa Coffee &&
+                (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.5)
+                # the coffee is where the spore was supposed to land || it blocked the dispersal
+                # println(first(trees))
+                # println(last(trees))
+                inoculate_rust!(model, trees)
+                # println("new rust: $(last(model.current.rust_ids))")
+                break
+            elseif rand(model.rng) < model.pars.disp_block * 0.5
+                # println("blocked at: $(add_tuples(s, rust.pos))")
+                break
+            end
         end
-
-
-        # patch = add_tuples(s, rust.pos)
-        # if all(1 .<= patch .<= model.pars.map_side)
-        #     trees = agents_in_position(patch, model)
-        #     if !isempty(trees) && rand(model.rng) < 0.1
-        #         if trees[1] isa Coffee
-        #             inoculate_rust!(model, trees[1])
-        #         end
-        #         break
-        #     end
-        # end
     end
 end
 
-# function try_travel(rust::AbstractAgent, sun::Float64, model::ABM, factor::String)
-#     if factor == "r"
-#         distance = abs(2 * randn(model.rng) * model.pars.rain_distance * model.pars.diff_splash / (1.0 + sun)) # more sun means less kinetic energy
-#     else
-#         distance = abs(2 * randn(model.rng) * model.pars.wind_distance * model.pars.wind_protec * sun) # more sun means more wind speed
-#     end
-#     heading = rand(model.rng) * 360
-#     blocked = false
-#     bound = model.pars.map_side
-#     potential_landing = rust
-#     position = rust.pos
-#     if heading == 90.0 || heading == 270.0
-#         final = round(Int, distance)
-#         Ys = 0:final
-#         if final < 0
-#             Ys = 0:-1:final
-#         end
-#         y = 1
-#         while y <= length(Ys) && !blocked
-#             if 0 < (position[2] + Ys[y]) <= bound
-#                 potential_landing = collect(agents_in_position((position[1], position[2] + Ys[y]), model))[1]
-#                 # position = potential_landing.pos
-#                 if potential_landing isa Shade && rand(model.rng) < 0.8
-#                     blocked = true
-#                     potential_landing = rust
-#                     break
-#                 else
-#                     y += 1
-#                 end
-#             else
-#                 model.current.outpour += 1.0
-#                 potential_landing = rust
-#                 blocked = true
-#                 break
-#             end
-#         end
-#     else
-#         Ca = abs(cosd(heading) * distance)
-#         Co = abs(sind(heading) * distance)
-#         if Ca > Co
-#             slope = tand(heading)
-#             final = round(Int, cosd(heading) * distance)
-#             Xs = 0:final
-#             if final < 0
-#                 Xs = 0:-1:final
-#             end
-#             # println(heading)
-#             # println(distance)
-#             x = 1
-#             # println(Xs)
-#             while x <= (length(Xs) - 1) && !blocked
-#                 # println("hola")
-#                 yi = round(Int, slope * Xs[x])
-#                 yf = round(Int, slope * Xs[x + 1])
-#                 # println(yi)
-#                 # println(yf)
-#                 for y = yi : yf
-#                     if 0 < position[2] + y <= bound
-#                         xcor = position[1] + Xs[x]
-#                         ycor = position[2] + y
-#                         if 0 < xcor <= bound
-#                             potential_landing = collect(agents_in_position((xcor, ycor), model))[1]
-#                             # println(potential_landing)
-#                             # position = potential_landing.pos
-#                         else
-#                             model.current.outpour += 1.0
-#                             potential_landing = rust
-#                             blocked = true
-#                             break
-#                         end
-#                     else
-#                         model.current.outpour += 1.0
-#                         potential_landing = rust
-#                         blocked = true
-#                         break
-#                     end
-#                     if potential_landing isa Shade && rand(model.rng) < 0.8
-#                         blocked = true
-#                         potential_landing = rust
-#                         break
-#                     end
-#                 end
-#                 x += 1
-#             end
-#         else
-#             slope = tand(heading)
-#             final = round(Int, sind(heading) * distance)
-#             Ys = 0:final
-#             if final < 0
-#                 Ys = 0:-1:final
-#             end
-#             # println(heading)
-#             # println(distance)
-#             # println(Ys)
-#             y = 1
-#             while y <= (length(Ys) - 1) && !blocked
-#                 # println("hola2")
-#                 xi = round(Int, slope * Ys[y])
-#                 xf = round(Int, slope * Ys[y + 1])
-#                 for x = xi : xf
-#                     if 0 < position[1] + x <= bound
-#                         xcor = position[1] + x
-#                         ycor = position[2] + Ys[y]
-#                         if 0 < ycor <= bound
-#                             potential_landing = collect(agents_in_position((xcor, ycor), model))[1]
-#                             # println(potential_landing)
-#                             # position = potential_landing.pos
-#                         else
-#                             model.current.outpour += 1.0
-#                             potential_landing = rust
-#                             blocked = true
-#                             break
-#                         end
-#                     else
-#                         model.current.outpour += 1.0
-#                         potential_landing = rust
-#                         blocked = true
-#                         break
-#                     end
-#                     if potential_landing isa Shade && rand(model.rng) < 0.8
-#                         blocked = true
-#                         potential_landing = rust
-#                         break
-#                     end
-#                 end
-#                 y += 1
-#             end
-#         end
-#
-#     end
-#
-#     # future upgrade: if by wind, go to the cell after the found shade and deposit there
-#     return potential_landing
-# end
+function w_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
+    distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
+    heading = rand(model.rng) * 360
+    path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
+
+    if length(path) == 1 && rust.n_lesions < model.pars.max_lesions # self-infected
+        rust.n_lesions += 1
+    else
+        wind_travel!(model, rust.pos, path)
+    end
+end
+
+function wind_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}})
+    let pos = pos, path = path
+        blockedwind = false
+        for s in path[2:end]
+            trees = try collect(agents_in_position(add_tuples(s, pos), model))
+            catch
+                model.current.outpour += 1
+                break
+            end
+            if blockedwind
+                if !isempty(trees) && first(trees) isa Coffee
+                    inoculate_rust!(model, trees)
+                    break
+                else
+                    break
+                end
+            else
+                if isempty(trees)
+                    continue
+                elseif first(trees) isa Coffee &&
+                    (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.1)
+                    # *0.1 because they are not great windbreaks, but can happen
+                    inoculate_rust!(model, collect(trees))
+                    break
+                elseif rand(model.rng) < model.pars.disp_block # blocked by shade
+                    blockedwind = true
+                    continue
+                end
+            end
+        end
+    end
+end
 
 function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target coffee
     here = collect(agents_in_position(target, model))
     if length(here) > 1
-        # println("nlesion")
-        if here[2].n_lesions < 25
+        if here[2].n_lesions < model.pars.max_lesions
             here[2].n_lesions += 1
+            here[2].age[here[2].n_lesions] = 0
         end
     elseif target isa Coffee
-        if isdisjoint(target.sample_cycle, model.current.cycle)
-            new_id = add_agent!(target.pos, Rust, model; age = (model.pars.steps + 1), hg_id = target.id, sample_cycle = target.sample_cycle).id
-        else
-            new_id = add_agent!(target.pos, Rust, model; hg_id = target.id, sample_cycle = target.sample_cycle).id
-        end
+        # if isdisjoint(target.sample_cycle, model.current.cycle)
+        #     new_id = add_agent!(target.pos, Rust, model; age = (model.pars.steps + 1), hg_id = target.id, sample_cycle = target.sample_cycle).id
+        # else
+            new_id = add_agent!(target.pos, Rust, model, model.pars.max_lesions, model.pars.steps;
+                hg_id = target.id, sample_cycle = target.sample_cycle).id
+        # end
         target.hg_id = new_id
         push!(model.current.rust_ids, new_id)
     end
 end
 
-function inoculate_rand_rust!(model::ABM)
-    cof = model[sample(model.rng, model.current.coffee_ids)]
-    inoculate_rust!(model::ABM, cof)
+function inoculate_rust!(model::ABM, trees::Vector{A}) where {A <: AbstractAgent}
+    # here = collect(trees)
+    if length(trees) > 1
+        if trees[2].n_lesions < model.pars.max_lesions
+            trees[2].n_lesions += 1
+            trees[2].age[trees[2].n_lesions] = 0
+        end
+    else
+        new_id = add_agent!(trees[1].pos, Rust, model, model.pars.max_lesions, model.pars.steps;
+            hg_id = trees[1].id, sample_cycle = trees[1].sample_cycle).id
+        trees[1].hg_id = new_id
+        push!(model.current.rust_ids, new_id)
+    end
+end
+
+function kill_rust!(rust::Rust, cof::Coffee, model::ABM)
+    cof.hg_id = 0
+    rm_id = rust.id
+    delete!(model.agents, rust.id)
+    deleteat!(model.space.s[rust.pos...], 2)
+    deleteat!(model.current.rust_ids, findfirst(i -> i == rm_id, model.current.rust_ids))
 end
 
 function add_tuples(t_a::Tuple{Int, Int}, t_b::Tuple{Int, Int})

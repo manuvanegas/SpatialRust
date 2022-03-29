@@ -1,33 +1,17 @@
 module SpatialRust
 
-# using Agents, Distributions, Random
-# using DrWatson: srcdir
-# using StatsBase: sample
-#
-# include(srcdir("ABMinputs.jl"))
-# include(srcdir("ABMsetup.jl"))#module SpatialRust
-
 using Agents, Distributions, Random
 using DataFrames
 using DrWatson: srcdir, datadir
 using StatsBase: sample
 
-include(srcdir("ABMinputs.jl"))
-include(srcdir("ABMsetup.jl"))
-include(srcdir("ABMstep.jl"))
+include(srcdir("ABM/Initialize.jl"))
+include(srcdir("ABM/FarmMap.jl"))
+include(srcdir("ABM/Setup.jl"))
+include(srcdir("ABM/Step.jl"))
+include(srcdir("RunnerFncs.jl"))
 
-# module ABCSims
 include(srcdir("ABC", "Sims.jl"))
-# export custom_sampling!, sim_and_write
-# end
-
-# using .ABCSims
-# export custom_sampling!, sim_and_write
-
-# include(srcdir("CustomRun.jl"))
-
-#export initialize_sim, step_model!, run_for_abc, Shade, Coffee, Rust
-#end
 
 end
 #

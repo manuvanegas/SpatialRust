@@ -1,9 +1,9 @@
 #=
-Input-handling structs and functions. If necessary, create farm_map or Weather,
-then call init_abm_obj. Returns model object
+Input-handling structs and functions. If necessary, call create farm_map or Weather,
+then call init_abm_obj. Returns model object ready to be run
 =#
 
-export Weather, Parameters, init_spatialrust, create_weather, create_farm_map, create_fullsun_farm_map
+export Weather, Parameters, init_spatialrust#, create_weather, create_farm_map, create_fullsun_farm_map
 
 struct Weather
     rain_data::Vector{Bool}
@@ -40,9 +40,9 @@ Base.@kwdef struct Parameters
     rain_washoff::Float64 = 0.1        # " " " rain wash-off (0 to 1)
     # shade-related
     temp_cooling::Float64 = 3.0        # temp reduction due to shade
-    diff_splash::Float64 = 2.0         # % extra distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high"+Gagliardi)
-    diff_wind::Float64 = 1.0           # % extra wind distance due to increased openness
-    disp_block::Float64 = 0.9          # prob a tree will block rust dispersal
+    diff_splash::Float64 = 2.0         # % extra rain distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high"+Gagliardi)
+    diff_wind::Float64 = 1.2           # % extra wind distance due to increased openness
+    disp_block::Float64 = 0.8          # prob a tree will block rust dispersal
     shade_g_rate::Float64 = 0.1        # shade growth rate
 
     # coffee and rust parameters
@@ -97,15 +97,4 @@ end
 function create_weather(rain_prob::Float64, wind_prob::Float64, mean_temp::Float64, steps::Int)
     #println("Check data! This has not been validated!")
     return Weather(rand(Float64, steps) .< rain_prob, rand(Float64, steps) .< wind_prob, fill(mean_temp, steps) .+ randn() .* 2)
-end
-
-function create_farm_map(parameters::Parameters)
-end
-
-function create_fullsun_farm_map()
-    farm_map = zeros(Int,100,100)
-    for c in 1:2:100
-        farm_map[:,c] .= 1
-    end
-    return farm_map
 end
