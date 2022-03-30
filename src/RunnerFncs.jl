@@ -1,4 +1,4 @@
-export dummyrun_spatialrust, nlesions_spatialrust
+export dummyrun_spatialrust, nlesions_spatialrust, justtwosteps
 
 function dummyrun_spatialrust(steps::Int = 200, side::Int = 60)
     pars = Parameters(steps = steps, map_side = side)
@@ -22,4 +22,11 @@ function nlesions_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int 
         mdata = [incidence])
 end
 
-function medsum(x); (median ∘ sum)(x); end
+function medsum(x); (median(sum.(x))); end
+
+function justtwosteps(side::Int = 60)
+    pars = Parameters(steps = 5, map_side = 60, max_lesions = 25)
+    model = init_spatialrust(pars, create_fullsun_farm_map())
+    step!(model, dummystep, step_model!, 2)
+    return model
+end

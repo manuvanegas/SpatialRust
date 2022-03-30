@@ -149,7 +149,7 @@ function disperse!(rust::Rust, cof::Coffee, model::ABM)
 
         # option 1
         events = sum(rust.spores) >= 0.5 ? Int(div(sum(rust.spores), 0.5)) : 1
-        println("rain : rust $(rust.id) has $events disps")
+        # println("rain : rust $(rust.id) has $events disps")
         for ns in 1:events
 
             r_rust_dispersal!(model, rust, cof.sunlight)
@@ -232,6 +232,7 @@ function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
                 if r < (cof.sunlight * model.pars.uv_inact) || r <  (cof.sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
                     # higher % sunlight means more chances of inactivation by UV or rain
                     if rust.n_lesions > 1
+                        "fix this"#TODO
                         rust.n_lesions -= 1
                     else
                         kill_rust!(rust, cof, model)
@@ -306,25 +307,24 @@ end
 function outside_spores!(model::ABM)
     starting = Tuple(shuffle(model.rng, [sample(model.rng, 1:100), sample(model.rng, [1,100])]))
     if starting[1] == 1
-        heading = 0
+        heading = 0.0
     elseif starting[2] == 1
-        heading = 270
+        heading = 270.0
     elseif starting[1] == 100
-        heading = 180
+        heading = 180.0
     else
-        heading = 90
+        heading = 90.0
     end
 
     distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind # sunlight is taken as 1.0
-    path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
-    wind_travel!(model, starting, path)
+    # path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
+    wind_travel!(model, starting, travel_path(distance, heading, 0.5))
 end
 
 function r_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
-    distance = abs(2 * randn(model.rng) * model.pars.rain_distance) *
-    ((sunlight - 0.55)^2 * (1 - model.pars.diff_splash) / 0.2025 + model.pars.diff_splash)
-    heading = rand(model.rng) * 360
-    path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
+
+    # path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
+    path = rain_path(model, sunlight)
 
     # println("path length $(length(path))")
     if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions  # self-infected
@@ -358,11 +358,9 @@ function r_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
 end
 
 function w_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
-    distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
-    heading = rand(model.rng) * 360
-    path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
+    path = wind_path(model, sunlight)
 
-    if length(path) == 1 && rust.n_lesions < model.pars.max_lesions # self-infected
+    if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions # self-infected
         rust.n_lesions += 1
     else
         wind_travel!(model, rust.pos, path)
@@ -451,3 +449,18 @@ end
 function calc_wetness_p(local_temp)
     w = (-0.5/16.0) * local_temp + (0.5*30.0/16.0)
 end
+
+function rain_path(model::ABM, sunlight)
+    distance = abs(2 * randn(model.rng) * model.pars.rain_distance) *
+    ((sunlight - 0.55)^2 * ((1 - model.pars.diff_splash) / 0.2025) + model.pars.diff_splash)
+
+    return travel_path(distance, (rand(model.rng) * 360), 0.5)
+end
+
+function wind_path(model::ABM, sunlight)
+    distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
+
+    return travel_path(distance, rand(model.rng) * 360, 0.5)
+end
+
+travel_path(distance::Float64, heading::Float64, x::Float64)::Vector{NTuple{2, Int}} = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in x:x:distance])
