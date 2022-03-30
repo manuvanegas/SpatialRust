@@ -232,7 +232,6 @@ function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
                 if r < (cof.sunlight * model.pars.uv_inact) || r <  (cof.sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
                     # higher % sunlight means more chances of inactivation by UV or rain
                     if rust.n_lesions > 1
-                        "fix this"#TODO
                         rust.n_lesions -= 1
                     else
                         kill_rust!(rust, cof, model)
@@ -405,7 +404,6 @@ function inoculate_rust!(model::ABM, target::AbstractAgent) # inoculate target c
     if length(here) > 1
         if here[2].n_lesions < model.pars.max_lesions
             here[2].n_lesions += 1
-            here[2].age[here[2].n_lesions] = 0
         end
     elseif target isa Coffee
         # if isdisjoint(target.sample_cycle, model.current.cycle)
@@ -424,7 +422,6 @@ function inoculate_rust!(model::ABM, trees::Vector{A}) where {A <: AbstractAgent
     if length(trees) > 1
         if trees[2].n_lesions < model.pars.max_lesions
             trees[2].n_lesions += 1
-            trees[2].age[trees[2].n_lesions] = 0
         end
     else
         new_id = add_agent!(trees[1].pos, Rust, model, model.pars.max_lesions, model.pars.steps;

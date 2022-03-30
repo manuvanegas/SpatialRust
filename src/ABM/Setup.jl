@@ -112,7 +112,8 @@ function add_trees!(model::ABM, farm_map::Array{Int,2})
 end
 
 function add_trees!(model::ABM, farm_map::Array{Int,2}, start_days_at::Int)
-    prod_dist = truncated(Normal(start_days_at, start_days_at * 0.02), 0.0, start_days_at)
+    cycle_adv = mod(start_days_at, model.pars.harvest_cycle) # how advanced in the harvest cycle are we
+    prod_dist = truncated(Normal(cycle_adv, cycle_adv * 0.02), 0.0, cycle_adv)
 
     for patch in positions(model)
         if farm_map[patch...] == 1
@@ -177,13 +178,13 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
     else
         model = ABM(Union{Shade, Coffee, Rust}, space;
             properties = Props(parameters, Books(days = parameters.start_days_at, ticks = parameters.start_days_at - 132, cycle = [4]), weather),
-            warn = false) # ...
+            warn = false)
     end
 
     if parameters.start_days_at == 0 # simulation starts at the beginning of a harvest cycle
         add_trees!(model, farm_map)
     else
-        add_trees!(model, farm_map, parameters.start_days_at) # simulation starts later, so accumulated production is drawn from truncated normal dist
+        add_trees!(model, farm_map, parameters.start_days_at) # simulation starts later in harvest cycle, so accumulated production is drawn from truncated normal dist
     end
 
     count_shades!(model)
