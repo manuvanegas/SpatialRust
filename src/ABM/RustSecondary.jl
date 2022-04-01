@@ -37,23 +37,6 @@ function r_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
         # println("nlesions: $(rust.n_lesions)")
     else
         # rain_travel!(model, rust.pos, path)
-        wind_travel!(model, rust.pos, path)
-
-    end
-end
-
-function w_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
-    path = wind_path(model, sunlight)
-
-    if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions # self-infected
-        rust.n_lesions += 1
-    else
-        wind_travel!(model, rust.pos, path)
-    end
-end
-
-function rain_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}})
-    let pos = pos, path = path
         for s in path[2:end]
             trees = try collect(agents_in_position(add_tuples(s, rust.pos), model))
             catch
@@ -77,6 +60,24 @@ function rain_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}
                 break
             end
         end
+        # wind_travel!(model, rust.pos, path)
+
+    end
+end
+
+function w_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
+    path = wind_path(model, sunlight)
+
+    if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions # self-infected
+        rust.n_lesions += 1
+    else
+        wind_travel!(model, rust.pos, path)
+    end
+end
+
+function rain_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}})
+    let pos = pos, path = path
+
     end
 end
 
@@ -102,7 +103,7 @@ function wind_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}
                 elseif first(trees) isa Coffee &&
                     (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.1)
                     # *0.1 because they are not great windbreaks, but can happen
-                    inoculate_rust!(model, collect(trees))
+                    inoculate_rust!(model, trees)
                     break
                 elseif rand(model.rng) < model.pars.disp_block # blocked by shade
                     blockedwind = true
@@ -134,7 +135,9 @@ end
 function inoculate_rust!(model::ABM, trees::Vector{A}) where {A<:AbstractAgent}
     # here = collect(trees)
     if length(trees) > 1
-        if trees[2].n_lesions < model.pars.max_lesions
+        if trees[2] isa Shade
+            error(string("Here. Id: ", trees[2].id, ". Pos: ", trees[2].pos))
+        elseif trees[2].n_lesions < model.pars.max_lesions
             trees[2].n_lesions += 1
         end
     else

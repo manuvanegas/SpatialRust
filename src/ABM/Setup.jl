@@ -191,7 +191,9 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
 
     init_rusts!(model, parameters.p_rusts)
 
-    push!(model.current.shade_ids, add_agent!((1,1), Shade, model; shade = -1.0).id)
+    if isempty(model.current.shade_ids)
+        push!(model.current.shade_ids, add_agent!(random_empty(model), Shade, model; shade = -1.0).id)
+    end
 
     return model
 end
