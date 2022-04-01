@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --array=1-2
-#SBATCH --ntasks=21
+#SBATCH --ntasks=20
 #SBATCH --ntasks-per-core=1
 #SBATCH -p debug
 #SBATCH -q wildfire
@@ -15,4 +15,4 @@ module purge
 module load julia/1.7.2
 
 export SLURM_NODEFILE=`generate_pbs_nodefile`
-julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl parameters.csv $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 400
+julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl parameters_1000000 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 500
