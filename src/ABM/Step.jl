@@ -1,6 +1,8 @@
 function step_model!(model::ABM)
     if model.current.ticks == 0
-        kill_agent!(pop!(model.current.shade_ids), model)
+        sh = model[pop!(model.current.shade_ids)]
+        delete!(model.agents, sh.id)
+        deleteat!(model.space.s[sh.pos...], 1)
     end
     pre_step!(model)
 
