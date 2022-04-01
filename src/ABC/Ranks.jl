@@ -19,7 +19,7 @@ cycle_fallen_nodes()::Vector{Symbol} = [:area_cycle, :spore_cycle, :fallen, :pro
 
 ######################_____________________________
 # testing stuff
-
+using CSV
 dists = CSV.read("results/ABC/dists.csv", DataFrame)
 describe(dists)
 

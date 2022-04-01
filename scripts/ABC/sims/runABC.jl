@@ -36,8 +36,9 @@ load_time = @elapsed begin
 end
 
 # pars = Parameters(steps = 231, map_side = 100, switch_cycles = copy(when_plant))
-# model = init_spatialrust(pars, create_fullsun_farm_map(), create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
-# custom_sampling!(model, 0.05, 1)
+# model = init_spatialrust(pars, Main.SpatialRust.create_fullsun_farm_map(), Main.SpatialRust.create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
+# Main.SpatialRust.custom_sampling_first!(model, 0.05)
+# using CSV: read as crd
 # paramss = crd(datadir("ABC", "parameters_10.csv"), DataFrame)
 # for rr in eachrow(paramss)[1:2]
 #     sim_abc(rr, rain_data, temp_data, when_rust, when_plant, 0.5, 231)

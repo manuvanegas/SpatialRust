@@ -42,10 +42,28 @@ end
 
 # med_area(rusts::Base.Iterators.Filter)::Float64 = isempty(rusts) ? -1.0 : median(map(rr -> rr.area * rr.n_lesions, rusts))
 # med_spores(rusts::Base.Iterators.Filter)::Float64 = isempty(rusts) ? -1.0 : median(map(rr -> rr.spores * rr.n_lesions, rusts))
-rel_area(areas::Vector{Float64}, maxn::Int)::Float64 = sum(areas) / maxn
+# rel_area(areas::Vector{Float64}, maxn::Int)::Float64 = sum(areas) / maxn
+rel_area(rust::Rust, maxn::Int) = sum(rust.area) / maxn
+rel_spore(rust::Rust, maxn::Int) = sum(rust.area) / maxn
 
-med_area(rusts::Base.Iterators.Filter)::Float64 = isempty(rusts) ? -1.0 : median(map(rel_area, rusts))
-med_spores(rusts::Base.Iterators.Filter)::Float64 = isempty(rusts) ? -1.0 : median(map(rel_area, rusts))
+# function rel_areas(rusts::Base.Iterators.Filter, maxn::Int)::Vector{Float64}
+#     # areas = []
+#     # for r in rusts
+#     #     push!(areas, rel_area(r.area, maxn))
+#     # end
+#     return rel_area.(rusts, maxn)
+# end
+
+# function rel_spores(rusts::Base.Iterators.Filter, maxn::Int)::Vector{Float64}
+#     # spores = zeros(length(rusts))
+#     # for (i, r) in enumerate(rusts)
+#     #     spores[i] = rel_area(r.spores, maxn)
+#     # end
+#     return rel_spore.(rusts, maxn)
+# end
+
+med_area(rusts::Base.Iterators.Filter, maxn::Int)::Float64 = isempty(rusts) ? -1.0 : median(rel_area.(rusts, maxn))
+med_spores(rusts::Base.Iterators.Filter, maxn::Int)::Float64 = isempty(rusts) ? -1.0 : median(rel_spore.(rusts,maxn))
 p_fallen(coffees::Base.Iterators.Filter)::Float64 = count(cc -> cc.exh_countdown > 0, coffees) / length(collect(coffees))
 
 function d_per_cycles(model::ABM)::DataFrame
@@ -54,7 +72,7 @@ function d_per_cycles(model::ABM)::DataFrame
     if isempty(sampled_rusts)
         df = DataFrame(cycle = Int[], fallen = Float64[])
         for cycle in model.current.cycle
-            sampled_cs = Iterators.filter(c -> cycle in c.sample_cycle && c isa Coffee, allagents(model))
+            sampled_cs = Iterators.filter(c -> c isa Coffee && cycle in c.sample_cycle, allagents(model))
             push!(df, [cycle, count(cc -> cc.exh_countdown > 0, sampled_cs) / length(collect(sampled_cs)) ] )
         end
         df.tick .= model.current.ticks
@@ -65,8 +83,11 @@ function d_per_cycles(model::ABM)::DataFrame
         df = DataFrame(cycle = Int[], area_m = Float64[], spores_m = Float64[], fallen = Float64[])
         for cycle in model.current.cycle
             c_sampled_rusts = Iterators.filter(r -> cycle in r.sample_cycle, sampled_rusts)
-            sampled_cs = Iterators.filter(c -> cycle in c.sample_cycle && c isa Coffee, allagents(model))
-            push!(df, [cycle, med_area(c_sampled_rusts), med_spores(c_sampled_rusts), p_fallen(sampled_cs)])
+            sampled_cs = Iterators.filter(c -> c isa Coffee && cycle in c.sample_cycle, allagents(model))
+            push!(df, [cycle,
+                        med_area(c_sampled_rusts, model.pars.max_lesions),
+                        med_spores(c_sampled_rusts, model.pars.max_lesions),
+                        p_fallen(sampled_cs)])
         end
         df.tick .= model.current.ticks
         # return df
