@@ -15,22 +15,24 @@ function d_per_ages(model::ABM)::DataFrame
     # used 53/7 = 7.57, which rounds to 8. We want all ages until 7
 
     if isempty(sampled_rusts)
-        df2 = DataFrame(age = -1, cycle = -1, area_m = -1.0, spores_m = -1.0, tick = model.current.ticks)
+        return DataFrame(age = -1, cycle = -1, area_m = -1.0, spores_m = -1.0, tick = model.current.ticks)
         # return df2
     else
         df = DataFrame(age = Int[], cycle = Int[], area = Float64[], spores = Float64[])
 
         for cycle in model.current.cycle
-            c_sampled_rusts = Iterators.filter(r -> cycle in r.sample_cycle, sampled_rusts)
-            if isempty(c_sampled_rusts)
-                push!(df, (-1, -1, -1.0, -1.0))
-            else
-                foreach(r -> age_area_spores!(r, cycle, df), c_sampled_rusts)
-            end
+            foreach(r -> age_area_spores!(r, cycle, df), Iterators.filter(r -> cycle in r.sample_cycle, sampled_rusts))
+            #c_sampled_rusts = Iterators.filter(r -> cycle in r.sample_cycle, sampled_rusts)
+            #if !isempty(c_sampled_rusts)
+            #    foreach(r -> age_area_spores!(r, cycle, df), c_sampled_rusts)
+            #end
         end
-        df2 = combine(groupby(df, [:age, :cycle]), [:area => median => :area_m, :spores => median => :spores_m])
-        df2.tick .= model.current.ticks
-
+        if isempty(df)
+            return DataFrame(age = -1, cycle = -1, area_m = -1.0, spores_m = -1.0, tick = model.current.ticks)
+        else
+            df2 = combine(groupby(df, [:age, :cycle]), [:area => median => :area_m, :spores => median => :spores_m])
+            df2.tick .= model.current.ticks
+        end
         # if size(df2)[1] == 0
         #     df2 = DataFrame(age = -1, cycle = -1, area_m = -1.0, spores_m = -1.0, tick = model.current.ticks)
         # end
