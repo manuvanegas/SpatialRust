@@ -1,3 +1,5 @@
+println("Here we go")
+
 usings_time = @elapsed begin
     @everywhere using DrWatson
     @everywhere @quickactivate "SpatialRust"
@@ -14,9 +16,11 @@ end
 
 # ARGS: params file, slurm job array id, # cores, # sims per core
 println(ARGS)
+println("Init: $usings_time")
+flush(stdout)
 
 load_time = @elapsed begin
-    n_rows = (parse(Int, ARGS[3]) - 1) * parse(Int, ARGS[4])
+    n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
     startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
 
     when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
@@ -35,6 +39,9 @@ load_time = @elapsed begin
     mkpath("/scratch/mvanega1/ABC/sims/prod")
 end
 
+println("Loads: $load_time")
+flush(stdout)
+
 # pars = Parameters(steps = 231, map_side = 100, switch_cycles = copy(when_plant))
 # model = init_spatialrust(pars, Main.SpatialRust.create_fullsun_farm_map(), Main.SpatialRust.create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
 # Main.SpatialRust.custom_sampling_first!(model, 0.05)
@@ -52,11 +59,17 @@ dummy_time = @elapsed begin
     println("Dummy run completed")
 end
 
+println("Compile: $dummy_time")
+flush(stdout)
+
 run_time = @elapsed begin
     outputs = pmap(p -> sim_abc(p, rain_data, temp_data, when_rust, when_plant, 0.5),
                     eachrow(parameters); retry_delays = fill(0.1, 3))
     println("total: ", length(outputs))
 end
+
+println("Run: $run_time")
+flush(stdout)
 
 cat_time = @elapsed begin
     cat_outs = reduce(struct_cat, outputs)
@@ -65,13 +78,15 @@ cat_time = @elapsed begin
     Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_" * ARGS[2] * ".arrow"), cat_outs.prod_df)
 end
 
-timings = """
-Init: $usings_time
-Loads: $load_time
-Compile: $dummy_time
-Run: $run_time
-Write: $cat_time
-"""
+println("Write: $cat_time")
+
+# timings = """
+# Init: $usings_time
+# Loads: $load_time
+# Compile: $dummy_time
+# Run: $run_time
+# Write: $cat_time
+# """
 
 println(string("array #: ", ARGS[2],"\n", timings))
 #cwr(string("~/SpatialRust/scripts/ABCsims/timing", ARGS[2],".txt"), timings)
