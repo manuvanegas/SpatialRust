@@ -19,27 +19,27 @@ cycle_fallen_nodes()::Vector{Symbol} = [:area_cycle, :spore_cycle, :fallen, :pro
 
 ######################_____________________________
 # testing stuff
-using CSV
-dists = CSV.read("results/ABC/dists.csv", DataFrame)
-describe(dists)
-
-["p_row", "area_age", "spore_age", "area_cycle", "spore_cycle", "fallen", "prod_fruit", "prod_node"]
-
-ttrows = best_100(dists, age_fallen_fruits())
-ttrows2 = best_100(dists, age_fallen_nodes())
-
-setdiff(ttrows, ttrows2)
-all(ttrows .== ttrows2)
-
-ttcrows = best_100(dists, age_fallen_fruits())
-ttcrows2 = best_100(dists, age_fallen_nodes())
-
-setdiff(ttcrows, ttcrows2)
-all(ttcrows .== ttcrows2)
-
-
-setdiff(ttrows, ttcrows)
-
-ttage = best_100(dists, [:area_age, :spore_age])
-ttcycle = best_100(dists, [:area_cycle, :spore_cycle])
-setdiff(ttage, ttcycle)
+# using CSV
+# dists = CSV.read("results/ABC/dists.csv", DataFrame)
+# describe(dists)
+#
+# ["p_row", "area_age", "spore_age", "area_cycle", "spore_cycle", "fallen", "prod_fruit", "prod_node"]
+#
+# ttrows = best_100(dists, age_fallen_fruits())
+# ttrows2 = best_100(dists, age_fallen_nodes())
+#
+# setdiff(ttrows, ttrows2)
+# all(ttrows .== ttrows2)
+#
+# ttcrows = best_100(dists, age_fallen_fruits())
+# ttcrows2 = best_100(dists, age_fallen_nodes())
+#
+# setdiff(ttcrows, ttcrows2)
+# all(ttcrows .== ttcrows2)
+#
+#
+# setdiff(ttrows, ttcrows)
+#
+# ttage = best_100(dists, [:area_age, :spore_age])
+# ttcycle = best_100(dists, [:area_cycle, :spore_cycle])
+# setdiff(ttage, ttcycle)

@@ -1,4 +1,23 @@
-# Secondary functions
+# Secondary and other helper functions
+
+## Rust growth
+
+function parasitize!(rust::Rust, cof::Coffee, model::ABM)
+
+    # if any(rust.germinated)
+        # bal = rust.area + (rust.n_lesions / 25.0) # between 0.0 and 2.0
+    # # cof.progression = 1 / (1 + (0.75 / bal)^4)
+    #     prog = 1 / (1 + (0.25 / bal)^4) # Hill function with steep increase
+    #     cof.area = 1.0 - prog
+        cof.area = 1.0 - (sum(rust.area) / model.pars.max_lesions)
+        #if rust.area * rust.n_lesions >= model.pars.exhaustion #|| bal >= 2.0
+        if (sum(rust.area) / model.pars.max_lesions) >= model.pars.exhaustion
+            cof.area = 0.0
+            cof.exh_countdown = (model.pars.harvest_cycle * 2) + 1
+            kill_rust!(rust, cof, model)
+        end
+    # end
+end
 
 ## Spore dispersal and deposition
 
@@ -31,37 +50,10 @@ function r_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
     # path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
     path = rain_path(model, sunlight)
 
-    # println("path length $(length(path))")
     if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions  # self-infected
         rust.n_lesions += 1
-        # println("nlesions: $(rust.n_lesions)")
     else
-        # rain_travel!(model, rust.pos, path)
-        for s in path[2:end]
-            trees = try collect(agents_in_position(add_tuples(s, rust.pos), model))
-            catch
-                model.current.outpour += 1
-                # println("out")
-                break
-            end
-            if isempty(trees)
-                # println("empty at $s")
-                continue
-            elseif first(trees) isa Coffee &&
-                (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.5)
-                # the coffee is where the spore was supposed to land || it blocked the dispersal
-                # println(first(trees))
-                # println(last(trees))
-                inoculate_rust!(model, trees)
-                # println("new rust: $(last(model.current.rust_ids))")
-                break
-            elseif rand(model.rng) < model.pars.disp_block * 0.5
-                # println("blocked at: $(add_tuples(s, rust.pos))")
-                break
-            end
-        end
-        # wind_travel!(model, rust.pos, path)
-
+        rain_travel!(model, rust.pos, path)
     end
 end
 
@@ -77,7 +69,23 @@ end
 
 function rain_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}})
     let pos = pos, path = path
-
+        for s in path[2:end]
+            trees = try collect(agents_in_position(add_tuples(s, pos), model))
+            catch
+                model.current.outpour += 1
+                break
+            end
+            if isempty(trees)
+                continue
+            elseif first(trees) isa Coffee &&
+                (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.5)
+                # if the coffee is where the spore was supposed to land || it blocked the dispersal
+                inoculate_rust!(model, trees)
+                break
+            elseif rand(model.rng) < model.pars.disp_block * 0.5
+                break
+            end
+        end
     end
 end
 
@@ -135,9 +143,7 @@ end
 function inoculate_rust!(model::ABM, trees::Vector{A}) where {A<:AbstractAgent}
     # here = collect(trees)
     if length(trees) > 1
-        if trees[2] isa Shade
-            error(string("Here. Id: ", trees[2].id, ". Pos: ", trees[2].pos))
-        elseif trees[2].n_lesions < model.pars.max_lesions
+        if trees[2].n_lesions < model.pars.max_lesions
             trees[2].n_lesions += 1
         end
     else
@@ -150,28 +156,28 @@ end
 
 inoculate_rust!(model::ABM, none::Bool) = nothing
 
-function rain_path(model::ABM, sunlight)
+function rain_path(model::ABM, sunlight)::Vector{NTuple{2, Int}}
     distance = abs(2 * randn(model.rng) * model.pars.rain_distance) *
         ((sunlight - 0.55)^2 * ((1 - model.pars.diff_splash) / 0.2025) + model.pars.diff_splash)
 
     return travel_path(distance, (rand(model.rng) * 360), 0.5)
 end
 
-function wind_path(model::ABM, sunlight)
+function wind_path(model::ABM, sunlight)::Vector{NTuple{2, Int}}
     distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
 
     return travel_path(distance, rand(model.rng) * 360, 0.5)
 end
 
-function coffee_here(pos::NTuple{2,Int}, model::ABM)::Union{Coffee, Bool}
-    if isempty(pos, model)
-        return false
-    elseif (c = first(collect(agents_in_position(starting, model)))) isa Coffee
-        return c
-    else
-        return false
-    end
-end
+# function coffee_here(pos::NTuple{2,Int}, model::ABM)::Union{Coffee, Bool}
+#     if isempty(pos, model)
+#         return false
+#     elseif (c = first(collect(agents_in_position(starting, model)))) isa Coffee
+#         return c
+#     else
+#         return false
+#     end
+# end
 
 travel_path(distance::Float64, heading::Float64, x::Float64)::Vector{NTuple{2, Int}} = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in x:x:distance])
 
