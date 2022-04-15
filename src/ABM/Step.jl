@@ -9,14 +9,17 @@ function step_model!(model::ABM)
     for shade_i in model.current.shade_ids
         shade_step!(model, model[shade_i])
     end
+    # shade_step!.(model, model.current.shade_ids)
 
     for cof_i in model.current.coffee_ids
         coffee_step!(model, model[cof_i])
     end
+    # coffee_step!.(model, model.current.coffee_ids)
 
     for rust_i in shuffle(model.rng, model.current.rust_ids)
         rust_step!(model, model[rust_i])
     end
+    # rust_step!.(model, shuffle(model.rng, model.current.rust_ids))
 
     post_step!(model)
 end
@@ -175,7 +178,7 @@ function grow_rust!(model::ABM, rust::Rust, cof::Coffee)
                     if rust.n_lesions > 1
                         rust.n_lesions -= 1
                     else
-                        kill_rust!(rust, cof, model)
+                        kill_rust!(model, rust, cof)
                     end
                 elseif r < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
                     # if rand(model.rng) < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
