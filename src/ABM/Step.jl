@@ -7,15 +7,15 @@ function step_model!(model::ABM)
     pre_step!(model)
 
     for shade_i in model.current.shade_ids
-        shade_step!(model[shade_i], model)
+        shade_step!(model, model[shade_i])
     end
 
     for cof_i in model.current.coffee_ids
-        coffee_step!(model[cof_i], model)
+        coffee_step!(model, model[cof_i])
     end
 
     for rust_i in shuffle(model.rng, model.current.rust_ids)
-        rust_step!(model[rust_i], model)
+        rust_step!(model, model[rust_i])
     end
 
     post_step!(model)
@@ -50,11 +50,12 @@ function pre_step!(model)
     end
 end
 
-function shade_step!(tree::Shade, model::ABM)
+function shade_step!(model::ABM, tree::Shade)
     grow_shade!(tree, model.pars.shade_g_rate)
 end
 
-function coffee_step!(coffee::Coffee, model::ABM)
+function coffee_step!(model::ABM, coffee::Coffee)
+    # coffee = model[cof]
 
     if coffee.exh_countdown > 1
         coffee.exh_countdown -= 1
@@ -62,14 +63,14 @@ function coffee_step!(coffee::Coffee, model::ABM)
         coffee.area = 1.0
         coffee.exh_countdown = 0
     else
-        update_sunlight!(coffee, model)
+        update_sunlight!(model, coffee)
         grow_coffee!(coffee, model.pars.max_cof_gr)
         acc_production!(coffee)
     end
 end
 
-function rust_step!(rust::Rust, model::ABM)
-
+function rust_step!(model::ABM, rust::Rust)
+    # rust = model[ru]
     host = model[rust.hg_id]
 
     if host.exh_countdown == 0 # not exhausted
@@ -77,8 +78,8 @@ function rust_step!(rust::Rust, model::ABM)
         #     disperse!(rust, host, model)
         # end
         # parasitize!(rust, host, model)
-        grow_rust!(rust, host, model)
-        disperse!(rust, host, model)
+        grow_rust!(model, rust, host)
+        disperse!(model, rust, host)
     end
 end
 
@@ -111,7 +112,7 @@ end
 ## Coffee
 ###
 
-function update_sunlight!(cof::Coffee, model::ABM)
+function update_sunlight!(model::ABM, cof::Coffee)
     shade = 0.0
     for sh in cof.shade_neighbors
         shade += model[sh].shade
@@ -144,7 +145,7 @@ end
 ## Rust
 ###
 
-function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
+function grow_rust!(model::ABM, rust::Rust, cof::Coffee)
 
     local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - cof.sunlight))
     for les in 1:rust.n_lesions
@@ -185,10 +186,10 @@ function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
             end
         end
     end
-    parasitize!(rust, cof, model)
+    parasitize!(model, rust, cof)
 end
 
-function disperse!(rust::Rust, cof::Coffee, model::ABM)
+function disperse!(model::ABM, rust::Rust, cof::Coffee)
     #prog = 1 / (1 + (0.25 / (rust.area + (rust.n_lesions / 25.0)))^4)
 
     # option 2 is put for outside if rand

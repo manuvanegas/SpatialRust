@@ -2,7 +2,7 @@
 
 ## Rust growth
 
-function parasitize!(rust::Rust, cof::Coffee, model::ABM)
+function parasitize!(model::ABM, rust::Rust, cof::Coffee)
 
     # if any(rust.germinated)
         # bal = rust.area + (rust.n_lesions / 25.0) # between 0.0 and 2.0
@@ -14,9 +14,13 @@ function parasitize!(rust::Rust, cof::Coffee, model::ABM)
         if (sum(rust.area) / model.pars.max_lesions) >= model.pars.exhaustion
             cof.area = 0.0
             cof.exh_countdown = (model.pars.harvest_cycle * 2) + 1
-            kill_rust!(rust, cof, model)
+            kill_rust!(model, rust, cof)
         end
     # end
+end
+
+function calc_wetness_p(local_temp)
+    w = (-0.5/16.0) * local_temp + (0.5*30.0/16.0)
 end
 
 ## Spore dispersal and deposition
@@ -186,16 +190,10 @@ add_tuples(t_a::Tuple{Int, Int}, t_b::Tuple{Int, Int}) = (t_a[1] + t_b[1], t_a[2
 
 ## Parasitism
 
-function kill_rust!(rust::Rust, cof::Coffee, model::ABM)
+function kill_rust!(model::ABM, rust::Rust, cof::Coffee)
     cof.hg_id = 0
     rm_id = rust.id
     delete!(model.agents, rust.id)
     deleteat!(model.space.s[rust.pos...], 2)
     deleteat!(model.current.rust_ids, findfirst(i -> i == rm_id, model.current.rust_ids))
-end
-
-
-
-function calc_wetness_p(local_temp)
-    w = (-0.5/16.0) * local_temp + (0.5*30.0/16.0)
 end
