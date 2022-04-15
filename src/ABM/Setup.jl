@@ -56,7 +56,7 @@ Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
 @agent Rust GridAgent{2} begin
     germinated::Vector{Bool} # has it germinated and penetrated leaf tissue?
     area::Vector{Float64} # total, equal to latent + sporulating
-    spores::Vector{Float64}
+    spores::Vector{Bool}
     age::Vector{Int}
     n_lesions::Int
     hg_id::Int # "host-guest id": rust is guest, then this stores corresponding host's id
@@ -68,7 +68,7 @@ end
 function Rust(id::Int, pos::NTuple{2,Int}, max_lesions::Int, max_age::Int;
     germinated::Vector{Bool} = fill(false, max_lesions),
     area::Vector{Float64} = fill(0.0, max_lesions),
-    spores::Vector{Float64} = fill(0.0, max_lesions),
+    spores::Vector{Bool} = fill(false, max_lesions),
     age::Vector{Int} = fill((max_age + 1), max_lesions),
     n_lesions = 1,
     hg_id = 0,
@@ -76,7 +76,7 @@ function Rust(id::Int, pos::NTuple{2,Int}, max_lesions::Int, max_age::Int;
 
     vgerminated = vcat(germinated, fill(false, (max_lesions - length(germinated))))
     varea = vcat(area, fill(0.0, (max_lesions - length(area))))
-    vspores = vcat(spores, fill(0.0, (max_lesions - length(spores))))
+    vspores = vcat(spores, fill(false, (max_lesions - length(spores))))
     vage = vcat(age, fill((max_age + 1), (max_lesions - length(age))))
 
     Rust(id, pos, vgerminated, varea, vspores, vage, n_lesions, hg_id, sample_cycle)
@@ -141,7 +141,7 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
         nlesions = sample(model.rng, 1:model.pars.max_lesions)
         germinates = zeros(Bool, model.pars.max_lesions)
         areas = zeros(model.pars.max_lesions)
-        spores = zeros(model.pars.max_lesions)
+        spores = zeros(Bool, model.pars.max_lesions)
         ages = fill((model.pars.steps + 1), model.pars.max_lesions)
 
         for li in 1:nlesions
@@ -153,7 +153,7 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
             elseif area > 0.9
                 germinates[li] = true
                 areas[li] = area
-                spores[li] = area * model.pars.spore_pct
+                spores[li] = true
                 ages[li] = 0
             end
         end

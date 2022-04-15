@@ -160,18 +160,16 @@ function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
                     model.pars.fruit_load * cof.production / model.pars.harvest_cycle *
                     (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
 
-                if rust.spores[les] == 0.0
-                    if rand(model.rng) < (rust.area[les] * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
-                        rust.spores[les] = rust.area[les] * model.pars.spore_pct
-                    end
-                else
-                    rust.spores[les] = rust.area[les] * model.pars.spore_pct
+                if !rust.spores[les] &&
+                    rand(model.rng) < (rust.area[les] * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
+                    rust.spores[les] = true
                 end
             end
 
         else # try to germinate + penetrate tissue
             let r = rand(model.rng)
-                if r < (cof.sunlight * model.pars.uv_inact) || r <  (cof.sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
+                if r < (cof.sunlight * model.pars.uv_inact) ||
+                    r <  (cof.sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
                     # higher % sunlight means more chances of inactivation by UV or rain
                     if rust.n_lesions > 1
                         rust.n_lesions -= 1
@@ -180,10 +178,9 @@ function grow_rust!(rust::Rust, cof::Coffee, model::ABM)
                     end
                 elseif r < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
                     # if rand(model.rng) < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
-                        rust.germinated[les] = true
-                        rust.area[les] = 0.01
-                        rust.age[les] = 0
-                    end
+                    rust.germinated[les] = true
+                    rust.area[les] = 0.01
+                    rust.age[les] = 0
                 end
             end
         end
@@ -194,47 +191,51 @@ end
 function disperse!(rust::Rust, cof::Coffee, model::ABM)
     #prog = 1 / (1 + (0.25 / (rust.area + (rust.n_lesions / 25.0)))^4)
 
-    # if model.current.rain && rand(model.rng) < model.pars.p_density * rust.spores
-    if model.current.rain && rand(model.rng) < maximum(rust.spores)
-        # model.p_density * prog  #(rust.n_lesions * rust.area) / (2 + rust.n_lesions * rust.area)
-        # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
-
-        # option 1
-        events = sum(rust.spores) >= 0.5 ? Int(div(sum(rust.spores), 0.5)) : 1
-        # println("rain : rust $(rust.id) has $events disps")
-        for ns in 1:events
-
-            r_rust_dispersal!(model, rust, cof.sunlight)
+    # option 2 is put for outside if rand
+    if model.current.rain
+        for lesion in 1:rust.n_lesions
+            if rust.spores[lesion] &&
+                rand(model.rng) < (rust.area[lesion] * model.pars.spore_pct)
+                r_rust_dispersal!(model, rust, cof.sunlight)
+            end
         end
-
-        # option 2 is put for outside if rand
-        if model.current.rain
-            for lesion in 1:rust.n_lesions
-                 if rand(model.rng) < rust.spores[lesion]
-                 end
-             end
-         end
     end
 
-    # if model.current.wind && rand(model.rng) < model.pars.p_density * rust.spores
-    if model.current.wind && rand(model.rng) < maximum(rust.spores)
-        # model.p_density * prog
-        # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
-        # option 1
-        events = sum(rust.spores) >= 0.5 ? Int(div(sum(rust.spores), 0.5)) : 1
-        for ns in 1:events
-
-            w_rust_dispersal!(model, rust, cof.sunlight)
+    if model.current.wind
+        for lesion in 1:rust.n_lesions
+            if rust.spores[lesion] &&
+                rand(model.rng) < (rust.area[lesion] * model.pars.spore_pct)
+                w_rust_dispersal!(model, rust, cof.sunlight)
+            end
         end
-
-        # option 2 is put for outside if rand
-        if model.current.rain
-            for lesion in 1:rust.n_lesions
-                 if rand(model.rng) < rust.spores[lesion]
-                 end
-             end
-         end
     end
+
+    # # if model.current.rain && rand(model.rng) < model.pars.p_density * rust.spores
+    # if model.current.rain && rand(model.rng) < (maximum(rust.area) * model.pars.spore_pct)
+    #     # model.p_density * prog  #(rust.n_lesions * rust.area) / (2 + rust.n_lesions * rust.area)
+    #     # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
+    #
+    #     # option 1
+    #     events = Int(div(sum(rust.area) * model.pars.spore_pct, 0.5))
+    #     # println("rain : rust $(rust.id) has $events disps")
+    #     for ns in 1:(events - 1)
+    #         # r_rust_dispersal!(model, rust, cof.sunlight)
+    #     end
+    #     # at least one dispersal event has to happen
+    #     # r_rust_dispersal!(model, rust, cof.sunlight)
+    # end
+    #
+    # # if model.current.wind && rand(model.rng) < model.pars.p_density * rust.spores
+    # if model.current.wind && rand(model.rng) < (maximum(rust.area) * model.pars.spore_pct)
+    #     # model.p_density * prog
+    #     # (rust.n_lesions * rust.spores / (25.0 * model.spore_pct)) * model.p_density
+    #     # option 1
+    #     events = Int(div(sum(rust.area) * model.pars.spore_pct, 0.5))
+    #     for ns in 1:(events - 1)
+    #         # w_rust_dispersal!(model, rust, cof.sunlight)
+    #     end
+    #     # w_rust_dispersal!(model, rust, cof.sunlight)
+    # end
 end
 
 ###
