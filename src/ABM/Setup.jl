@@ -126,7 +126,7 @@ end
 
 function count_shades!(model::ABM)
     for c in model.current.coffee_ids
-        neighbors = nearby_ids(model[c], model) # get ids of neighboring plants
+        neighbors = nearby_ids(model[c], model, model.pars.shade_r) # get ids of neighboring plants
         model[c].shade_neighbors = collect(Iterators.Filter(id -> model[id] isa Shade, neighbors))
     end
 end

@@ -2,22 +2,17 @@
 
 ## Rust growth
 
-function parasitize!(model::ABM, rust::Rust, cof::Coffee)
-
-    # if any(rust.germinated)
-        # bal = rust.area + (rust.n_lesions / 25.0) # between 0.0 and 2.0
-    # # cof.progression = 1 / (1 + (0.75 / bal)^4)
-    #     prog = 1 / (1 + (0.25 / bal)^4) # Hill function with steep increase
-    #     cof.area = 1.0 - prog
-        cof.area = 1.0 - (sum(rust.area) / model.pars.max_lesions)
-        #if rust.area * rust.n_lesions >= model.pars.exhaustion #|| bal >= 2.0
-        if (sum(rust.area) / model.pars.max_lesions) >= model.pars.exhaustion
-            cof.area = 0.0
-            cof.exh_countdown = (model.pars.harvest_cycle * 2) + 1
-            kill_rust!(model, rust, cof)
-        end
-    # end
-end
+# function parasitism!(cof::Coffee, rust::Rust, pars::Parameters)
+#     # rust = model[cof.hg_id]
+#     cof.area = 1.0 - (sum(rust.area) / pars.max_lesions)
+#     if (sum(rust.area) / pars.max_lesions) >= pars.exhaustion
+#         cof.area = 0.0
+#         cof.exh_countdown = (pars.harvest_cycle * 2) + 1
+#         # kill_rust!(model, rust, cof)
+#         return rust
+#     end
+#     return nothing
+# end
 
 function calc_wetness_p(local_temp)
     w = (-0.5/16.0) * local_temp + (0.5*30.0/16.0)
@@ -197,3 +192,9 @@ function kill_rust!(model::ABM, rust::Rust, cof::Coffee)
     deleteat!(model.space.s[rust.pos...], 2)
     deleteat!(model.current.rust_ids, findfirst(i -> i == rm_id, model.current.rust_ids))
 end
+
+# kill_rust!(model::ABM, nothing) = nothing
+
+# kill_rust!(model::ABM, ru::Int) = kill_rust!(model, model[ru])
+
+kill_rust!(model, rust::Rust) = kill_rust!(model, rust, model[rust.hg_id])
