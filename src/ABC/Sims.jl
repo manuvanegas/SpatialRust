@@ -54,7 +54,8 @@ function simulate_fullsun(p_row::DataFrameRow,
 
         create_fullsun_farm_map(),
 
-        Weather(rain_data[1:restart_after], rand(Float64, restart_after) .< wind_prob, temp_data[1:restart_after]))
+        create_weather(rain_data[1:restart_after], wind_prob, temp_data[1:restart_after], restart_after)
+        )
 
 
     custom_sampling_first!(model1, 0.05)
@@ -81,7 +82,8 @@ function simulate_fullsun(p_row::DataFrameRow,
 
         create_fullsun_farm_map(),
 
-        Weather(rain_data, rand(Float64, 455) .< wind_prob, temp_data) )
+        create_weather(rain_data[(restart_after + 1):455], wind_prob, temp_data[(restart_after + 1):455], (455 - restart_after))
+        )
 
     custom_sampling_second!(model2, 0.025) # sampling groups in 2nd half were 1/2 and overlapped with each other
 

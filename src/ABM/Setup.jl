@@ -65,14 +65,18 @@ Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
     #parent::Int # id of rust it came from
 end
 
-function Rust(id::Int, pos::NTuple{2,Int}, max_lesions::Int, max_age::Int;
+function Rust(
+    id::Int, pos::NTuple{2,Int},
+    max_lesions::Int,
+    max_age::Int;
     germinated::Vector{Bool} = fill(false, max_lesions),
     area::Vector{Float64} = fill(0.0, max_lesions),
     spores::Vector{Bool} = fill(false, max_lesions),
     age::Vector{Int} = fill((max_age + 1), max_lesions),
     n_lesions = 1,
     hg_id = 0,
-    sample_cycle = [])
+    sample_cycle = []
+    )
 
     vgerminated = vcat(germinated, fill(false, (max_lesions - length(germinated))))
     varea = vcat(area, fill(0.0, (max_lesions - length(area))))
@@ -158,10 +162,18 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
             end
         end
 
-        new_rust = add_agent!(model[rusted].pos, Rust, model, model.pars.max_lesions,
-            model.pars.steps; germinated = germinates, area = areas,
-            spores = spores, age = ages, n_lesions = nlesions,
-            hg_id = model[rusted].id, sample_cycle = model[rusted].sample_cycle)
+        new_rust = add_agent!(
+        model[rusted].pos, Rust, model,
+        model.pars.max_lesions,
+        model.pars.steps;
+        germinated = germinates,
+        area = areas,
+        spores = spores,
+        age = ages,
+        n_lesions = nlesions,
+        hg_id = model[rusted].id,
+        sample_cycle = model[rusted].sample_cycle
+        )
         model[rusted].hg_id = new_rust.id
         model[rusted].area = model[rusted].area - (sum(new_rust.area) / model.pars.max_lesions)
         push!(model.current.rust_ids, new_rust.id)

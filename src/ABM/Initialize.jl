@@ -5,10 +5,10 @@ then call init_abm_obj. Returns model object ready to be run
 
 export Weather, Parameters, init_spatialrust#, create_weather, create_farm_map, create_fullsun_farm_map
 
-struct Weather
-    rain_data::Vector{Bool}
-    wind_data::Vector{Bool}
-    temp_data::Vector{Float64}
+struct Weather{S}
+    rain_data::SVector{S, Bool}
+    wind_data::SVector{S, Bool}
+    temp_data::SVector{S, Float64}
 end
 
 Base.@kwdef struct Parameters
@@ -93,9 +93,35 @@ function init_spatialrust()
 end
 
 
-
-
-function create_weather(rain_prob::Float64, wind_prob::Float64, mean_temp::Float64, steps::Int)
+function create_weather(
+    rain_prob::Float64,
+    wind_prob::Float64,
+    mean_temp::Float64,
+    steps::Int,
+    )
     #println("Check data! This has not been validated!")
-    return Weather(rand(Float64, steps) .< rain_prob, rand(Float64, steps) .< wind_prob, fill(mean_temp, steps) .+ randn() .* 2)
+    return Weather{steps}(
+        rand(steps) .< rain_prob,
+        rand(steps) .< wind_prob,
+        fill(mean_temp, steps) .+ randn() .* 2
+        # rand(steps) .< rain_prob,
+        # rand(steps) .< wind_prob,
+        # fill(mean_temp, steps) .+ randn() .* 2
+    )
+end
+
+function create_weather(
+    rain_data::AbstractVector{Bool},
+    wind_prob::Float64,
+    temp_data::Vector{Float64},
+    steps::Int,
+    )
+    return Weather{steps}(
+        rain_data,
+        rand(steps) .< wind_prob,
+        temp_data
+        # rain_data,
+        # rand(steps) .< wind_prob,
+        # temp_data
+    )
 end
