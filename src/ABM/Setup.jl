@@ -65,6 +65,18 @@ Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
     #parent::Int # id of rust it came from
 end
 
+# @agent Rust{N} GridAgent{2} begin
+#     germinated::MVector{N, Bool} # has it germinated and penetrated leaf tissue?
+#     area::MVector{N, Float64} # total, equal to latent + sporulating
+#     spores::MVector{N, Bool}
+#     age::MVector{N, Int}
+#     n_lesions::Int
+#     hg_id::Int # "host-guest id": rust is guest, then this stores corresponding host's id
+#     sample_cycle::Vector{Int} # inherits days of sampling from host
+#     #successful_landings::Int # maybe useful metric?
+#     #parent::Int # id of rust it came from
+# end
+
 function Rust(
     id::Int, pos::NTuple{2,Int},
     max_lesions::Int,
@@ -82,6 +94,11 @@ function Rust(
     varea = vcat(area, fill(0.0, (max_lesions - length(area))))
     vspores = vcat(spores, fill(false, (max_lesions - length(spores))))
     vage = vcat(age, fill((max_age + 1), (max_lesions - length(age))))
+
+    # vgerminated = MVector{max_lesions}(vcat(germinated, fill(false, (max_lesions - length(germinated)))))
+    # varea = MVector{max_lesions}(vcat(area, fill(0.0, (max_lesions - length(area)))))
+    # vspores = MVector{max_lesions}(vcat(spores, fill(false, (max_lesions - length(spores)))))
+    # vage = MVector{max_lesions}(vcat(age, fill((max_age + 1), (max_lesions - length(age)))))
 
     Rust(id, pos, vgerminated, varea, vspores, vage, n_lesions, hg_id, sample_cycle)
 end

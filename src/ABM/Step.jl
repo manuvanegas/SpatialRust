@@ -150,9 +150,9 @@ function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float
     local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - sunlight))
     for les in 1:rust.n_lesions
         if rust.germinated[les]
-            # if rust.age[les] < model.pars.steps
+            if rust.age[les] < model.pars.steps
                 rust.age[les] += 1
-            # end
+            end
             if 14 < local_temp < 30 # grow and sporulate
 
                 #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
