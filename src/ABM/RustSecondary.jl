@@ -69,19 +69,20 @@ end
 function rain_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}})
     let pos = pos, path = path
         for s in path[2:end]
-            trees = try collect(agents_in_position(add_tuples(s, pos), model))
-            catch
+            if all(1 .<= (new_pos = add_tuples(s, pos)) .<= model.pars.map_side)
+                trees = collect(agents_in_position(new_pos, model))
+                if isempty(trees)
+                    continue
+                elseif first(trees) isa Coffee &&
+                    (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.5)
+                    # if the coffee is where the spore was supposed to land || it blocked the dispersal
+                    inoculate_rust!(model, trees)
+                    break
+                elseif rand(model.rng) < model.pars.disp_block * 0.5
+                    break
+                end
+            else
                 model.current.outpour += 1
-                break
-            end
-            if isempty(trees)
-                continue
-            elseif first(trees) isa Coffee &&
-                (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.5)
-                # if the coffee is where the spore was supposed to land || it blocked the dispersal
-                inoculate_rust!(model, trees)
-                break
-            elseif rand(model.rng) < model.pars.disp_block * 0.5
                 break
             end
         end
@@ -92,30 +93,31 @@ function wind_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}
     let pos = pos, path = path
         blockedwind = false
         for s in path[2:end]
-            trees = try collect(agents_in_position(add_tuples(s, pos), model))
-            catch
-                model.current.outpour += 1
-                break
-            end
-            if blockedwind
-                if !isempty(trees) && first(trees) isa Coffee
-                    inoculate_rust!(model, trees)
-                    break
+            if all(1 .<= (new_pos = add_tuples(s, pos)) .<= model.pars.map_side)
+                trees = collect(agents_in_position(new_pos, model))
+                if blockedwind
+                    if !isempty(trees) && first(trees) isa Coffee
+                        inoculate_rust!(model, trees)
+                        break
+                    else
+                        break
+                    end
                 else
-                    break
+                    if isempty(trees)
+                        continue
+                    elseif first(trees) isa Coffee &&
+                        (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.1)
+                        # *0.1 because they are not great windbreaks, but can happen
+                        inoculate_rust!(model, trees)
+                        break
+                    elseif rand(model.rng) < model.pars.disp_block # blocked by shade
+                        blockedwind = true
+                        continue
+                    end
                 end
             else
-                if isempty(trees)
-                    continue
-                elseif first(trees) isa Coffee &&
-                    (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.1)
-                    # *0.1 because they are not great windbreaks, but can happen
-                    inoculate_rust!(model, trees)
-                    break
-                elseif rand(model.rng) < model.pars.disp_block # blocked by shade
-                    blockedwind = true
-                    continue
-                end
+                model.current.outpour += 1
+                break
             end
         end
     end
