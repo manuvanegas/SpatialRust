@@ -182,3 +182,29 @@ function f2(a,b)
     f1(a,b,c)
     println(c)
 end
+
+##  A fresh approach
+using Plots, Interact
+
+function par_dveg(K::Float64, µ::Float64, hill::Float64)
+    return dveg(R::Float64, veg::Float64) = ( 1.0 / (1.0 + (K / R)^hill) - 1) * µ * veg
+end
+
+function par_dR(K::Float64, k::Float64, hill::Float64)
+    return dR(R::Float64, veg::Float64) = k * V - ( 1.0 / (1.0 + (K / R)^hill) )
+end
+
+function run_g5(K::Float64, µ::Float64, k::Float64, hill::Float64, Ri::Float64, vegi::Float64, days::Int = 1900)
+    Rs = vcat(Ri, zeros(days - 1))
+    vegs = vcat(vegi, zeros(days - 1))
+
+    dR = par_dveg(K, k)
+    dveg = par_dveg(K, µ)
+
+    for d in 2:days
+        Rs[d] = Rs[d-1] + dR(Rs[d-1], vegs[d-1])
+        vegs[d] = vegs[d-1] + dveg(Rs[d-1], vegs[d-1])
+    end
+
+    return Rs, vegs
+end
