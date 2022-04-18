@@ -1,5 +1,5 @@
 Pkg.activate(".")
-using Agents, DrWatson
+using Agents, DrWatson, Random
 using Statistics: median, mean
 
 include(projectdir("SpatialRust.jl"))
@@ -20,8 +20,11 @@ tmodel = justtwosteps()
 # dm_adf, dm_mdf = dummyrun_spatialrust(10, 100)
 
 tadf, tmdf = dummyrun_spatialrust(10, 100, 10)
+
 using BenchmarkTools
+Random.seed!(1234)
 @btime a, m = dummyrun_spatialrust(500, 100, 25)
+
 
 maxlesions = [1, 5, 10, 25, 50]
 medians = []
@@ -65,7 +68,7 @@ plot(maxlesions, getproperty.(medians, :memory), title = "memory")
 # medians[1]
 # medians[4]
 # medians[5]
-# 
+#
 
 #=
 with @inbounds:
