@@ -41,6 +41,30 @@ end
 tadf, tmdf = nlesions_spatialrust(500, 100, 50)
 
 
+# Juno.@profiler dummyrun_spatialrust(10, 100)
+
+ttmodel = init_spatialrust(Parameters(map_side = 100, max_lesions = 25), SpatialRust.create_fullsun_farm_map())
+for i in 1:50
+    SpatialRust.step_model!(ttmodel)
+end
+
+@time SpatialRust.step_model!(ttmodel)
+
+using Profile
+Profile.init()
+Profile.init(n = 10^9)
+
+Juno.@profiler for i in 1:2
+    for rust_i in shuffle(ttmodel.rng, ttmodel.current.rust_ids)
+        SpatialRust.rust_step!(ttmodel, ttmodel[rust_i], ttmodel[ttmodel[rust_i].hg_id])
+    end
+    # println("hi")
+end
+
+Juno.@profiler for i in 1:3
+    SpatialRust.step_model!(ttmodel)
+end
+
 #type of median(t) is BenchmarkTools.TrialEstimate
 #=
 median(t)
