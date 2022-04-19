@@ -1,23 +1,3 @@
-# Secondary and other helper functions
-
-## Rust growth
-
-# function parasitism!(cof::Coffee, rust::Rust, pars::Parameters)
-#     # rust = model[cof.hg_id]
-#     cof.area = 1.0 - (sum(rust.area) / pars.max_lesions)
-#     if (sum(rust.area) / pars.max_lesions) >= pars.exhaustion
-#         cof.area = 0.0
-#         cof.exh_countdown = (pars.harvest_cycle * 2) + 1
-#         # kill_rust!(model, rust, cof)
-#         return rust
-#     end
-#     return nothing
-# end
-
-function calc_wetness_p(local_temp)
-    w = (-0.5/16.0) * local_temp + (0.5*30.0/16.0)
-end
-
 ## Spore dispersal and deposition
 
 function outside_spores!(model::ABM)
@@ -123,23 +103,23 @@ function wind_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}
     end
 end
 
-function inoculate_rust!(model::ABM, target::Coffee) # inoculate target coffee
-    here = collect(agents_in_position(target, model))
-    if length(here) > 1
-        if here[2].n_lesions < model.pars.max_lesions
-            here[2].n_lesions += 1
-        end
-    else
-        # if isdisjoint(target.sample_cycle, model.current.cycle)
-        #     new_id = add_agent!(target.pos, Rust, model; age = (model.pars.steps + 1), hg_id = target.id, sample_cycle = target.sample_cycle).id
-        # else
-            new_id = add_agent!(target.pos, Rust, model, model.pars.max_lesions, model.pars.steps;
-                hg_id = target.id, sample_cycle = target.sample_cycle).id
-        # end
-        target.hg_id = new_id
-        push!(model.current.rust_ids, new_id)
-    end
-end
+# function inoculate_rust!(model::ABM, target::Coffee) # inoculate target coffee
+#     here = collect(agents_in_position(target, model))
+#     if length(here) > 1
+#         if here[2].n_lesions < model.pars.max_lesions
+#             here[2].n_lesions += 1
+#         end
+#     else
+#         # if isdisjoint(target.sample_cycle, model.current.cycle)
+#         #     new_id = add_agent!(target.pos, Rust, model; age = (model.pars.steps + 1), hg_id = target.id, sample_cycle = target.sample_cycle).id
+#         # else
+#             new_id = add_agent!(target.pos, Rust, model, model.pars.max_lesions, model.pars.steps;
+#                 hg_id = target.id, sample_cycle = target.sample_cycle).id
+#         # end
+#         target.hg_id = new_id
+#         push!(model.current.rust_ids, new_id)
+#     end
+# end
 
 function inoculate_rust!(model::ABM, trees::Vector{A}) where {A<:AbstractAgent}
     # here = collect(trees)
@@ -155,7 +135,7 @@ function inoculate_rust!(model::ABM, trees::Vector{A}) where {A<:AbstractAgent}
     end
 end
 
-inoculate_rust!(model::ABM, none::Bool) = nothing
+# inoculate_rust!(model::ABM, none::Bool) = nothing
 
 function rain_path(model::ABM, sunlight)::Vector{NTuple{2, Int}}
     distance = abs(2 * randn(model.rng) * model.pars.rain_distance) *
@@ -183,20 +163,3 @@ end
 travel_path(distance::Float64, heading::Float64, x::Float64)::Vector{NTuple{2, Int}} = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in x:x:distance])
 
 add_tuples(t_a::Tuple{Int, Int}, t_b::Tuple{Int, Int}) = (t_a[1] + t_b[1], t_a[2] + t_b[2])
-
-
-## Parasitism
-
-function kill_rust!(model::ABM, rust::Rust, cof::Coffee)
-    cof.hg_id = 0
-    rm_id = rust.id
-    delete!(model.agents, rust.id)
-    deleteat!(model.space.s[rust.pos...], 2)
-    deleteat!(model.current.rust_ids, findfirst(i -> i == rm_id, model.current.rust_ids))
-end
-
-# kill_rust!(model::ABM, nothing) = nothing
-
-# kill_rust!(model::ABM, ru::Int) = kill_rust!(model, model[ru])
-
-kill_rust!(model, rust::Rust) = kill_rust!(model, rust, model[rust.hg_id])

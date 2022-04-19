@@ -168,22 +168,22 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
 
     for rusted in rusted_ids
         nlesions = sample(model.rng, 1:model.pars.max_lesions)
-        germinates = zeros(Bool, model.pars.max_lesions)
+        germinates = zeros(model.pars.max_lesions)
         areas = zeros(model.pars.max_lesions)
-        spores = zeros(Bool, model.pars.max_lesions)
-        ages = fill((model.pars.steps + 1), model.pars.max_lesions)
+        spores = zeros(model.pars.max_lesions)
+        ages = fill((model.pars.steps + 1.0), model.pars.max_lesions)
 
         for li in 1:nlesions
             area = rand(model.rng)
             if 0.05 < area < 0.9
-                germinates[li] = true
+                germinates[li] = 1.0
                 areas[li] = area
-                ages[li] = 0
+                ages[li] = 0.0
             elseif area > 0.9
-                germinates[li] = true
+                germinates[li] = 1.0
                 areas[li] = area
-                spores[li] = true
-                ages[li] = 0
+                spores[li] = 1.0
+                ages[li] = 0.0
             end
         end
 
