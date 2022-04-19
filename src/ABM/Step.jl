@@ -147,7 +147,7 @@ end
 
 function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64)
     let local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - sunlight)),
-        growth_modif = model.pars.fruit_load * production / model.pars.harvest_cycle *
+        growth_modif = (1 + model.pars.fruit_load * production / model.pars.harvest_cycle) *
         (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
 
         @views for lesion in 1:rust.n_lesions
@@ -161,15 +161,15 @@ function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float
                 else
                     area_growth!(rust.state[:, lesion], local_temp, growth_modif, false)
                 end
-            elseif (r = rand(model.rng) < (sunlight * model.pars.uv_inact)) ||
-                        r <  (sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
+            elseif rand(model.rng) < (sunlight * max(model.pars.uv_inact,
+                        (model.current.rain ? model.pars.rain_washoff : 0.0)) )
                         # higher % sunlight means more chances of inactivation by UV or rain
                         if rust.n_lesions > 1
                             rust.n_lesions -= 1
                         else
                             kill_rust!(model, rust)
                         end
-            elseif r < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
+            elseif rand(model.rng) < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
                 germinate!(rust.state[:, lesion])
             end
         end

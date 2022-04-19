@@ -17,7 +17,7 @@ function area_growth!(state::SubArray{Float64}, local_temp::Float64, growth_modi
     if 14.0 < local_temp < 30.0 # grow and sporulate
 
         #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
-        state[2] += state[2] * (1 - state[2]) * growth_modif
+        state[2] += 0.15 * state[2] * (1 - state[2]) * growth_modif
 
         if spor_conds
             state[3] = 1.0
@@ -33,7 +33,7 @@ function germinate!(state::SubArray{Float64})
     # println(typeof(state))
     # println(state)
     state[1] = 1.0
-    state[2] = 0.001
+    state[2] = 0.0002
     state[4] = 0.0
 end
 

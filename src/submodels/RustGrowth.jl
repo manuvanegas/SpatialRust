@@ -80,3 +80,40 @@
 # │     │ Int64 │ Int64 │ Int64 │
 # ├─────┼───────┼───────┼───────┤
 # │ 6   │ 12    │ 15    │ 18    │
+
+##
+#= Now with the general observations by McCain (1984):
+    - max radius of 1-1.5 cm -> max area is 3.14 to 7 cm^2. Assume 5 cm^2
+ + exp data starts with size = 0.001
+
+ => modelling relative areas (from 0 to 1). Need to divide exp data /5 to compare to model
+
+ max area recorded in exp data is ~0.6 at age 7w (49 days). 0.6/5 = 0.12
+=#
+using Plots
+
+g_r = 0.15
+
+days = collect(1:100)
+size = zeros(length(days))
+size[1] = 0.0002
+
+for day in 2:length(days)
+    size[day] = size[day - 1] + (g_r * size[day - 1] * (1.0 - size[day - 1])) #* temp_modif#* prod[day - 1]
+end
+
+size[49]
+
+plot(days, size)
+
+local_temp = 20.0
+temp_modif = (-0.0178 * ((local_temp - 22.5) ^ 2.0) + 1.0)
+prod = [i / 365 for i in days] .+ 1
+sizep = zeros(length(days))
+sizep[1] = 0.0002
+
+for day in 2:length(days)
+    sizep[day] = sizep[day - 1] + (g_r * sizep[day - 1] * (1.0 - sizep[day - 1])) * prod[day - 1] * temp_modif
+end
+
+plot(days, sizep)

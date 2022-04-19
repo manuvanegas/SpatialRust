@@ -82,10 +82,10 @@ function Rust(
     id::Int, pos::NTuple{2,Int},
     max_lesions::Int,
     max_age::Int;
-    germinated::Vector{Bool} = fill(false, max_lesions),
+    germinated::Vector{Float64} = fill(0.0, max_lesions),
     area::Vector{Float64} = fill(0.0, max_lesions),
-    spores::Vector{Bool} = fill(false, max_lesions),
-    age::Vector{Int} = fill((max_age + 1), max_lesions),
+    spores::Vector{Float64} = fill(0.0, max_lesions),
+    age::Vector{Float64} = fill((max_age + 1.0), max_lesions),
     n_lesions = 1,
     hg_id = 0,
     sample_cycle = []
