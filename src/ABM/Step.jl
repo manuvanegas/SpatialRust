@@ -146,45 +146,72 @@ end
 ###
 
 function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64)
+    let local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - sunlight)),
+        growth_r = model.pars.fruit_load * production / model.pars.harvest_cycle *
+        (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
 
-    local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - sunlight))
-    for les in 1:rust.n_lesions
-        if rust.germinated[les]
-            if rust.age[les] < model.pars.steps
-                rust.age[les] += 1
-            end
-            if 14 < local_temp < 30 # grow and sporulate
+        @views for lesion in 1:rust.n_lesions
+            # rust.n_lesions += grow_each_rust!(rust.state[:, lesion], local_temp, sunlight, production)
 
-                #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
-                rust.area[les] += rust.area[les] * (1 - rust.area[les]) *
-                    #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
-                    model.pars.fruit_load * production / model.pars.harvest_cycle *
-                    (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
-
-                if !rust.spores[les] &&
-                    rand(model.rng) < (rust.area[les] * (local_temp + 5) / 30) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
-                    rust.spores[les] = true
+            if rust.state[1, lesion] == 1.0
+                if rust.state[3, lesion] == 0.0
+                    area_growth!(rust.state[:, lesion],local_temp, growth_r,
+                        sporul_conds(rand(model.rng), rust.state[2, lesion], local_temp)
+                    )
+                else
+                    area_growth!(rust.state[:, lesion], local_temp, growth_r, false)
                 end
-            end
-
-        else # try to germinate + penetrate tissue
-            let r = rand(model.rng)
-                if r < (sunlight * model.pars.uv_inact) ||
-                    r <  (sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
-                    # higher % sunlight means more chances of inactivation by UV or rain
-                    if rust.n_lesions > 1
-                        rust.n_lesions -= 1
-                    else
-                        kill_rust!(model, rust)
-                    end
-                elseif r < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
-                    # if rand(model.rng) < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
-                    rust.germinated[les] = true
-                    rust.area[les] = 0.01
-                    rust.age[les] = 0
-                end
+            elseif (r = rand(model.rng) < (sunlight * model.pars.uv_inact)) ||
+                        r <  (sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
+                        # higher % sunlight means more chances of inactivation by UV or rain
+                        if rust.n_lesions > 1
+                            rust.n_lesions -= 1
+                        else
+                            kill_rust!(model, rust)
+                        end
+            elseif r < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
+                germinate!(rust.state[:, lesion])
             end
         end
+
+        # for les in 1:rust.n_lesions
+        #     if rust.germinated[les]
+        #         if rust.age[les] < model.pars.steps
+        #             rust.age[les] += 1
+        #         end
+        #         if 14 < local_temp < 30 # grow and sporulate
+        #
+        #             #  logistic growth (K=1) * rate due to fruit load * rate due to temperature
+        #             rust.area[les] += rust.area[les] * (1 - rust.area[les]) *
+        #                 #(model.fruit_load * (1 / (1 + (30 / cof.production))^2)) *
+        #                 model.pars.fruit_load * production / model.pars.harvest_cycle *
+        #                 (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
+        #
+        #             if !rust.spores[les] &&
+        #                 rand(model.rng) < (rust.area[les] * (local_temp + 5.0) / 30.0) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
+        #                 rust.spores[les] = true
+        #             end
+        #         end
+        #
+        #     else # try to germinate + penetrate tissue
+        #         let r = rand(model.rng)
+        #             if r < (sunlight * model.pars.uv_inact) ||
+        #                 r <  (sunlight * (model.current.rain ? model.pars.rain_washoff : 0.0))
+        #                 # higher % sunlight means more chances of inactivation by UV or rain
+        #                 if rust.n_lesions > 1
+        #                     rust.n_lesions -= 1
+        #                 else
+        #                     kill_rust!(model, rust)
+        #                 end
+        #             elseif r < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
+        #                 # if rand(model.rng) < calc_wetness_p(local_temp - (model.current.rain ? 6.0 : 0.0))
+        #                 rust.germinated[les] = true
+        #                 rust.area[les] = 0.01
+        #                 rust.age[les] = 0
+        #             end
+        #         end
+        #     end
+        # end
     end
 end
 
@@ -194,8 +221,8 @@ function disperse!(model::ABM, rust::Rust, cof::Coffee)
     # option 2 is put for outside if rand
     if model.current.rain
         for lesion in 1:rust.n_lesions
-            if rust.spores[lesion] &&
-                rand(model.rng) < (rust.area[lesion] * model.pars.spore_pct)
+            if rust.state[3, lesion] == 1.0 &&
+                rand(model.rng) < (rust.state[2, lesion] * model.pars.spore_pct)
                 r_rust_dispersal!(model, rust, cof.sunlight)
             end
         end
@@ -203,8 +230,8 @@ function disperse!(model::ABM, rust::Rust, cof::Coffee)
 
     if model.current.wind
         for lesion in 1:rust.n_lesions
-            if rust.spores[lesion] &&
-                rand(model.rng) < (rust.area[lesion] * model.pars.spore_pct)
+            if rust.state[3, lesion] == 1.0 &&
+                rand(model.rng) < (rust.state[2, lesion] * model.pars.spore_pct)
                 w_rust_dispersal!(model, rust, cof.sunlight)
             end
         end
@@ -245,9 +272,9 @@ function parasitize!(model::ABM, rust::Rust, cof::Coffee)
     # # cof.progression = 1 / (1 + (0.75 / bal)^4)
     #     prog = 1 / (1 + (0.25 / bal)^4) # Hill function with steep increase
     #     cof.area = 1.0 - prog
-        cof.area = 1.0 - (sum(rust.area) / model.pars.max_lesions)
+        cof.area = 1.0 - (sum(rust.state[2, :]) / model.pars.max_lesions)
         #if rust.area * rust.n_lesions >= model.pars.exhaustion #|| bal >= 2.0
-        if (sum(rust.area) / model.pars.max_lesions) >= model.pars.exhaustion
+        if (sum(rust.state[2, :]) / model.pars.max_lesions) >= model.pars.exhaustion
             cof.area = 0.0
             cof.exh_countdown = (model.pars.harvest_cycle * 2) + 1
             kill_rust!(model, rust)

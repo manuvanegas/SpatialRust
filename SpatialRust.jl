@@ -10,6 +10,7 @@ include(srcdir("ABM/FarmMap.jl"))
 include(srcdir("ABM/Setup.jl"))
 include(srcdir("ABM/Step.jl"))
 include(srcdir("ABM/RustSecondary.jl"))
+include(srcdir("ABM/RustGrowth.jl"))
 include(srcdir("RunnerFncs.jl"))
 
 include(srcdir("ABC", "Sims.jl"))
