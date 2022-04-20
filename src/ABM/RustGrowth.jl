@@ -1,11 +1,3 @@
-function grow_each_rust!(state::Vector{Float64}, temp::Float64, sunlight::Float64, production::Float64)
-    if state[1] #germinated
-
-    else
-
-    end
-end
-
 function area_growth!(state::SubArray{Float64}, local_temp::Float64, growth_modif::Float64, spor_conds::Bool)
 # 1. germinated
 # 2. area
