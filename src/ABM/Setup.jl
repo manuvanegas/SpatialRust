@@ -54,10 +54,11 @@ end
 Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
 
 @agent Rust GridAgent{2} begin
-    germinated::Vector{Bool} # has it germinated and penetrated leaf tissue?
-    area::Vector{Float64} # total, equal to latent + sporulating
-    spores::Vector{Bool}
-    age::Vector{Int}
+    # germinated::Vector{Bool} # has it germinated and penetrated leaf tissue?
+    # area::Vector{Float64} # total, equal to latent + sporulating
+    # spores::Vector{Bool}
+    # age::Vector{Int}
+    state::Matrix{Float64}
     n_lesions::Int
     hg_id::Int # "host-guest id": rust is guest, then this stores corresponding host's id
     sample_cycle::Vector{Int} # inherits days of sampling from host
@@ -81,26 +82,33 @@ function Rust(
     id::Int, pos::NTuple{2,Int},
     max_lesions::Int,
     max_age::Int;
-    germinated::Vector{Bool} = fill(false, max_lesions),
+    germinated::Vector{Float64} = fill(0.0, max_lesions),
     area::Vector{Float64} = fill(0.0, max_lesions),
-    spores::Vector{Bool} = fill(false, max_lesions),
-    age::Vector{Int} = fill((max_age + 1), max_lesions),
+    spores::Vector{Float64} = fill(0.0, max_lesions),
+    age::Vector{Float64} = fill((max_age + 1.0), max_lesions),
     n_lesions = 1,
     hg_id = 0,
     sample_cycle = []
     )
 
-    vgerminated = vcat(germinated, fill(false, (max_lesions - length(germinated))))
+    # vgerminated = vcat(germinated, fill(false, (max_lesions - length(germinated))))
+    # varea = vcat(area, fill(0.0, (max_lesions - length(area))))
+    # vspores = vcat(spores, fill(false, (max_lesions - length(spores))))
+    # vage = vcat(age, fill((max_age + 1), (max_lesions - length(age))))
+
+    vgerminated = vcat(germinated, fill(0.0, (max_lesions - length(germinated))))
     varea = vcat(area, fill(0.0, (max_lesions - length(area))))
-    vspores = vcat(spores, fill(false, (max_lesions - length(spores))))
-    vage = vcat(age, fill((max_age + 1), (max_lesions - length(age))))
+    vspores = vcat(spores, fill(0.0, (max_lesions - length(spores))))
+    vage = vcat(age, fill((max_age + 1.0), (max_lesions - length(age))))
+
+    mstate = vcat(vgerminated', varea', vspores', vage')
 
     # vgerminated = MVector{max_lesions}(vcat(germinated, fill(false, (max_lesions - length(germinated)))))
     # varea = MVector{max_lesions}(vcat(area, fill(0.0, (max_lesions - length(area)))))
     # vspores = MVector{max_lesions}(vcat(spores, fill(false, (max_lesions - length(spores)))))
     # vage = MVector{max_lesions}(vcat(age, fill((max_age + 1), (max_lesions - length(age)))))
 
-    Rust(id, pos, vgerminated, varea, vspores, vage, n_lesions, hg_id, sample_cycle)
+    Rust(id, pos, mstate, n_lesions, hg_id, sample_cycle)
 end
 
 # function Rust(id, pos;
@@ -160,22 +168,22 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
 
     for rusted in rusted_ids
         nlesions = sample(model.rng, 1:model.pars.max_lesions)
-        germinates = zeros(Bool, model.pars.max_lesions)
+        germinates = zeros(model.pars.max_lesions)
         areas = zeros(model.pars.max_lesions)
-        spores = zeros(Bool, model.pars.max_lesions)
-        ages = fill((model.pars.steps + 1), model.pars.max_lesions)
+        spores = zeros(model.pars.max_lesions)
+        ages = fill((model.pars.steps + 1.0), model.pars.max_lesions)
 
         for li in 1:nlesions
             area = rand(model.rng)
             if 0.05 < area < 0.9
-                germinates[li] = true
+                germinates[li] = 1.0
                 areas[li] = area
-                ages[li] = 0
+                ages[li] = 0.0
             elseif area > 0.9
-                germinates[li] = true
+                germinates[li] = 1.0
                 areas[li] = area
-                spores[li] = true
-                ages[li] = 0
+                spores[li] = 1.0
+                ages[li] = 0.0
             end
         end
 
@@ -192,7 +200,7 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
         sample_cycle = model[rusted].sample_cycle
         )
         model[rusted].hg_id = new_rust.id
-        model[rusted].area = model[rusted].area - (sum(new_rust.area) / model.pars.max_lesions)
+        model[rusted].area = model[rusted].area - (sum(areas) / model.pars.max_lesions)
         push!(model.current.rust_ids, new_rust.id)
     end
 end

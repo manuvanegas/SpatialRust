@@ -5,7 +5,9 @@ using Statistics: median, mean
 include(projectdir("SpatialRust.jl"))
 using .SpatialRust
 
+# tmodel = SpatialRust.init_spatialrust(Parameters(), SpatialRust.create_fullsun_farm_map())
 tmodel = justtwosteps()
+# SpatialRust.step_model!(tmodel)
 
 # tnl = getproperty.((tmodel[id] for id in tmodel.current.rust_ids), :n_lesions)
 # trusts = collect(tmodel[id] for id in tmodel.current.rust_ids)
@@ -30,7 +32,7 @@ maxlesions = [1, 5, 10, 25, 50]
 medians = []
 mins = []
 for (i, nl) in enumerate(maxlesions)
-    t = @benchmark nlesions_spatialrust(500, 100, $nl)
+    t = @benchmark dummyrun_spatialrust(500, 100, $nl)
     println(nl)
     push!(medians, median(t))
     push!(mins, minimum(t))

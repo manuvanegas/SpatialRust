@@ -1,23 +1,3 @@
-# Secondary and other helper functions
-
-## Rust growth
-
-# function parasitism!(cof::Coffee, rust::Rust, pars::Parameters)
-#     # rust = model[cof.hg_id]
-#     cof.area = 1.0 - (sum(rust.area) / pars.max_lesions)
-#     if (sum(rust.area) / pars.max_lesions) >= pars.exhaustion
-#         cof.area = 0.0
-#         cof.exh_countdown = (pars.harvest_cycle * 2) + 1
-#         # kill_rust!(model, rust, cof)
-#         return rust
-#     end
-#     return nothing
-# end
-
-function calc_wetness_p(local_temp)
-    w = (-0.5/16.0) * local_temp + (0.5*30.0/16.0)
-end
-
 ## Spore dispersal and deposition
 
 function outside_spores!(model::ABM)
@@ -183,20 +163,3 @@ end
 travel_path(distance::Float64, heading::Float64, x::Float64)::Vector{NTuple{2, Int}} = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in x:x:distance])
 
 add_tuples(t_a::Tuple{Int, Int}, t_b::Tuple{Int, Int}) = (t_a[1] + t_b[1], t_a[2] + t_b[2])
-
-
-## Parasitism
-
-function kill_rust!(model::ABM, rust::Rust, cof::Coffee)
-    cof.hg_id = 0
-    rm_id = rust.id
-    delete!(model.agents, rust.id)
-    deleteat!(model.space.s[rust.pos...], 2)
-    deleteat!(model.current.rust_ids, findfirst(i -> i == rm_id, model.current.rust_ids))
-end
-
-# kill_rust!(model::ABM, nothing) = nothing
-
-# kill_rust!(model::ABM, ru::Int) = kill_rust!(model, model[ru])
-
-kill_rust!(model, rust::Rust) = kill_rust!(model, rust, model[rust.hg_id])
