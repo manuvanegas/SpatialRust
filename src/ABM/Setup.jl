@@ -218,6 +218,10 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
             warn = false)
     end
 
+    if all(farm_map .!= 2)
+        model = ABM(Union{Coffee, Rust}, model.space; model.properties, warn = false)
+    end
+
     if parameters.start_days_at == 0 # simulation starts at the beginning of a harvest cycle
         add_trees!(model, farm_map)
     else
@@ -228,9 +232,9 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
 
     init_rusts!(model, parameters.p_rusts)
 
-    if isempty(model.current.shade_ids)
-        push!(model.current.shade_ids, add_agent!(random_empty(model), Shade, model; shade = -1.0).id)
-    end
+    # if isempty(model.current.shade_ids)
+    #     push!(model.current.shade_ids, add_agent!(random_empty(model), Shade, model; shade = -1.0).id)
+    # end
 
     return model
 end
