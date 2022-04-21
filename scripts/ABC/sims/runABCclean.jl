@@ -48,9 +48,16 @@ end
 
 cat_time = @elapsed begin
     cat_outs = reduce(struct_cat, outputs)
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/ages/m_" * ARGS[2] * ".arrow"), cat_outs.per_age)
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/cycles/m_" * ARGS[2] * ".arrow"), cat_outs.per_cycle)
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_" * ARGS[2] * ".arrow"), cat_outs.prod_df)
+    filenum = ifelse(ARGS[2] < 10,
+    string("00", ARGS[2]),
+    ifelse(ARGS[2] < 100,
+        string("0", ARGS[2]),
+        ARGS[2]
+        )
+    )
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/ages/m_", filenum, ".arrow"), cat_outs.per_age)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/cycles/m_", filenum, ".arrow"), cat_outs.per_cycle)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_", filenum, ".arrow"), cat_outs.prod_df)
 end
 
 timings = """
