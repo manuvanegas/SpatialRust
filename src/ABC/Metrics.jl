@@ -3,8 +3,8 @@
 function age_area_spores!(rust::Rust, cycle::Int, df::DataFrame)
     let r::Rust = rust, c::Int = cycle
         for i in 1:r.n_lesions
-            if r.age[i] < 53
-                push!(df, (div(r.age[i], 7), c, r.area[i], r.spores[i]))
+            if r.state[4, i] < 53.0
+                push!(df, c, (div(r.state[4, i], 7.0, RoundNearest), r.state[2, i]))
             end
         end
     end
@@ -15,10 +15,10 @@ function d_per_ages(model::ABM)::DataFrame
     # used 53/7 = 7.57, which rounds to 8. We want all ages until 7
 
     if isempty(sampled_rusts)
-        return DataFrame(age = -1, cycle = -1, area_m = -1.0, spores_m = -1.0, tick = model.current.ticks)
+        return DataFrame(cycle = -1, age = -1.0, area_m = -1.0, spores_m = -1.0, tick = model.current.ticks)
         # return df2
     else
-        df = DataFrame(age = Int[], cycle = Int[], area = Float64[], spores = Float64[])
+        df = DataFrame(cycle = Int[], age = Float64[], area = Float64[])
 
         for cycle in model.current.cycle
             foreach(r -> age_area_spores!(r, cycle, df), Iterators.filter(r -> cycle in r.sample_cycle, sampled_rusts))
@@ -30,7 +30,8 @@ function d_per_ages(model::ABM)::DataFrame
         if isempty(df)
             return DataFrame(age = -1, cycle = -1, area_m = -1.0, spores_m = -1.0, tick = model.current.ticks)
         else
-            df2 = combine(groupby(df, [:age, :cycle]), [:area => median => :area_m, :spores => median => :spores_m])
+            df2 = combine(groupby(df, [:age, :cycle]), [:area => median => :area_m])
+            df2.spores_m = df2.area_m * model.pars.spore_pct
             df2.tick .= model.current.ticks
         end
         # if size(df2)[1] == 0
@@ -107,3 +108,71 @@ function prod_metrics(model::ABM)::Array{Function}
     end
     return [tick, coffee_production]
 end
+
+## Getting raw lesion area+spore and fallen data
+
+function get_rust_state(rust::Rust)
+    let r::Rust = rust
+        # areas = r.state[[2, 4],:][r.state[4,:] .< 53.0]
+        rdf = DataFrame((r.state[2:4, (r.state[4,:] .< 53.0)])', [:area, :spore, :age])
+        rdf[:, :age] .= div.(rdf.age, 7.0, RoundNearest)
+        return rdf
+    end
+end
+
+function SpatialRust.ind_data(model::ABM)
+    df = DataFrame(tick = Int[], cycle = Int[], age = Int[], area = Float64[], spore = Float64[], exh = Bool[], id = Int[])
+    # println(model.current.cycle)
+    for cycle in model.current.cycle
+        for cof in Iterators.filter(c -> c isa Coffee && cycle in c.sample_cycle, allagents(model))
+            if cof.hg_id == 0
+                push!(df, (model.current.ticks, cycle, -1, -1.0, -1.0, (cof.exh_countdown > 0), cof.id))
+            else
+                rust_df = SpatialRust.get_rust_state(model[cof.hg_id])
+                rust_df[:, :tick] .= model.current.ticks
+                rust_df[:, :cycle] .= cycle
+                rust_df[:, :spore] .= @. rust_df.spore * rust_df.area * model.pars.spore_pct
+                rust_df[:, :exh].= cof.exh_countdown > 0
+                rust_df[:, :id] .= cof.id
+
+                append!(df, rust_df)
+            end
+        end
+    end
+    if model.current.cycle == [5, 6] && model.current.ticks >= 84
+        println(first(df,5))
+        println(collect(Iterators.filter(c -> c isa Coffee && !isdisjoint(model.current.cycle, c.sample_cycle), allagents(model)))[1:3])
+    end
+    return df
+end
+
+## Process raw data to obtain per_age and per_cycle dfs
+
+function update_dfs!(per_age::DataFrame, per_cycle::DataFrame, data::DataFrame, max_lesions::Int)
+
+    append!(
+    per_age,
+    combine(groupby(data, [:tick, :age, :cycle]),
+        [:area => median5 => :area_m, :spore => median5 => :spores_m]
+        )
+    )
+
+    let nl::Int = max_lesions
+        sum_area(col::SubArray) = sum(col) / nl
+        x -> count(x) / nrow(x)
+
+        intermediate = combine(groupby(data, [:tick, :cycle, :id]),
+            [:area => sum_area => :s_area, :spore => sum_area => :s_spore, :exh => first => :fallen]
+            )
+
+        append!(
+        per_cycle,
+        combine(groupby(intermediate, [:tick, :cycle]),
+            [:s_area => median => :area_m, :s_spore => median => :spores_m, :fallen => pct => :fallen]
+            )
+        )
+    end
+end
+
+pct(col::SubArray) = count(col) / length(col)
+median5(col::SubArray) = median(col) * 5

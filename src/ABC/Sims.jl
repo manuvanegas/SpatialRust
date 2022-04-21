@@ -18,10 +18,10 @@ function sim_abc(p_row::DataFrameRow,
     wind_prob::Float64,
     restart_after::Int = 231)
 
-    rust_df, plant_df = simulate_fullsun(p_row, rain_data, temp_data, when_rust, when_prod, wind_prob, restart_after)
+    per_age_df, per_cycle_df, plant_df = simulate_fullsun(p_row, rain_data, temp_data, when_rust, when_prod, wind_prob, restart_after)
 
 
-    per_age_df, per_cycle_df = dewrinkle(rust_df) # "wrinkles" being the nested DataFrames
+    # per_age_df, per_cycle_df = dewrinkle(rust_df) # "wrinkles" being the nested DataFrames
 
     per_age_df.p_row .= p_row[:RowN]
     per_cycle_df.p_row .= p_row[:RowN]
@@ -60,8 +60,8 @@ function simulate_fullsun(p_row::DataFrameRow,
 
     custom_sampling_first!(model1, 0.05)
 
-    rust_df, plant_df = abc_run!(model1, step_model!, restart_after;
-        when_rust = when_rust, when_prod = when_prod, rust_data = [d_per_ages, d_per_cycles], prod_data = prod_metrics)
+    per_age_df, per_cycle_df, plant_df = abc_run!(model1, step_model!, restart_after;
+        when_rust = when_rust, when_prod = when_prod, rust_data = [ind_data], prod_data = prod_metrics)
 
     when_rust2 = filter(x -> x > 0, when_rust .- restart_after)
     when_prod2 = filter(x -> x > 0, when_prod .- restart_after)
@@ -87,10 +87,20 @@ function simulate_fullsun(p_row::DataFrameRow,
 
     custom_sampling_second!(model2, 0.025) # sampling groups in 2nd half were 1/2 and overlapped with each other
 
-    rust_df2, plant_df2 = abc_run!(model2, step_model!, (455 - restart_after);
-        when_rust = when_rust2, when_prod = when_prod2, rust_data = [d_per_ages, d_per_cycles], prod_data = prod_metrics)
+    per_age_df2, per_cycle_df2, plant_df2 = abc_run!(
+    model2, step_model!,
+    (455 - restart_after);
+    when_rust = when_rust2,
+    when_prod = when_prod2,
+    rust_data = [ind_data],
+    prod_data = prod_metrics
+    )
 
-    return vcat(rust_df, rust_df2), vcat(plant_df, plant_df2)
+    per_age_df2[:, :tick] .= per_age_df2.tick .+ restart_after
+    per_cycle_df2[:, :tick] .= per_cycle_df2.tick .+ restart_after
+    plant_df2[:, :tick] .= plant_df2.tick .+ restart_after
+
+    return vcat(per_age_df, per_age_df2), vcat(per_cycle_df, per_cycle_df2), vcat(plant_df, plant_df2)
 end
 
 ## Selecting sampled locations for each cycle
@@ -165,9 +175,14 @@ function abc_run!(model::ABM,
     prod_data = nothing,
     obtainer = identity)
 
-    df_rust = init_model_dataframe(model, rust_data)
+    # df_rust = init_model_dataframe(model, rust_data)
+    per_age = DataFrame(tick = Int[], cycle = Int[], age = Int[], area_m = Float64[], spores_m = Float64[])
+    per_cycle = DataFrame(tick = Int[], cycle = Int[], area_m = Float64[], spores_m = Float64[], fallen = Float64[])
     df_prod = init_model_dataframe(model, prod_data)
-    for c in eachcol(df_rust)
+    for c in eachcol(per_age)
+        sizehint!(c, length(when_rust))
+    end
+    for c in eachcol(per_cycle)
         sizehint!(c, length(when_rust))
     end
     for c in eachcol(df_prod)
@@ -177,7 +192,9 @@ function abc_run!(model::ABM,
     s = 0
     while Agents.until(s, n, model)
         if Agents.should_we_collect(s, model, when_rust)
-            collect_model_data!(df_rust, model, rust_data, s; obtainer)
+            df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
+            # println(first(df[1, :ind_data],5))
+            update_dfs!(per_age, per_cycle, df[1, :ind_data], model.pars.max_lesions)
         end
         if Agents.should_we_collect(s, model, when_prod)
             collect_model_data!(df_prod, model, prod_data, s; obtainer)
@@ -186,12 +203,13 @@ function abc_run!(model::ABM,
         s += 1
     end
     if Agents.should_we_collect(s, model, when_rust)
-        collect_model_data!(df_rust, model, rust_data, s; obtainer)
+        df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
+        update_dfs!(per_age, per_cycle, df.ind_data[1], model.pars.max_lesions)
     end
     if should_we_collect(s, model, when_prod)
         collect_model_data!(df_prod, model, prod_data, s; obtainer)
     end
-    return df_rust, df_prod
+    return per_age, per_cycle, df_prod
 end
 
 ## DataFrame post processing

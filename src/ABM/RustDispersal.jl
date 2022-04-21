@@ -103,23 +103,23 @@ function wind_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}
     end
 end
 
-# function inoculate_rust!(model::ABM, target::Coffee) # inoculate target coffee
-#     here = collect(agents_in_position(target, model))
-#     if length(here) > 1
-#         if here[2].n_lesions < model.pars.max_lesions
-#             here[2].n_lesions += 1
-#         end
-#     else
-#         # if isdisjoint(target.sample_cycle, model.current.cycle)
-#         #     new_id = add_agent!(target.pos, Rust, model; age = (model.pars.steps + 1), hg_id = target.id, sample_cycle = target.sample_cycle).id
-#         # else
-#             new_id = add_agent!(target.pos, Rust, model, model.pars.max_lesions, model.pars.steps;
-#                 hg_id = target.id, sample_cycle = target.sample_cycle).id
-#         # end
-#         target.hg_id = new_id
-#         push!(model.current.rust_ids, new_id)
-#     end
-# end
+function inoculate_rust!(model::ABM, target::Coffee) # inoculate target coffee
+    here = collect(agents_in_position(target, model))
+    if length(here) > 1
+        if here[2].n_lesions < model.pars.max_lesions
+            here[2].n_lesions += 1
+        end
+    else
+        # if isdisjoint(target.sample_cycle, model.current.cycle)
+        #     new_id = add_agent!(target.pos, Rust, model; age = (model.pars.steps + 1), hg_id = target.id, sample_cycle = target.sample_cycle).id
+        # else
+            new_id = add_agent!(target.pos, Rust, model, model.pars.max_lesions, model.pars.steps;
+                hg_id = target.id, sample_cycle = target.sample_cycle).id
+        # end
+        target.hg_id = new_id
+        push!(model.current.rust_ids, new_id)
+    end
+end
 
 function inoculate_rust!(model::ABM, trees::Vector{A}) where {A<:AbstractAgent}
     # here = collect(trees)

@@ -213,8 +213,11 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
             properties = Props(parameters, Books(days = parameters.start_days_at), weather),
             warn = false) # ...
     else
+        # model = ABM(Union{Shade, Coffee, Rust}, space;
+        #     properties = Props(parameters, Books(days = parameters.start_days_at, ticks = parameters.start_days_at - 132, cycle = [4]), weather),
+        #     warn = false)
         model = ABM(Union{Shade, Coffee, Rust}, space;
-            properties = Props(parameters, Books(days = parameters.start_days_at, ticks = parameters.start_days_at - 132, cycle = [4]), weather),
+            properties = Props(parameters, Books(days = parameters.start_days_at, cycle = [4]), weather),
             warn = false)
     end
 
