@@ -168,7 +168,7 @@ function update_dfs!(per_age::DataFrame, per_cycle::DataFrame, data::DataFrame, 
         append!(
         per_cycle,
         combine(groupby(intermediate, [:tick, :cycle]),
-            [:s_area => median => :area_m, :s_spore => median => :spores_m, :fallen => pct => :fallen]
+            [:s_area => median5 => :area_m, :s_spore => median5 => :spores_m, :fallen => pct => :fallen]
             )
         )
     end
