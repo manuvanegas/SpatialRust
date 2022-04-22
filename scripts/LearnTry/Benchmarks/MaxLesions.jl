@@ -1,6 +1,7 @@
 Pkg.activate(".")
 using Agents, DrWatson, Random
 using Statistics: median, mean
+@time using Revise
 
 include(projectdir("SpatialRust.jl"))
 using .SpatialRust
