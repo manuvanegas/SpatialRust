@@ -324,10 +324,9 @@ function inspect!(model::ABM)
     n_inspected = trunc(model.pars.inspect_effort * length(model.current.coffee_ids))
     cofs = sample(model.rng, model.current.coffee_ids, n_inspected, replace = false)
     for c in cofs
-        here = collect(agents_in_position(model[c].pos, model))
-        if length(here) > 1
-            here[2].n_lesions = round(Int, here[2].n_lesions * 0.1)
-            here[2].area = round(Int, here[2].area * 0.1)
+        if c.hg_id != 0
+            model[c.hg_id].n_lesions = round(Int, model[c.hg_id].n_lesions * 0.1)
+            model[c.hg_id].area = round(Int, model[c.hg_id].area * 0.1)
         end
     end
 end
