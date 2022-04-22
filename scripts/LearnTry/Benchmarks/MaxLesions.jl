@@ -7,7 +7,7 @@ using .SpatialRust
 
 # tmodel = SpatialRust.init_spatialrust(Parameters(), SpatialRust.create_fullsun_farm_map())
 tmodel = justtwosteps()
-# SpatialRust.step_model!(tmodel)
+SpatialRust.step_model!(tmodel)
 
 # tnl = getproperty.((tmodel[id] for id in tmodel.current.rust_ids), :n_lesions)
 # trusts = collect(tmodel[id] for id in tmodel.current.rust_ids)
@@ -43,7 +43,7 @@ end
 tadf, tmdf = nlesions_spatialrust(500, 100, 50)
 
 
-# Juno.@profiler dummyrun_spatialrust(10, 100)
+# Juno.@profiler dummyrun_spatialrust(10, 100) #doesnt run (too many things happenning?)
 
 ttmodel = init_spatialrust(Parameters(map_side = 100, max_lesions = 25), SpatialRust.create_fullsun_farm_map())
 for i in 1:50

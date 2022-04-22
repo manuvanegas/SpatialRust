@@ -111,7 +111,7 @@ end
 
 ## Getting raw lesion area+spore and fallen data
 
-function get_rust_state(rust::Rust)
+function get_rust_state(rust::Rust)::DataFrame
     let r::Rust = rust
         # areas = r.state[[2, 4],:][r.state[4,:] .< 53.0]
         rdf = DataFrame((r.state[2:4, (r.state[4,:] .< 53.0)])', [:area, :spore, :age])
@@ -120,7 +120,7 @@ function get_rust_state(rust::Rust)
     end
 end
 
-function SpatialRust.ind_data(model::ABM)
+function ind_data(model::ABM)::DataFrame
     df = DataFrame(tick = Int[], cycle = Int[], age = Int[], area = Float64[], spore = Float64[], exh = Bool[], id = Int[])
     # println(model.current.cycle)
     for cycle in model.current.cycle
@@ -128,21 +128,26 @@ function SpatialRust.ind_data(model::ABM)
             if cof.hg_id == 0
                 push!(df, (model.current.ticks, cycle, -1, -1.0, -1.0, (cof.exh_countdown > 0), cof.id))
             else
-                rust_df = SpatialRust.get_rust_state(model[cof.hg_id])
-                rust_df[:, :tick] .= model.current.ticks
-                rust_df[:, :cycle] .= cycle
-                rust_df[:, :spore] .= @. rust_df.spore * rust_df.area * model.pars.spore_pct
-                rust_df[:, :exh].= cof.exh_countdown > 0
-                rust_df[:, :id] .= cof.id
-
-                append!(df, rust_df)
+                rust_df = get_rust_state(model[cof.hg_id])
+                if isempty(rust_df)
+                    push!(df, (model.current.ticks, cycle, -1, -1.0, -1.0, (cof.exh_countdown > 0), cof.id))
+                else
+                    rust_df[:, :tick] .= model.current.ticks
+                    rust_df[:, :cycle] .= cycle
+                    rust_df[:, :spore] .= @. rust_df.spore * rust_df.area * model.pars.spore_pct
+                    rust_df[:, :exh] .= cof.exh_countdown > 0
+                    rust_df[:, :id] .= cof.id
+                    append!(df, rust_df)
+                end
             end
         end
     end
-    if model.current.cycle == [5, 6] && model.current.ticks >= 84
-        println(first(df,5))
-        println(collect(Iterators.filter(c -> c isa Coffee && !isdisjoint(model.current.cycle, c.sample_cycle), allagents(model)))[1:3])
-    end
+    # if isempty(df)
+    # end
+    # if model.current.cycle == [5, 6] && model.current.ticks >= 84
+    #     println(first(df,5))
+    #     println(collect(Iterators.filter(c -> c isa Coffee && !isdisjoint(model.current.cycle, c.sample_cycle), allagents(model)))[1:3])
+    # end
     return df
 end
 
