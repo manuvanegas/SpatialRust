@@ -193,7 +193,6 @@ function abc_run!(model::ABM,
     while Agents.until(s, n, model)
         if Agents.should_we_collect(s, model, when_rust)
             df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-            # println(first(df[1, :ind_data],5))
             update_dfs!(per_age, per_cycle, df[1, :ind_data], model.pars.max_lesions)
         end
         if Agents.should_we_collect(s, model, when_prod)
