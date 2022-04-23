@@ -1,5 +1,3 @@
-println("Here we go")
-
 usings_time = @elapsed begin
     @everywhere using DrWatson
     @everywhere @quickactivate "SpatialRust"
@@ -29,8 +27,6 @@ load_time = @elapsed begin
     # read climate data
     rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1])
     temp_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[2])
-    # rain_data = Vector{Bool}(weather[!, :Rainy])
-    # temp_data = Vector{Float64}(weather[!, :MeanTa])
 
     parameters = DataFrame(Arrow.Table(string("data/ABC/", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
 
@@ -41,17 +37,6 @@ end
 
 println("Loads: $load_time")
 flush(stdout)
-
-# pars = Parameters(steps = 231, map_side = 100, switch_cycles = copy(when_plant))
-# model = init_spatialrust(pars, Main.SpatialRust.create_fullsun_farm_map(), Main.SpatialRust.create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
-# Main.SpatialRust.custom_sampling_first!(model, 0.05)
-# using CSV: read as crd
-# paramss = crd(datadir("ABC", "parameters_10.csv"), DataFrame)
-# for rr in eachrow(paramss)[1:2]
-#     sim_abc(rr, rain_data, temp_data, when_rust, when_plant, 0.5, 231)
-# end
-
-# println(parameters)
 
 dummy_time = @elapsed begin
     #dummy run
@@ -73,9 +58,9 @@ flush(stdout)
 
 cat_time = @elapsed begin
     cat_outs = reduce(struct_cat, outputs)
-    filenum = ifelse(ARGS[2] < 10,
+    filenum = ifelse(parse(Int, ARGS[2]) < 10,
     string("00", ARGS[2]),
-    ifelse(ARGS[2] < 100,
+    ifelse(parse(Int, ARGS[2]) < 100,
         string("0", ARGS[2]),
         ARGS[2]
         )
@@ -96,4 +81,3 @@ println("Write: $cat_time")
 # """
 
 println(string("array #: ", ARGS[2],"\n", timings))
-#cwr(string("~/SpatialRust/scripts/ABCsims/timing", ARGS[2],".txt"), timings)

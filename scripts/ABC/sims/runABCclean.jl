@@ -24,8 +24,6 @@ load_time = @elapsed begin
     # read climate data
     rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1])
     temp_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[2])
-    # rain_data = Vector{Bool}(weather[!, :Rainy])
-    # temp_data = Vector{Float64}(weather[!, :MeanTa])
 
     parameters = DataFrame(Arrow.Table(string("data/ABC/", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
 
@@ -48,9 +46,9 @@ end
 
 cat_time = @elapsed begin
     cat_outs = reduce(struct_cat, outputs)
-    filenum = ifelse(ARGS[2] < 10,
+    filenum = ifelse(parse(Int, ARGS[2]) < 10,
     string("00", ARGS[2]),
-    ifelse(ARGS[2] < 100,
+    ifelse(parse(Int, ARGS[2]) < 100,
         string("0", ARGS[2]),
         ARGS[2]
         )

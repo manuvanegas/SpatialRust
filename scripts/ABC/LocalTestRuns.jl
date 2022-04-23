@@ -32,7 +32,7 @@ Random.seed!(1234)
 @btime sim_abc($(eachrow(paramss)[1]), $rain_data, $temp_data, $when_rust, $when_plant, 0.5, 231)
 
 @btime sim_abc($(eachrow(paramss)[4]), $rain_data, $temp_data, $when_rust, $when_plant, 0.5, 231)
-
+# 55 s!
 
 tmodel = justtwosteps() #tmodel has only 5 steps
 SpatialRust.abc_run!(tmodel,

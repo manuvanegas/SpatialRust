@@ -2,9 +2,9 @@
 #SBATCH --array=1-100
 #SBATCH --ntasks=20
 #SBATCH --ntasks-per-core=1
-#SBATCH -J init-ABC
-#SBATCH -o logs/outs.%x-%A-%a.o
-#SBATCH -e logs/outs.%x-%A.e
+#SBATCH -J ABC
+#SBATCH -o logs/ABC/o-%A-%a.o
+#SBATCH -e logs/ABC/o-%A.e
 #SBATCH -t 0-00:15:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mvanega1@asu.edu
