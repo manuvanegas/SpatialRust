@@ -1,48 +1,50 @@
 ## Spore dispersal and deposition
 
 function outside_spores!(model::ABM)
-    starting = Tuple(shuffle(model.rng, [sample(model.rng, 1:model.pars.map_side), sample(model.rng, [1, model.pars.map_side])]))
-    if starting[1] == 1
-        heading = 0.0
-    elseif starting[2] == 1
-        heading = 270.0
-    elseif starting[1] == 100
-        heading = 180.0
-    else
-        heading = 90.0
-    end
+    let starting = Tuple(shuffle(model.rng,
+            [sample(model.rng, 1:model.pars.map_side),
+            sample(model.rng, [1, model.pars.map_side])])),
+        distance = abs(2 * randn(model.rng)) *
+            model.pars.wind_distance * model.pars.diff_wind # sunlight is assumed to be 1.0
 
-    distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind # sunlight is taken to be 1.0
-    # path = travel_path(distance, heading, 0.5)
-    if length(travel_path(distance, heading, 0.5)) <= 1
-        if !isempty(starting, model) && (c = first(agents_in_position(starting, model))) isa Coffee
-            inoculate_rust!(model, c)
+        if starting[1] == 1
+            heading = 0.0
+        elseif starting[2] == 1
+            heading = 270.0
+        elseif starting[1] == 100
+            heading = 180.0
+        else
+            heading = 90.0
         end
-        # inoculate_rust!(model, coffee_here(starting, model))
-    else
-        wind_travel!(model, starting, travel_path(distance, heading, 0.5))
+
+        if length(travel_path(distance, heading)) <= 1
+            if !isempty(starting, model) && (c = first(agents_in_position(starting, model))) isa Coffee
+                inoculate_rust!(model, c)
+            end
+            # inoculate_rust!(model, coffee_here(starting, model))
+        else
+            wind_travel!(model, starting, travel_path(distance, heading))
+        end
     end
 end
 
 function r_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
-
-    # path = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance])
-    path = rain_path(model, sunlight)
-
-    if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions  # self-infected
-        rust.n_lesions += 1
-    else
-        rain_travel!(model, rust.pos, path)
+    let path = rain_path(model, sunlight)
+        if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions  # self-infected
+            rust.n_lesions += 1
+        else
+            rain_travel!(model, rust.pos, path)
+        end
     end
 end
 
 function w_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
-    path = wind_path(model, sunlight)
-
-    if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions # self-infected
-        rust.n_lesions += 1
-    else
-        wind_travel!(model, rust.pos, path)
+    let path = wind_path(model, sunlight)
+        if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions # self-infected
+            rust.n_lesions += 1
+        else
+            wind_travel!(model, rust.pos, path)
+        end
     end
 end
 
@@ -109,6 +111,10 @@ function inoculate_rust!(model::ABM, target::Coffee) # inoculate target coffee
         if model[target.hg_id].n_lesions < model.pars.max_lesions
             model[target.hg_id].n_lesions += 1
         end
+    # if length(here) > 1
+    #     if here[2].n_lesions < model.pars.max_lesions
+    #         here[2].n_lesions += 1
+    #     end
     else
         # if isdisjoint(target.sample_cycle, model.current.cycle)
         #     new_id = add_agent!(target.pos, Rust, model; age = (model.pars.steps + 1), hg_id = target.id, sample_cycle = target.sample_cycle).id
@@ -121,33 +127,35 @@ function inoculate_rust!(model::ABM, target::Coffee) # inoculate target coffee
     end
 end
 
-function inoculate_rust!(model::ABM, trees::Vector{A}) where {A<:AbstractAgent}
-    # here = collect(trees)
-    if length(trees) > 1
-        if trees[2].n_lesions < model.pars.max_lesions
-            trees[2].n_lesions += 1
-        end
-    else
-        new_id = add_agent!(trees[1].pos, Rust, model, model.pars.max_lesions, model.pars.steps;
-            hg_id = trees[1].id, sample_cycle = trees[1].sample_cycle).id
-        trees[1].hg_id = new_id
-        push!(model.current.rust_ids, new_id)
-    end
-end
+# function inoculate_rust!(model::ABM, trees::Vector{A}) where {A<:AbstractAgent}
+#     # here = collect(trees)
+#     if length(trees) > 1
+#         if trees[2].n_lesions < model.pars.max_lesions
+#             trees[2].n_lesions += 1
+#         end
+#     else
+#         new_id = add_agent!(trees[1].pos, Rust, model, model.pars.max_lesions, model.pars.steps;
+#             hg_id = trees[1].id, sample_cycle = trees[1].sample_cycle).id
+#         trees[1].hg_id = new_id
+#         push!(model.current.rust_ids, new_id)
+#     end
+# end
 
 # inoculate_rust!(model::ABM, none::Bool) = nothing
 
 function rain_path(model::ABM, sunlight)::Vector{NTuple{2, Int}}
-    distance = abs(2 * randn(model.rng) * model.pars.rain_distance) *
+    let distance = abs(2 * randn(model.rng) * model.pars.rain_distance) *
         ((sunlight - 0.55)^2 * ((1 - model.pars.diff_splash) / 0.2025) + model.pars.diff_splash)
 
-    return travel_path(distance, (rand(model.rng) * 360), 0.5)
+        return travel_path(distance, rand(model.rng) * 360)
+    end
 end
 
 function wind_path(model::ABM, sunlight)::Vector{NTuple{2, Int}}
-    distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
+    let distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
 
-    return travel_path(distance, rand(model.rng) * 360, 0.5)
+        return travel_path(distance, rand(model.rng) * 360)
+    end
 end
 
 # function coffee_here(pos::NTuple{2,Int}, model::ABM)::Union{Coffee, Bool}
@@ -160,6 +168,13 @@ end
 #     end
 # end
 
-travel_path(distance::Float64, heading::Float64, x::Float64)::Vector{NTuple{2, Int}} = unique!([(round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in x:x:distance])
+function travel_path(distance::Float64, heading::Float64)::Vector{NTuple{2, Int}}
+    let ca = cosd(heading), co = sind(heading)
+        return unique((round(Int, ca * h), round(Int, co * h)) for h in 0.5:0.5:distance)
+    end
+    # unique!((round.(Int, (cosd(heading) .* collect(0.5:0.5:distance))), round.(Int, (sind(heading) .* collect(0.5:0.5:distance)))))
+end
+
+# travel_path(distance::Float64, heading::Float64)::Vector{NTuple{2, Int}} = unique((round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance)
 
 add_tuples(t_a::Tuple{Int, Int}, t_b::Tuple{Int, Int}) = (t_a[1] + t_b[1], t_a[2] + t_b[2])
