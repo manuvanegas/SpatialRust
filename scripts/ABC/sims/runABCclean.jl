@@ -31,7 +31,7 @@ load_time = @elapsed begin
 
     mkpath("/scratch/mvanega1/ABC/sims/ages")
     mkpath("/scratch/mvanega1/ABC/sims/cycles")
-    # mkpath("/scratch/mvanega1/ABC/sims/prod")
+    mkpath("/scratch/mvanega1/ABC/sims/prod")
 end
 
 dummy_time = @elapsed begin
@@ -57,7 +57,7 @@ cat_time = @elapsed begin
     )
     Arrow.write(string("/scratch/mvanega1/ABC/sims/ages/m_", filenum, ".arrow"), cat_outs.per_age)
     Arrow.write(string("/scratch/mvanega1/ABC/sims/cycles/m_", filenum, ".arrow"), cat_outs.per_cycle)
-    # Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_", filenum, ".arrow"), cat_outs.prod_df)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_", filenum, ".arrow"), cat_outs.prod_df)
 end
 
 timings = """

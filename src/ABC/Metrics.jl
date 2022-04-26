@@ -98,8 +98,8 @@
 #     return df
 # end
 #
-# ## Getting median coffee production
-#
+## Getting median coffee production
+
 # function prod_metrics(model::ABM)::Array{Function}
 #     tick(model::ABM)::Int = model.current.ticks
 #
@@ -108,6 +108,18 @@
 #     end
 #     return [tick, coffee_production]
 # end
+
+function coffee_prod(model::ABM)::DataFrame
+    let maxc = maximum(model.current.cycle) + 1
+        return DataFrame(
+            tick = model.current.ticks,
+            coffee_production = median(map(getprod,
+                Iterators.filter(c -> c isa Coffee && (maxc ∈ c.sample_cycle), allagents(model))
+                )))
+    end
+end
+
+getprod(c::Coffee)::Float64 = c.production
 
 ## Getting raw lesion area+spore and fallen data
 
@@ -160,12 +172,12 @@ end
 
 function collect_same_cof(model::ABM)::DataFrame
     rustdf = DataFrame(tick = Int[], cycle = Int[], id = Int[], age = Int[], area = Float64[], spore = Float64[])
-    cofdf = DataFrame(tick = Int[], cycle = Int[], exh = Bool[], prod = Float64[])
+    cofdf = DataFrame(tick = Int[], cycle = Int[], exh = Bool[])
 
-    let harv = model.pars.harvest_cycle, cticks = model.current.ticks, sprpct = model.pars.spore_pct
+    let cticks = model.current.ticks, sprpct = model.pars.spore_pct
         for cycle in model.current.cycle
             for cof in Iterators.filter(c -> c isa Coffee && cycle in c.sample_cycle, allagents(model))
-                push!(cofdf, (cticks, cycle, (cof.exh_countdown > 0), (cof.production / harv)))
+                push!(cofdf, (cticks, cycle, (cof.exh_countdown > 0)))
                 if cof.hg_id != 0
                 #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
                 # else
@@ -193,12 +205,12 @@ function collect_same_cof(model::ABM)::DataFrame
 end
 
 function ind_data(model::ABM)::DataFrame
-    if (length(model.current.cycle) == 1 && # cycle overlapping starts after cycle #5
-        model.current.ticks in model.pars.switch_cycles)
-        return collect_diff_cof(model)
-    else
+    # if (length(model.current.cycle) == 1 && # cycle overlapping starts after cycle #5
+    #     model.current.ticks in model.pars.switch_cycles)
+    #     return collect_diff_cof(model)
+    # else
         return collect_same_cof(model)
-    end
+    # end
 
     # if all(model.current.cycle .< 6)
     #     if model.current.ticks in model.pars.switch_cycles
@@ -216,6 +228,10 @@ function ind_data(model::ABM)::DataFrame
 end
 
 ## Process raw data to obtain per_age and per_cycle dfs
+"collect_rust_data"
+
+
+
 
 function update_dfs!(
     per_age::DataFrame,
@@ -251,7 +267,7 @@ function update_dfs!(
     [:s_area => nanmedian5 => :area_m, :s_spore => nanmedian5 => :spores_m]) |>
     r -> leftjoin(
     combine(groupby(pdata, [:tick, :cycle]),
-        [:exh => pct => :fallen, :prod => nanmedian => :coffee_production]),
+        [:exh => pct => :fallen]),
     r,
     on = [:tick, :cycle]
     )

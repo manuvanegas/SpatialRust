@@ -10,7 +10,7 @@ include(srcdir("ABC","Metrics.jl"))
 struct ABCOuts
     per_age::DataFrame
     per_cycle::DataFrame
-    # prod_df::DataFrame
+    prod_df::DataFrame
 end
 
 function sim_abc(p_row::DataFrameRow,
@@ -21,7 +21,7 @@ function sim_abc(p_row::DataFrameRow,
     wind_prob::Float64,
     restart_after::Int = 231)
 
-    per_age_df, per_cycle_df = simulate_fullsun( #, plant_df
+    per_age_df, per_cycle_df, plant_df = simulate_fullsun( #, plant_df
     p_row,
     rain_data,
     temp_data,
@@ -35,9 +35,9 @@ function sim_abc(p_row::DataFrameRow,
     # plant_df = extract_prod(per_cycle_df)
     per_age_df.p_row .= p_row[:RowN]
     per_cycle_df.p_row .= p_row[:RowN]
-    # plant_df.p_row .= p_row[:RowN]
+    plant_df.p_row .= p_row[:RowN]
 
-    return ABCOuts(per_age_df, per_cycle_df)#, plant_df
+    return ABCOuts(per_age_df, per_cycle_df, plant_df)#
 end
 
 function simulate_fullsun(p_row::DataFrameRow,
@@ -70,12 +70,12 @@ function simulate_fullsun(p_row::DataFrameRow,
 
     custom_sampling_first!(model1, 0.05)
 
-    per_age_df, per_cycle_df = abc_run!( #, plant_df
+    per_age_df, per_cycle_df, plant_df = abc_run!( #, plant_df
         model1, step_model!, restart_after;
         when_rust = when_rust,
-        # when_prod = when_prod,
-        rust_data = [ind_data]#,
-        #prod_data = prod_metrics
+        when_prod = when_prod,
+        rust_data = [ind_data],
+        prod_data = [coffee_prod]
         )
 
     when_rust2 = filter(x -> x > 0, when_rust .- restart_after)
@@ -102,21 +102,21 @@ function simulate_fullsun(p_row::DataFrameRow,
 
     custom_sampling_second!(model2, 0.025) # sampling groups in 2nd half were 1/2 and overlapped with each other
 
-    per_age_df2, per_cycle_df2 = abc_run!( #, plant_df2
+    per_age_df2, per_cycle_df2, plant_df2 = abc_run!( #, plant_df2
     model2, step_model!, (455 - restart_after);
     when_rust = when_rust2,
-    #when_prod = when_prod2,
-    rust_data = [ind_data]#,
-    #prod_data = prod_metrics
+    when_prod = when_prod2,
+    rust_data = [ind_data],
+    prod_data = [coffee_prod]
     )
 
     # plant_df = per_cycle_df[per_cycle_df .∈ Ref(when_prod), [:tick, :coffee_production]]
 
     per_age_df2[:, :tick] .= per_age_df2.tick .+ restart_after
     per_cycle_df2[:, :tick] .= per_cycle_df2.tick .+ restart_after
-    # plant_df2[:, :tick] .= plant_df2.tick .+ restart_after
+    plant_df2[:, :tick] .= plant_df2.tick .+ restart_after
 
-    return vcat(per_age_df, per_age_df2), vcat(per_cycle_df, per_cycle_df2)#, vcat(plant_df, plant_df2)
+    return vcat(per_age_df, per_age_df2), vcat(per_cycle_df, per_cycle_df2), vcat(plant_df, plant_df2)
 
 end
 
@@ -185,15 +185,25 @@ function complete_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::I
         x ∉ sampled_coffees[i,:] && x ∉ sampled_coffees[:,c], nearby_ids(model[c_id], model, 2))))
 end
 
+## Extracting prod data from per_cycle
+
+function extract_prod(cdf::DataFrame)::DataFrame
+    return leftjoin(DataFrame(
+        tick = [17, 77, 140, 203, 287, 315, 343, 372, 399, 427], cycle = 1:10
+        ),
+    cdf[!, [:tick, :cycle, :coffee_production]],
+    on = [:tick, :cycle])
+end
+
 ## Custom run
 
 function abc_run!(model::ABM,
     model_step!,
     n;
     when_rust = true,
-    #when_prod = true,
+    when_prod = true,
     rust_data = nothing,
-    #prod_data = nothing,
+    prod_data = nothing,
     obtainer = identity)
 
     # df_rust = init_model_dataframe(model, rust_data)
@@ -206,13 +216,12 @@ function abc_run!(model::ABM,
     per_cycle = DataFrame(
         tick = Int[], cycle = Int[],
         area_m = Float64[], spores_m = Float64[],
-        fallen = Float64[], coffee_production = Float64[]
+        fallen = Float64[]
     )
 
-    # per_plant = DataFrame(
-    #     tick = Int[], cycle = Int[],
-    #     coffee_production = Float64[]
-    # )
+    per_plant = DataFrame(
+        tick = Int[], coffee_production = Float64[]
+    )
 
     # df_prod = init_model_dataframe(model, prod_data)
     for c in eachcol(per_age)
@@ -221,14 +230,32 @@ function abc_run!(model::ABM,
     for c in eachcol(per_cycle)
         sizehint!(c, length(when_rust))
     end
-    # for c in eachcol(per_plant)
-    #     sizehint!(c, length(when_rust))
-    # end
+    for c in eachcol(per_plant)
+        sizehint!(c, length(when_prod))
+    end
 
     s = 0
     while Agents.until(s, n, model)
         if Agents.should_we_collect(s, model, when_rust)
-            df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
+            let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
+                update_dfs!(
+                per_age,
+                per_cycle,
+                # per_plant,
+                df[1, :ind_data][1, :rust],
+                df[1, :ind_data][1, :prod])
+            end
+        end
+        if Agents.should_we_collect(s, model, when_prod)
+            let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
+                append!(per_plant, df2[1, :coffee_prod])
+            end
+        end
+        step!(model, dummystep, model_step!, 1)
+        s += 1
+    end
+    if Agents.should_we_collect(s, model, when_rust)
+        let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
             update_dfs!(
             per_age,
             per_cycle,
@@ -236,25 +263,13 @@ function abc_run!(model::ABM,
             df[1, :ind_data][1, :rust],
             df[1, :ind_data][1, :prod])
         end
-        # if Agents.should_we_collect(s, model, when_prod)
-        #     collect_model_data!(df_prod, model, prod_data, s; obtainer)
-        # end
-        step!(model, dummystep, model_step!, 1)
-        s += 1
     end
-    if Agents.should_we_collect(s, model, when_rust)
-        df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-        update_dfs!(
-        per_age,
-        per_cycle,
-        # per_plant,
-        df[1, :ind_data][1, :rust],
-        df[1, :ind_data][1, :prod])
+    if should_we_collect(s, model, when_prod)
+        let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
+            append!(per_plant, df2[1, :coffee_prod])
+        end
     end
-    # if should_we_collect(s, model, when_prod)
-    #     collect_model_data!(df_prod, model, prod_data, s; obtainer)
-    # end
-    return per_age, per_cycle#, per_plant
+    return per_age, per_cycle, per_plant
 end
 
 ## DataFrame post processing
