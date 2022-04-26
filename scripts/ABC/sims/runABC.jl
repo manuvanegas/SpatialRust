@@ -18,21 +18,23 @@ println("Init: $usings_time")
 flush(stdout)
 
 load_time = @elapsed begin
-    n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
-    startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
+    const n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
+    const startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
 
     when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
-    when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
+    const when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
+
+    const when_rust = sort!(union(when_plant, when_rust))
 
     # read climate data
-    rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1])
-    temp_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[2])
+    const rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1])
+    const temp_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[2])
 
-    parameters = DataFrame(Arrow.Table(string("data/ABC/", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
+    const parameters = DataFrame(Arrow.Table(string("data/ABC/", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
 
     mkpath("/scratch/mvanega1/ABC/sims/ages")
     mkpath("/scratch/mvanega1/ABC/sims/cycles")
-    mkpath("/scratch/mvanega1/ABC/sims/prod")
+    # mkpath("/scratch/mvanega1/ABC/sims/prod")
 end
 
 println("Loads: $load_time")
@@ -67,7 +69,7 @@ cat_time = @elapsed begin
     )
     Arrow.write(string("/scratch/mvanega1/ABC/sims/ages/m_", filenum, ".arrow"), cat_outs.per_age)
     Arrow.write(string("/scratch/mvanega1/ABC/sims/cycles/m_", filenum, ".arrow"), cat_outs.per_cycle)
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_", filenum, ".arrow"), cat_outs.prod_df)
+    # Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_", filenum, ".arrow"), cat_outs.prod_df)
 end
 
 println("Write: $cat_time")
