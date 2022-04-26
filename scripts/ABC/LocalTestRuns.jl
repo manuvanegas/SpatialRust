@@ -54,6 +54,17 @@ ttmodel = init_spatialrust(pars, Main.SpatialRust.create_fullsun_farm_map(), Mai
 Main.SpatialRust.custom_sampling_second!(ttmodel, 0.05)
 
 
+Random.seed!(1234)
+pars = Parameters(steps = 231, map_side = 100, switch_cycles = copy(when_plant))
+for i in 1:500
+    ttmodel = init_spatialrust(pars, Main.SpatialRust.create_fullsun_farm_map(), Main.SpatialRust.create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
+    Main.SpatialRust.custom_sampling_second!(ttmodel, 0.05)
+    if isempty(Iterators.filter(c -> c isa Coffee && 8 in c.sample_cycle, allagents(ttmodel)))
+        println(i)
+        break
+    end
+end
+
 using DataFrames
 tmodel = justtwosteps()
 SpatialRust.custom_sampling_first!(tmodel, 0.05)
