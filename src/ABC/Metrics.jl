@@ -223,16 +223,16 @@ function ind_data(model::ABM)::DataFrame
                     push!(rustdf, (cticks, cycle, cof.id, -1, NaN, NaN, (cof.exh_countdown > 0)))
                 else
                     rust_df = get_rust_state(model[cof.hg_id])
-                    # if isempty(rust_df)
-                    #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
-                    # else
+                    if isempty(rust_df)
+                        push!(rustdf, (cticks, cycle, cof.id, -1, NaN, NaN, (cof.exh_countdown > 0)))
+                    else
                         rust_df[:, :tick] .= cticks
                         rust_df[:, :cycle] .= cycle
                         @. rust_df[:, :spore] = rust_df.spore * rust_df.area * sprpct
                         rust_df[:, :id] .= cof.id
                         rust_df[:, :exh] .= (cof.exh_countdown > 0)
                         append!(rustdf, rust_df)
-                    # end
+                    end
                 end
             end
         end
@@ -242,18 +242,16 @@ function ind_data(model::ABM)::DataFrame
         #     end
         # end
     end
-
     return rustdf
 end
 
 ## Process raw data to append to per_age and per_cycle dfs
 
 function collect_rust_data!(per_age::DataFrame, per_cycle::DataFrame, model::ABM)
-    rdata1 = ind_data(model)
-    rdata2 = ind_data(model)
+    rdata = ind_data(model)
     # println(length(rdata.exh))
-    append!(per_age, combine_per_age(rdata1))
-    append!(per_cycle, combine_per_cycle(rdata2))
+    append!(per_age, combine_per_age(rdata))
+    append!(per_cycle, combine_per_cycle(rdata))
     # end
 end
 
@@ -280,20 +278,20 @@ function combine_per_cycle(rdata::DataFrame)::DataFrame
     #     )
     # end
 
-    # x = try combine(groupby(rdata, [:tick, :cycle, :id]),
-    # [:area => nansum => :s_area, :spore => nansum => :s_spore, :exh => first => :exh])
-    # catch e
-    #     println(first(rdata, 10))
-    #     println(e)
-    # end
-    #
-    # return combine(groupby(x, [:tick, :cycle]),
-    # [:s_area => nanmedian5 => :area_m, :s_spore => nanmedian5 => :spores_m, :exh => pct => :fallen])
+    x = try combine(groupby(rdata, [:tick, :cycle, :id]),
+    [:area => nansum => :s_area, :spore => nansum => :s_spore, :exh => first => :exh])
+    catch e
+        println(first(rdata, 10))
+        println(e)
+    end
 
-    return combine(groupby(rdata, [:tick, :cycle, :id]),
-    [:area => nansum => :s_area, :spore => nansum => :s_spore, :exh => first => :exh]) |>
-    x -> combine(groupby(x, [:tick, :cycle]),
+    return combine(groupby(x, [:tick, :cycle]),
     [:s_area => nanmedian5 => :area_m, :s_spore => nanmedian5 => :spores_m, :exh => pct => :fallen])
+
+    # return combine(groupby(rdata, [:tick, :cycle, :id]),
+    # [:area => nansum => :s_area, :spore => nansum => :s_spore, :exh => first => :exh]) |>
+    # x -> combine(groupby(x, [:tick, :cycle]),
+    # [:s_area => nanmedian5 => :area_m, :s_spore => nanmedian5 => :spores_m, :exh => pct => :fallen])
 end
 
 
