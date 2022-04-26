@@ -2,34 +2,50 @@ Pkg.activate(".")
 using Agents, DrWatson, Random
 using Statistics: median, mean
 
-include(projectdir("SpatialRust.jl"))
-using .SpatialRust
-
 using Arrow, DataFrames
 using CSV: read as crd
 
 when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
-when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
+const when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
+
+# const when_rust = sort!(union(when_plant, when_rust))
 
 # read climate data
-rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1])
-temp_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[2])
+const rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1])
+const temp_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[2])
+const paramss = crd(datadir("ABC", "parameters_10.csv"), DataFrame)
+# for i in when_plant; println(i in when_rust);end
+# false
+# false
+# false
+# false
+# false
+# true
+# true
+# true
+# true
+# true
+
+
+include(projectdir("SpatialRust.jl"))
+using .SpatialRust
 
 pars = Parameters(steps = 231, map_side = 100, switch_cycles = copy(when_plant))
-model = init_spatialrust(pars, Main.SpatialRust.create_fullsun_farm_map(), Main.SpatialRust.create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
-Main.SpatialRust.custom_sampling_first!(model, 0.05)
-paramss = crd(datadir("ABC", "parameters_10.csv"), DataFrame)
+ttmodel = init_spatialrust(pars, Main.SpatialRust.create_fullsun_farm_map(), Main.SpatialRust.create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
+Main.SpatialRust.custom_sampling_second!(ttmodel, 0.05)
 
-sim_abc(eachrow(paramss)[4], rain_data, temp_data, when_rust, when_plant, 0.5, 231)
+# Random.seed!(1234)
+# for rr in eachrow(paramss)[1:2]
+#     sim_abc(rr, rain_data, temp_data, when_rust, when_plant, 0.5, 231)
+# end
 
-Random.seed!(1234)
-for rr in eachrow(paramss)[1:5]
-    sim_abc(rr, rain_data, temp_data, when_rust, when_plant, 0.5, 231)
-end
+sim_abc(eachrow(paramss)[1], rain_data, temp_data, when_rust, when_plant, 0.5, 231)
 
 using BenchmarkTools
 Random.seed!(1234)
-@btime sim_abc($(eachrow(paramss)[1]), $rain_data, $temp_data, $when_rust, $when_plant, 0.5, 231)
+@btime sim_abc(
+    $(eachrow(paramss)[1]), $rain_data, $temp_data,
+    $when_rust, $when_plant, 0.5, 231)
 
 @btime sim_abc($(eachrow(paramss)[4]), $rain_data, $temp_data, $when_rust, $when_plant, 0.5, 231)
 # 55 s!
@@ -42,3 +58,14 @@ SpatialRust.abc_run!(tmodel,
     rust_data = [SpatialRust.ind_data],
     prod_data = [SpatialRust.prod_metrics],
     obtainer = identity)
+
+##
+using DataFrames
+tmodel = justtwosteps()
+SpatialRust.custom_sampling_first!(tmodel, 0.05)
+ttmodel.current.cycle =[5,6]
+SpatialRust.ind_data(ttmodel)
+stepdata = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame(rust = DataFrame(), prod = DataFrame())),
+    ttmodel, [SpatialRust.ind_data], 2; obtainer = identity)
+
+SpatialRust.update_dfs!(per_age, per_cycle, stepdata[1, :ind_data][1, :rust], stepdata[1, :ind_data][1, :prod])

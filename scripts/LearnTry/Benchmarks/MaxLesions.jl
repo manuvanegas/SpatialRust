@@ -1,7 +1,8 @@
 Pkg.activate(".")
+# push!(LOAD_PATH, pwd())
+# using Revise
 using Agents, DrWatson, Random
 using Statistics: median, mean
-@time using Revise
 
 include(projectdir("SpatialRust.jl"))
 using .SpatialRust

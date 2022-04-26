@@ -2,12 +2,15 @@
 
 export ABCOuts, sim_abc, struct_cat
 
+# using DataFramesMeta, NaNStatistics
+using NaNStatistics
+
 include(srcdir("ABC","Metrics.jl"))
 
 struct ABCOuts
     per_age::DataFrame
     per_cycle::DataFrame
-    prod_df::DataFrame
+    # prod_df::DataFrame
 end
 
 function sim_abc(p_row::DataFrameRow,
@@ -18,16 +21,23 @@ function sim_abc(p_row::DataFrameRow,
     wind_prob::Float64,
     restart_after::Int = 231)
 
-    per_age_df, per_cycle_df, plant_df = simulate_fullsun(p_row, rain_data, temp_data, when_rust, when_prod, wind_prob, restart_after)
-
+    per_age_df, per_cycle_df = simulate_fullsun( #, plant_df
+    p_row,
+    rain_data,
+    temp_data,
+    when_rust,
+    when_prod,
+    wind_prob,
+    restart_after)
 
     # per_age_df, per_cycle_df = dewrinkle(rust_df) # "wrinkles" being the nested DataFrames
 
+    # plant_df = extract_prod(per_cycle_df)
     per_age_df.p_row .= p_row[:RowN]
     per_cycle_df.p_row .= p_row[:RowN]
-    plant_df.p_row .= p_row[:RowN]
+    # plant_df.p_row .= p_row[:RowN]
 
-    return ABCOuts(per_age_df, per_cycle_df, plant_df[:, Not(:step)])
+    return ABCOuts(per_age_df, per_cycle_df)#, plant_df
 end
 
 function simulate_fullsun(p_row::DataFrameRow,
@@ -60,8 +70,13 @@ function simulate_fullsun(p_row::DataFrameRow,
 
     custom_sampling_first!(model1, 0.05)
 
-    per_age_df, per_cycle_df, plant_df = abc_run!(model1, step_model!, restart_after;
-        when_rust = when_rust, when_prod = when_prod, rust_data = [ind_data], prod_data = prod_metrics)
+    per_age_df, per_cycle_df = abc_run!( #, plant_df
+        model1, step_model!, restart_after;
+        when_rust = when_rust,
+        # when_prod = when_prod,
+        rust_data = [ind_data]#,
+        #prod_data = prod_metrics
+        )
 
     when_rust2 = filter(x -> x > 0, when_rust .- restart_after)
     when_prod2 = filter(x -> x > 0, when_prod .- restart_after)
@@ -87,43 +102,47 @@ function simulate_fullsun(p_row::DataFrameRow,
 
     custom_sampling_second!(model2, 0.025) # sampling groups in 2nd half were 1/2 and overlapped with each other
 
-    per_age_df2, per_cycle_df2, plant_df2 = abc_run!(
-    model2, step_model!,
-    (455 - restart_after);
+    per_age_df2, per_cycle_df2 = abc_run!( #, plant_df2
+    model2, step_model!, (455 - restart_after);
     when_rust = when_rust2,
-    when_prod = when_prod2,
-    rust_data = [ind_data],
-    prod_data = prod_metrics
+    #when_prod = when_prod2,
+    rust_data = [ind_data]#,
+    #prod_data = prod_metrics
     )
+
+    # plant_df = per_cycle_df[per_cycle_df .∈ Ref(when_prod), [:tick, :coffee_production]]
 
     per_age_df2[:, :tick] .= per_age_df2.tick .+ restart_after
     per_cycle_df2[:, :tick] .= per_cycle_df2.tick .+ restart_after
-    plant_df2[:, :tick] .= plant_df2.tick .+ restart_after
+    # plant_df2[:, :tick] .= plant_df2.tick .+ restart_after
 
-    return vcat(per_age_df, per_age_df2), vcat(per_cycle_df, per_cycle_df2), vcat(plant_df, plant_df2)
+    return vcat(per_age_df, per_age_df2), vcat(per_cycle_df, per_cycle_df2)#, vcat(plant_df, plant_df2)
+
 end
 
 ## Selecting sampled locations for each cycle
 
 function custom_sampling_first!(model::ABM, percent::Float64)
-    n_persample = floor(Int, length(model.current.coffee_ids) * percent)
-    first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids), n_persample, replace = false)
+    let n_persample = floor(Int, length(model.current.coffee_ids) * percent),
+    first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95),
+        model.current.coffee_ids), n_persample, replace = false),
     sampled_coffees = hcat(first_ids, zeros(Int, n_persample, 3)) # 1 half requires 3 neighs, 2 half reqs 5
-    for (i, id) in enumerate(first_ids)
-        push!(model[id].sample_cycle, 1)
-        c = 2
-        for neigh in select_s_neighbors(model, sampled_coffees, id)
-            push!(model[neigh].sample_cycle, c)
-            sampled_coffees[i, c] = neigh
-            c += 1
-            c > 4 && break # break if # of selected neighs is greater than 4
-        end
-        if c < 4 # if # of selected neighs was not enough, relax requirements
-            for add_neigh in complete_s_neighbors(model, sampled_coffees, id, i, c)
-                push!(model[add_neigh].sample_cycle, c)
-                sampled_coffees[i, c] = add_neigh
+        for (i, id) in enumerate(first_ids)
+            push!(model[id].sample_cycle, 1)
+            c = 2
+            for neigh in select_s_neighbors(model, sampled_coffees, id)
+                push!(model[neigh].sample_cycle, c)
+                sampled_coffees[i, c] = neigh
                 c += 1
-                c > 4 && break
+                c > 4 && break # break if # of selected neighs is greater than 4
+            end
+            if c < 4 # if # of selected neighs was not enough, relax requirements
+                for add_neigh in complete_s_neighbors(model, sampled_coffees, id, i, c)
+                    push!(model[add_neigh].sample_cycle, c)
+                    sampled_coffees[i, c] = add_neigh
+                    c += 1
+                    c > 4 && break
+                end
             end
         end
     end
@@ -131,31 +150,33 @@ end
 
 
 function custom_sampling_second!(model::ABM, percent::Float64)
-    n_persample = floor(Int, length(model.current.coffee_ids) * percent)
-    first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95), model.current.coffee_ids), n_persample, replace = false)
+    let n_persample = floor(Int, length(model.current.coffee_ids) * percent),
+    first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95),
+        model.current.coffee_ids), n_persample, replace = false),
     sampled_coffees = hcat(first_ids, zeros(Int, n_persample, 5))
-    for (i, id) in enumerate(first_ids)
-        push!(model[id].sample_cycle, 5) # second half starts with cycle 5
-        c = 6
-        for neigh in select_s_neighbors(model, sampled_coffees, id)
-            push!(model[neigh].sample_cycle, c)
-            sampled_coffees[i, (c - 4)] = neigh
-            c += 1
-            c > 10 && break
-        end
-        if c < 10
-            for add_neigh in complete_s_neighbors(model, sampled_coffees, id, i, (c - 4))
-                push!(model[add_neigh].sample_cycle, c)
-                sampled_coffees[i, (c - 4)] = add_neigh
+        for (i, id) in enumerate(first_ids)
+            push!(model[id].sample_cycle, 5) # second half starts with cycle 5
+            c = 6
+            for neigh in select_s_neighbors(model, sampled_coffees, id)
+                push!(model[neigh].sample_cycle, c)
+                sampled_coffees[i, (c - 4)] = neigh
                 c += 1
                 c > 10 && break
+            end
+            if c < 10
+                for add_neigh in complete_s_neighbors(model, sampled_coffees, id, i, (c - 4))
+                    push!(model[add_neigh].sample_cycle, c)
+                    sampled_coffees[i, (c - 4)] = add_neigh
+                    c += 1
+                    c > 10 && break
+                end
             end
         end
     end
 end
 
 function select_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::Int)::Vector{Int}
-    return sampled_neighs = shuffle(model.rng, collect(Iterators.filter(x -> model[x] isa Coffee && x ∉ sampled_coffees,
+    return shuffle(model.rng, collect(Iterators.filter(x -> model[x] isa Coffee && x ∉ sampled_coffees,
         nearby_ids(model[c_id], model, 2))))
 end
 
@@ -170,45 +191,70 @@ function abc_run!(model::ABM,
     model_step!,
     n;
     when_rust = true,
-    when_prod = when_rust,
+    #when_prod = true,
     rust_data = nothing,
-    prod_data = nothing,
+    #prod_data = nothing,
     obtainer = identity)
 
     # df_rust = init_model_dataframe(model, rust_data)
-    per_age = DataFrame(tick = Int[], cycle = Int[], age = Int[], area_m = Float64[], spores_m = Float64[])
-    per_cycle = DataFrame(tick = Int[], cycle = Int[], area_m = Float64[], spores_m = Float64[], fallen = Float64[])
-    df_prod = init_model_dataframe(model, prod_data)
+    per_age = DataFrame(
+        tick = Int[], cycle = Int[],
+        age = Int[],
+        area_m = Float64[], spores_m = Float64[]
+    )
+
+    per_cycle = DataFrame(
+        tick = Int[], cycle = Int[],
+        area_m = Float64[], spores_m = Float64[],
+        fallen = Float64[], coffee_production = Float64[]
+    )
+
+    # per_plant = DataFrame(
+    #     tick = Int[], cycle = Int[],
+    #     coffee_production = Float64[]
+    # )
+
+    # df_prod = init_model_dataframe(model, prod_data)
     for c in eachcol(per_age)
-        sizehint!(c, length(when_rust))
+        sizehint!(c, (length(when_rust) * 2))
     end
     for c in eachcol(per_cycle)
         sizehint!(c, length(when_rust))
     end
-    for c in eachcol(df_prod)
-        sizehint!(c, length(when_prod))
-    end
+    # for c in eachcol(per_plant)
+    #     sizehint!(c, length(when_rust))
+    # end
 
     s = 0
     while Agents.until(s, n, model)
         if Agents.should_we_collect(s, model, when_rust)
             df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-            update_dfs!(per_age, per_cycle, df[1, :ind_data], model.pars.max_lesions)
+            update_dfs!(
+            per_age,
+            per_cycle,
+            # per_plant,
+            df[1, :ind_data][1, :rust],
+            df[1, :ind_data][1, :prod])
         end
-        if Agents.should_we_collect(s, model, when_prod)
-            collect_model_data!(df_prod, model, prod_data, s; obtainer)
-        end
+        # if Agents.should_we_collect(s, model, when_prod)
+        #     collect_model_data!(df_prod, model, prod_data, s; obtainer)
+        # end
         step!(model, dummystep, model_step!, 1)
         s += 1
     end
     if Agents.should_we_collect(s, model, when_rust)
         df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-        update_dfs!(per_age, per_cycle, df.ind_data[1], model.pars.max_lesions)
+        update_dfs!(
+        per_age,
+        per_cycle,
+        # per_plant,
+        df[1, :ind_data][1, :rust],
+        df[1, :ind_data][1, :prod])
     end
-    if should_we_collect(s, model, when_prod)
-        collect_model_data!(df_prod, model, prod_data, s; obtainer)
-    end
-    return per_age, per_cycle, df_prod
+    # if should_we_collect(s, model, when_prod)
+    #     collect_model_data!(df_prod, model, prod_data, s; obtainer)
+    # end
+    return per_age, per_cycle#, per_plant
 end
 
 ## DataFrame post processing
@@ -227,7 +273,7 @@ function struct_cat(s1::ABCOuts, s2::ABCOuts)
     return ABCOuts(
     vcat(s1.per_age, s2.per_age),
     vcat(s1.per_cycle, s2.per_cycle),
-    vcat(s1.prod_df, s2.prod_df)
+    # vcat(s1.prod_df, s2.prod_df)
     )
 end
 
