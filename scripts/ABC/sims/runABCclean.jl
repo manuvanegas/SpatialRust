@@ -61,9 +61,9 @@ cat_time = @elapsed begin
         ARGS[2]
         )
     )
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/ages/mo_", filenum, ".arrow"), cat_outs.per_age)
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/cycles/mo_", filenum, ".arrow"), cat_outs.per_cycle)
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/mo_", filenum, ".arrow"), cat_outs.prod_df)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/ages/m_", filenum, ".arrow"), cat_outs.per_age)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/cycles/m_", filenum, ".arrow"), cat_outs.per_cycle)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_", filenum, ".arrow"), cat_outs.prod_df)
 end
 
 timings = """
