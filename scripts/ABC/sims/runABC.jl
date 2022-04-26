@@ -46,8 +46,8 @@ flush(stdout)
 #     println("Dummy run completed")
 # end
 
-println("Compile: $dummy_time")
-flush(stdout)
+# println("Compile: $dummy_time")
+# flush(stdout)
 
 run_time = @elapsed begin
     outputs = pmap(p -> sim_abc(p, rain_data, temp_data, when_rust, when_plant, 0.5),
