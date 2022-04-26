@@ -48,8 +48,9 @@ Base.@kwdef struct Parameters
 
     # coffee and rust parameters
     exhaustion::Float64 = 0.8          # rust level (relative to max) that causes plant exhaustion
-    max_cof_gr::Float64 = 0.5          # maximum coffee area growth rate
+    cof_gr::Float64 = 0.5              # maximum coffee area growth rate
     max_lesions::Int64 = 25            # maximum number of rust lesions
+    rust_gr::Float64 = 0.15            # rust area growth rate
     opt_g_temp::Float64 = 22.5         # optimal rust growth temp
     fruit_load::Float64 = 1.0          # extent of fruit load effect on rust growth (severity; 0 to 1)
     spore_pct::Float64 = 0.6           # % of area that sporulates

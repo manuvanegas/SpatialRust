@@ -63,7 +63,7 @@ function coffee_step!(model::ABM, coffee::Coffee)
         coffee.exh_countdown = 0
     else
         !isempty(coffee.shade_neighbors) && update_sunlight!(model, coffee)
-        grow_coffee!(coffee, model.pars.max_cof_gr)
+        grow_coffee!(coffee, model.pars.cof_gr)
         acc_production!(coffee)
     end
 end
@@ -124,12 +124,12 @@ function update_sunlight!(model::ABM, cof::Coffee)
     # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
 end
 
-function grow_coffee!(cof::Coffee, max_cof_gr)
+function grow_coffee!(cof::Coffee, cof_gr)
     # coffee plants can recover healthy tissue (dilution effect for sunlit plants)
 
 "This growth function has to change"
     if 0.0 < cof.area < 1.0
-        cof.area += max_cof_gr * (cof.area * cof.sunlight)
+        cof.area += cof_gr * (cof.area * cof.sunlight)
     elseif cof.area > 1.0
         cof.area = 1.0
     end
@@ -148,7 +148,7 @@ end
 function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64)
     let local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - sunlight)),
         growth_modif = (1 + model.pars.fruit_load * production / model.pars.harvest_cycle) *
-        (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0)
+        (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0) * model.pars.rust_gr
 
         @views for lesion in 1:rust.n_lesions
             # rust.n_lesions += grow_each_rust!(rust.state[:, lesion], local_temp, sunlight, production)
