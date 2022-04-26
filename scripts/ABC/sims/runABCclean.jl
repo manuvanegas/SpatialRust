@@ -63,7 +63,6 @@ end
 timings = """
 Init: $usings_time
 Loads: $load_time
-Compile: $dummy_time
 Run: $run_time
 Write: $cat_time
 """

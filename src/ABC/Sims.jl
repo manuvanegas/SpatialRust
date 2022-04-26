@@ -288,7 +288,7 @@ function struct_cat(s1::ABCOuts, s2::ABCOuts)
     return ABCOuts(
     vcat(s1.per_age, s2.per_age),
     vcat(s1.per_cycle, s2.per_cycle),
-    # vcat(s1.prod_df, s2.prod_df)
+    vcat(s1.prod_df, s2.prod_df)
     )
 end
 
