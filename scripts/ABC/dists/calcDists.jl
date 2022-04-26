@@ -15,7 +15,7 @@ end
 time_joins = @elapsed begin
     # load field data
     ages = CSV.read("data/exp_pro/compare/Sun_AreaSpore_Age.csv", DataFrame)
-    cycles = CSV.read("data/exp_pro/compare/Sun_Appr_Areas_Fallen.csv", DataFrame)[:, 2:6]
+    cycles = CSV.read("data/exp_pro/compare/Sun_Appr_Areas_Fallen.csv", DataFrame)[:, [2,3,4,5,7]] 
     cprod = CSV.read("data/exp_pro/compare/Sun_Plant_Production.csv", DataFrame)[:, 2:4]
     # load variance files
     σ2_ages = CSV.read(projectdir("results/ABC/variances/v_ages.csv"), DataFrame)

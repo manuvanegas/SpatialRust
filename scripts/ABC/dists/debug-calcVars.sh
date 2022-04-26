@@ -2,9 +2,9 @@
 #SBATCH --ntasks=10
 #SBATCH -p debug
 #SBATCH -q wildfire
-#SBATCH -J debug-ABCv
-#SBATCH -o logs/outs.%x-%A.o
-#SBATCH -e logs/outs.%x-%A.e
+#SBATCH -J ABCv
+#SBATCH -o logs/ABC/vars/o.%x-%A.o
+#SBATCH -e logs/ABC/vars/o.%x-%A.e
 #SBATCH -t 0-00:15:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mvanega1@asu.edu
