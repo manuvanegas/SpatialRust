@@ -72,14 +72,13 @@ cat_time = @elapsed begin
     Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_", filenum, ".arrow"), cat_outs.prod_df)
 end
 
-println("Write: $cat_time")
+# println("Write: $cat_time")
 
-# timings = """
-# Init: $usings_time
-# Loads: $load_time
-# Compile: $dummy_time
-# Run: $run_time
-# Write: $cat_time
-# """
+timings = """
+Init: $usings_time
+Loads: $load_time
+Run: $run_time
+Write: $cat_time
+"""
 
 println(string("array #: ", ARGS[2],"\n", timings))

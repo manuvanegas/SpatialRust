@@ -21,7 +21,7 @@ function sim_abc(p_row::DataFrameRow,
     wind_prob::Float64,
     restart_after::Int = 231)
 
-    per_age_df, per_cycle_df, plant_df = simulate_fullsun( #, plant_df
+    simtime = @elapsed per_age_df, per_cycle_df, plant_df = simulate_fullsun( #, plant_df
     p_row,
     rain_data,
     temp_data,
@@ -36,6 +36,11 @@ function sim_abc(p_row::DataFrameRow,
     per_age_df.p_row .= p_row[:RowN]
     per_cycle_df.p_row .= p_row[:RowN]
     plant_df.p_row .= p_row[:RowN]
+
+    println("Row $(p_row[:RowN])")
+    println("Time $simtime")
+    println("")
+    flush(stdout)
 
     return ABCOuts(per_age_df, per_cycle_df, plant_df)#
 end
