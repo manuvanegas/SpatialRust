@@ -29,7 +29,9 @@ struct Props
 end
 
 ## Agent types and constructor fcts
-@agent Coffee GridAgent{2} begin
+mutable struct Coffee <: AbstractAgent
+    id::Int
+    pos::NTuple{2, Int}
     area::Float64 # healthy foliar area (= 25 - rust.area * rust.n_lesions/25)
     sunlight::Float64 # let through by shade trees
     shade_neighbors::Vector{Int} # remember which neighbors are shade trees
@@ -44,7 +46,9 @@ end
 
 Coffee(id, pos; production = 1.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, []) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
 
-@agent Shade GridAgent{2} begin
+mutable struct Shade <: AbstractAgent
+    id::Int
+    pos::NTuple{2, Int}
     shade::Float64 # between 20 and 90 %
     production::Float64
     age::Int
@@ -53,7 +57,9 @@ end
 
 Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
 
-@agent Rust GridAgent{2} begin
+mutable struct Rust <: AbstractAgent
+    id::Int
+    pos::NTuple{2, Int}
     # germinated::Vector{Bool} # has it germinated and penetrated leaf tissue?
     # area::Vector{Float64} # total, equal to latent + sporulating
     # spores::Vector{Bool}
