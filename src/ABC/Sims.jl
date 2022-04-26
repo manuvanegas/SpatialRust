@@ -52,8 +52,8 @@ function simulate_fullsun(p_row::DataFrameRow,
         steps = restart_after,
         start_days_at = 132,
         switch_cycles = when_prod,
-        rust_gr = p_row[:rust_gr],
-        cof_gr = p_row[:cof_gr],
+        opt_g_temp = p_row[:opt_g_temp],
+        max_cof_gr = p_row[:max_cof_gr],
         spore_pct = p_row[:spore_pct],
         fruit_load = p_row[:fruit_load],
         uv_inact = p_row[:uv_inact],
@@ -85,9 +85,9 @@ function simulate_fullsun(p_row::DataFrameRow,
         start_days_at = 132 + restart_after,
         switch_cycles = when_prod,
         p_rusts = min((model1.current.outpour / length(model1.current.coffee_ids)), 1.0),
-        rust_gr = p_row[:rust_gr],
+        opt_g_temp = p_row[:opt_g_temp],
         spore_pct = p_row[:spore_pct],
-        cof_gr = p_row[:cof_gr],
+        max_cof_gr = p_row[:max_cof_gr],
         fruit_load = p_row[:fruit_load],
         uv_inact = p_row[:uv_inact],
         rain_washoff = p_row[:rain_washoff],
@@ -203,7 +203,8 @@ function abc_run!(model::ABM,
     when_rust = true,
     when_prod = true,
     rust_data = nothing,
-    prod_data = nothing)
+    prod_data = nothing,
+    obtainer = identity)
 
     # df_rust = init_model_dataframe(model, rust_data)
     per_age = DataFrame(
@@ -236,41 +237,37 @@ function abc_run!(model::ABM,
     s = 0
     while Agents.until(s, n, model)
         if Agents.should_we_collect(s, model, when_rust)
-            # let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-            #     update_dfs!(
-            #     per_age,
-            #     per_cycle,
-            #     # per_plant,
-            #     df[1, :ind_data][1, :rust],
-            #     df[1, :ind_data][1, :prod])
-            # end
-            collect_rust_data!(per_age, per_cycle, model)
+            let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
+                update_dfs!(
+                per_age,
+                per_cycle,
+                # per_plant,
+                df[1, :ind_data][1, :rust],
+                df[1, :ind_data][1, :prod])
+            end
         end
         if Agents.should_we_collect(s, model, when_prod)
-            # let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
-            #     append!(per_plant, df2[1, :coffee_prod])
-            # end
-            collect_prod_data!(per_plant, model)
+            let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
+                append!(per_plant, df2[1, :coffee_prod])
+            end
         end
         step!(model, dummystep, model_step!, 1)
         s += 1
     end
     if Agents.should_we_collect(s, model, when_rust)
-        # let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-        #     update_dfs!(
-        #     per_age,
-        #     per_cycle,
-        #     # per_plant,
-        #     df[1, :ind_data][1, :rust],
-        #     df[1, :ind_data][1, :prod])
-        # end
-        collect_rust_data!(per_age, per_cycle, model)
+        let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
+            update_dfs!(
+            per_age,
+            per_cycle,
+            # per_plant,
+            df[1, :ind_data][1, :rust],
+            df[1, :ind_data][1, :prod])
+        end
     end
     if should_we_collect(s, model, when_prod)
-        # let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
-        #     append!(per_plant, df2[1, :coffee_prod])
-        # end
-        collect_prod_data!(per_plant, model)
+        let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
+            append!(per_plant, df2[1, :coffee_prod])
+        end
     end
     return per_age, per_cycle, per_plant
 end
