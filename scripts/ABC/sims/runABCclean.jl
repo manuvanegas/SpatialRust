@@ -40,6 +40,12 @@ end
 #     println("Dummy run completed")
 # end
 
+println("""                                                                   
+Init: $usings_time                                                              
+Loads: $load_time
+""")
+flush(stdout)
+
 run_time = @elapsed begin
     outputs = pmap(p -> sim_abc(p, rain_data, temp_data, when_rust, when_plant, 0.5),
                     eachrow(parameters); retry_delays = fill(0.1, 3))
