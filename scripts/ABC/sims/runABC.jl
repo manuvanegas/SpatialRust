@@ -21,10 +21,10 @@ load_time = @elapsed begin
     const n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
     const startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
 
-    when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
+    const when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
     const when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
 
-    const when_rust = sort!(union(when_plant, when_rust))
+    # const when_rust = sort!(union(when_plant, when_rust))
 
     # read climate data
     const rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1])

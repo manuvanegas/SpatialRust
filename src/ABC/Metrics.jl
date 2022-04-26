@@ -113,13 +113,20 @@ function coffee_prod(model::ABM)::DataFrame
     let maxc = maximum(model.current.cycle) + 1
         return DataFrame(
             tick = model.current.ticks,
-            coffee_production = median(map(getprod,
+            coffee_production = (median(map(getprod,
                 Iterators.filter(c -> c isa Coffee && (maxc ∈ c.sample_cycle), allagents(model))
-                )))
+                ))) / model.pars.harvest_cycle
+            )
     end
 end
 
 getprod(c::Coffee)::Float64 = c.production
+
+## append data to per_plant
+
+function collect_prod_data!(per_plant::DataFrame, model::ABM)
+    append!(per_plant, coffee_prod(model))
+end
 
 ## Getting raw lesion area+spore and fallen data
 
@@ -132,55 +139,89 @@ function get_rust_state(rust::Rust)::DataFrame
     end
 end
 
-function collect_diff_cof(model::ABM)::DataFrame
-    rustdf = DataFrame(tick = Int[], cycle = Int[], id = Int[], age = Int[], area = Float64[], spore = Float64[])
-    cofdf = DataFrame(tick = Int[], cycle = Int[], exh = Bool[], prod = Float64[])
+# function collect_diff_cof(model::ABM)::DataFrame
+#     rustdf = DataFrame(tick = Int[], cycle = Int[], id = Int[], age = Int[], area = Float64[], spore = Float64[])
+#     cofdf = DataFrame(tick = Int[], cycle = Int[], exh = Bool[], prod = Float64[])
+#
+#     let harv = model.pars.harvest_cycle, cticks = model.current.ticks, sprpct = model.pars.spore_pct
+#         for cycle in model.current.cycle
+#             for (cof, cof2) in zip(
+#                 Iterators.filter(c -> c isa Coffee && cycle in c.sample_cycle, allagents(model)),
+#                 Iterators.filter(c -> c isa Coffee && (cycle + 1) in c.sample_cycle, allagents(model))
+#                 )
+#                 push!(cofdf, (cticks, cycle, (cof.exh_countdown > 0), (cof2.production / harv)))
+#                 if cof.hg_id != 0
+#                 #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
+#                 # else
+#                     rust_df = get_rust_state(model[cof.hg_id])
+#                     # if isempty(rust_df)
+#                     #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
+#                     # else
+#                         rust_df[:, :tick] .= cticks
+#                         rust_df[:, :cycle] .= cycle
+#                         @. rust_df[:, :spore] = rust_df.spore * rust_df.area * sprpct
+#                         rust_df[:, :id] .= cof.id
+#                         append!(rustdf, rust_df)
+#                     # end
+#                 end
+#             end
+#         end
+#         if isempty(rustdf)
+#             for c in model.current.cycle
+#                 push!(rustdf, (cticks, c, 0, -1, NaN, NaN))
+#             end
+#             # allowmissing!(rustdf, [:area, :spore])
+#         end
+#     end
+#
+#     return DataFrame(rust = rustdf, prod = cofdf)
+# end
+#
+# function collect_same_cof(model::ABM)::DataFrame
+#     rustdf = DataFrame(tick = Int[], cycle = Int[], id = Int[], age = Int[], area = Float64[], spore = Float64[])
+#     cofdf = DataFrame(tick = Int[], cycle = Int[], exh = Bool[])
+#
+#     let cticks = model.current.ticks, sprpct = model.pars.spore_pct
+#         for cycle in model.current.cycle
+#             for cof in Iterators.filter(c -> c isa Coffee && cycle in c.sample_cycle, allagents(model))
+#                 push!(cofdf, (cticks, cycle, (cof.exh_countdown > 0)))
+#                 if cof.hg_id != 0
+#                 #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
+#                 # else
+#                     rust_df = get_rust_state(model[cof.hg_id])
+#                     # if isempty(rust_df)
+#                     #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
+#                     # else
+#                         rust_df[:, :tick] .= cticks
+#                         rust_df[:, :cycle] .= cycle
+#                         @. rust_df[:, :spore] = rust_df.spore * rust_df.area * sprpct
+#                         rust_df[:, :id] .= cof.id
+#                         append!(rustdf, rust_df)
+#                     # end
+#                 end
+#             end
+#         end
+#         if isempty(rustdf)
+#             for c in model.current.cycle
+#                 push!(rustdf, (cticks, c, 0, -1, NaN, NaN))
+#             end
+#         end
+#     end
+#
+#     return DataFrame(rust = rustdf, prod = cofdf)
+# end
 
-    let harv = model.pars.harvest_cycle, cticks = model.current.ticks, sprpct = model.pars.spore_pct
-        for cycle in model.current.cycle
-            for (cof, cof2) in zip(
-                Iterators.filter(c -> c isa Coffee && cycle in c.sample_cycle, allagents(model)),
-                Iterators.filter(c -> c isa Coffee && (cycle + 1) in c.sample_cycle, allagents(model))
-                )
-                push!(cofdf, (cticks, cycle, (cof.exh_countdown > 0), (cof2.production / harv)))
-                if cof.hg_id != 0
-                #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
-                # else
-                    rust_df = get_rust_state(model[cof.hg_id])
-                    # if isempty(rust_df)
-                    #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
-                    # else
-                        rust_df[:, :tick] .= cticks
-                        rust_df[:, :cycle] .= cycle
-                        @. rust_df[:, :spore] = rust_df.spore * rust_df.area * sprpct
-                        rust_df[:, :id] .= cof.id
-                        append!(rustdf, rust_df)
-                    # end
-                end
-            end
-        end
-        if isempty(rustdf)
-            for c in model.current.cycle
-                push!(rustdf, (cticks, c, 0, -1, NaN, NaN))
-            end
-            # allowmissing!(rustdf, [:area, :spore])
-        end
-    end
-
-    return DataFrame(rust = rustdf, prod = cofdf)
-end
-
-function collect_same_cof(model::ABM)::DataFrame
-    rustdf = DataFrame(tick = Int[], cycle = Int[], id = Int[], age = Int[], area = Float64[], spore = Float64[])
-    cofdf = DataFrame(tick = Int[], cycle = Int[], exh = Bool[])
+function ind_data(model::ABM)::DataFrame
+    rustdf = DataFrame(tick = Int[], cycle = Int[], id = Int[], age = Int[], area = Float64[], spore = Float64[], exh = Bool[])
+    # cofdf = DataFrame(tick = Int[], cycle = Int[], exh = Bool[])
 
     let cticks = model.current.ticks, sprpct = model.pars.spore_pct
         for cycle in model.current.cycle
             for cof in Iterators.filter(c -> c isa Coffee && cycle in c.sample_cycle, allagents(model))
-                push!(cofdf, (cticks, cycle, (cof.exh_countdown > 0)))
-                if cof.hg_id != 0
-                #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
-                # else
+                # push!(cofdf, (cticks, cycle, (cof.exh_countdown > 0)))
+                if cof.hg_id == 0
+                    push!(rustdf, (cticks, cycle, cof.id, -1, NaN, NaN, (cof.exh_countdown > 0)))
+                else
                     rust_df = get_rust_state(model[cof.hg_id])
                     # if isempty(rust_df)
                     #     push!(df, (model.current.ticks, cycle, -1, missing, missing, cof.id))
@@ -189,48 +230,71 @@ function collect_same_cof(model::ABM)::DataFrame
                         rust_df[:, :cycle] .= cycle
                         @. rust_df[:, :spore] = rust_df.spore * rust_df.area * sprpct
                         rust_df[:, :id] .= cof.id
+                        rust_df[:, :exh] .= (cof.exh_countdown > 0)
                         append!(rustdf, rust_df)
                     # end
                 end
             end
         end
-        if isempty(rustdf)
-            for c in model.current.cycle
-                push!(rustdf, (cticks, c, 0, -1, NaN, NaN))
-            end
-        end
+        # if isempty(rustdf)
+        #     for c in model.current.cycle
+        #         push!(rustdf, (cticks, c, 0, -1, NaN, NaN))
+        #     end
+        # end
     end
 
-    return DataFrame(rust = rustdf, prod = cofdf)
+    return rustdf
 end
 
-function ind_data(model::ABM)::DataFrame
-    # if (length(model.current.cycle) == 1 && # cycle overlapping starts after cycle #5
-    #     model.current.ticks in model.pars.switch_cycles)
-    #     return collect_diff_cof(model)
-    # else
-        return collect_same_cof(model)
-    # end
+## Process raw data to append to per_age and per_cycle dfs
 
-    # if all(model.current.cycle .< 6)
-    #     if model.current.ticks in model.pars.switch_cycles
-    #         collect_same_cof(model)
-    #     else
-    #         collect_just_rustd()
-    #     end
-    # else
-    #     if model.current.ticks in model.pars.switch_cycles
-    #         return collect_diff_cof(model)
-    #     else
-    #         return collect_same_cof(model)
-    #     end
+function collect_rust_data!(per_age::DataFrame, per_cycle::DataFrame, model::ABM)
+    rdata1 = ind_data(model)
+    rdata2 = ind_data(model)
+    # println(length(rdata.exh))
+    append!(per_age, combine_per_age(rdata1))
+    append!(per_cycle, combine_per_cycle(rdata2))
     # end
 end
 
-## Process raw data to obtain per_age and per_cycle dfs
-"collect_rust_data"
+function combine_per_age(rdata::DataFrame)::DataFrame
+    combine(groupby(rdata, [:tick, :cycle, :age]),
+    [:area => nanmedian5 => :area_m, :spore => nanmedian5 => :spores_m] )
+end
 
+function combine_per_cycle(rdata::DataFrame)::DataFrame
+    # let data_cycle = combine(groupby(rdata, [:tick, :cycle, :id]),
+    # [:area => nansum => :s_area, :spore => nansum => :s_spore]) |>
+    # x -> combine(groupby(x, [:tick, :cycle]),
+    # [:s_area => nanmedian5 => :area_m, :s_spore => nanmedian5 => :spores_m]) |>
+    # r -> leftjoin(
+    # combine(groupby(cdata, [:tick, :cycle]),
+    #     [:exh => pct => :fallen]),
+    # r,
+    # on = [:tick, :cycle]
+    # )
+    #
+    # return data_cycle[:, [:area_m, :spores_m]] .= ifelse.(
+    #     ismissing.(data_cycle[!, [:area_m, :spores_m]]),
+    #     NaN, data_cycle[!, [:area_m, :spores_m]]
+    #     )
+    # end
 
+    # x = try combine(groupby(rdata, [:tick, :cycle, :id]),
+    # [:area => nansum => :s_area, :spore => nansum => :s_spore, :exh => first => :exh])
+    # catch e
+    #     println(first(rdata, 10))
+    #     println(e)
+    # end
+    #
+    # return combine(groupby(x, [:tick, :cycle]),
+    # [:s_area => nanmedian5 => :area_m, :s_spore => nanmedian5 => :spores_m, :exh => pct => :fallen])
+
+    return combine(groupby(rdata, [:tick, :cycle, :id]),
+    [:area => nansum => :s_area, :spore => nansum => :s_spore, :exh => first => :exh]) |>
+    x -> combine(groupby(x, [:tick, :cycle]),
+    [:s_area => nanmedian5 => :area_m, :s_spore => nanmedian5 => :spores_m, :exh => pct => :fallen])
+end
 
 
 function update_dfs!(

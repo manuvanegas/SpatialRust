@@ -203,8 +203,7 @@ function abc_run!(model::ABM,
     when_rust = true,
     when_prod = true,
     rust_data = nothing,
-    prod_data = nothing,
-    obtainer = identity)
+    prod_data = nothing)
 
     # df_rust = init_model_dataframe(model, rust_data)
     per_age = DataFrame(
@@ -237,37 +236,41 @@ function abc_run!(model::ABM,
     s = 0
     while Agents.until(s, n, model)
         if Agents.should_we_collect(s, model, when_rust)
-            let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-                update_dfs!(
-                per_age,
-                per_cycle,
-                # per_plant,
-                df[1, :ind_data][1, :rust],
-                df[1, :ind_data][1, :prod])
-            end
+            # let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
+            #     update_dfs!(
+            #     per_age,
+            #     per_cycle,
+            #     # per_plant,
+            #     df[1, :ind_data][1, :rust],
+            #     df[1, :ind_data][1, :prod])
+            # end
+            collect_rust_data!(per_age, per_cycle, model)
         end
         if Agents.should_we_collect(s, model, when_prod)
-            let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
-                append!(per_plant, df2[1, :coffee_prod])
-            end
+            # let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
+            #     append!(per_plant, df2[1, :coffee_prod])
+            # end
+            collect_prod_data!(per_plant, model)
         end
         step!(model, dummystep, model_step!, 1)
         s += 1
     end
     if Agents.should_we_collect(s, model, when_rust)
-        let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-            update_dfs!(
-            per_age,
-            per_cycle,
-            # per_plant,
-            df[1, :ind_data][1, :rust],
-            df[1, :ind_data][1, :prod])
-        end
+        # let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
+        #     update_dfs!(
+        #     per_age,
+        #     per_cycle,
+        #     # per_plant,
+        #     df[1, :ind_data][1, :rust],
+        #     df[1, :ind_data][1, :prod])
+        # end
+        collect_rust_data!(per_age, per_cycle, model)
     end
     if should_we_collect(s, model, when_prod)
-        let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
-            append!(per_plant, df2[1, :coffee_prod])
-        end
+        # let df2 = collect_model_data!(DataFrame(step = Int[], coffee_prod = DataFrame()), model, prod_data, s; obtainer)
+        #     append!(per_plant, df2[1, :coffee_prod])
+        # end
+        collect_prod_data!(per_plant, model)
     end
     return per_age, per_cycle, per_plant
 end
