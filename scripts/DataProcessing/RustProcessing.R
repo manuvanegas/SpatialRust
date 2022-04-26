@@ -92,6 +92,20 @@ app_areas <- filter(rSelected, Fallen == 0) %>%
             med.app.spores = median(appr.spores, na.rm = T),
             count.areas = n())
 
+#########################################
+# New metric #2 (after adding multirust)
+sum_areas <- filter(rSelected, Fallen == 0) %>%
+  group_by(day.n, f.date, plant.group, sample.cycle, leaf.id) %>%
+  summarise(sum.area = sum(num.area, na.rm = T),
+            sum.spores = sum(AreaWithSpores, na.rm = T),
+            n.lesions = max(Lesion)) %>%
+  group_by(day.n, f.date, plant.group, sample.cycle) %>%
+  summarise(med.app.area = median(sum.area, na.rm = T),
+            med.app.spores = median(sum.spores, na.rm = T),
+            med.lesions = median(n.lesions),
+            count.areas = n())
+
+
 
 ## The following section was not used, but I am leaving it here commented for future ref
 # The idea was to repeat the steps above, but for spore areas
@@ -128,6 +142,8 @@ fallen_leaves <- group_by(rSelected, day.n, f.date, plant.group, sample.cycle, l
 
 # Join Ms 2 & 3  
 areas_and_fallen <- left_join(app_areas, fallen_leaves) %>% ungroup()
+# Join version 2
+areas_and_fallen2 <- left_join(sum_areas, fallen_leaves) %>% ungroup()
 
 #########################################
 # Write rust data 
@@ -145,8 +161,14 @@ write.csv(select(spore_per_age, c(1,5,6,10)),
                                    "compare/Sun_Spore_Age.csv", 
                                    "compare/Shade_Spore_Age.csv")))
 
- colnames(areas_and_fallen) <- gsub("\\.", "_", colnames(areas_and_fallen))
+colnames(areas_and_fallen) <- gsub("\\.", "_", colnames(areas_and_fallen))
 write.csv(select(areas_and_fallen, c(1,4,5,6,8)),
+          paste0(data_path, ifelse(SunOrShade == "Sun", 
+                                   "compare/Sun_Appr_Areas_Fallen.csv",
+                                   "compare/Shade_Appr_Areas_Fallen.csv")))
+
+colnames(areas_and_fallen2) <- gsub("\\.", "_", colnames(areas_and_fallen2))
+write.csv(select(areas_and_fallen2, c(1,4,5,6,7,9)),
           paste0(data_path, ifelse(SunOrShade == "Sun", 
                                    "compare/Sun_Appr_Areas_Fallen.csv",
                                    "compare/Shade_Appr_Areas_Fallen.csv")))
