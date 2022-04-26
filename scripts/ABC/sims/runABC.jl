@@ -5,7 +5,7 @@ usings_time = @elapsed begin
         using DataFrames
         using Arrow
         using Distributed: pmap
-        include(projectdir("SpatialRust.jl"))
+        include(srcdir("SpatialRust.jl"))
     end
     @everywhere begin
         using .SpatialRust
