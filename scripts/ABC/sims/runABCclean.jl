@@ -34,11 +34,11 @@ load_time = @elapsed begin
     mkpath("/scratch/mvanega1/ABC/sims/prod")
 end
 
-dummy_time = @elapsed begin
-    #dummy run
-    sim_abc(parameters[10,:], rain_data, temp_data, when_rust, when_plant, 0.5)
-    println("Dummy run completed")
-end
+# dummy_time = @elapsed begin
+#     #dummy run
+#     sim_abc(parameters[10,:], rain_data, temp_data, when_rust, when_plant, 0.5)
+#     println("Dummy run completed")
+# end
 
 run_time = @elapsed begin
     outputs = pmap(p -> sim_abc(p, rain_data, temp_data, when_rust, when_plant, 0.5),

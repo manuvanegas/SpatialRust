@@ -40,11 +40,11 @@ end
 println("Loads: $load_time")
 flush(stdout)
 
-dummy_time = @elapsed begin
-    #dummy run
-    sim_abc(parameters[10,:], rain_data, temp_data, when_rust, when_plant, 0.5)
-    println("Dummy run completed")
-end
+# dummy_time = @elapsed begin
+#     #dummy run
+#     sim_abc(parameters[10,:], rain_data, temp_data, when_rust, when_plant, 0.5)
+#     println("Dummy run completed")
+# end
 
 println("Compile: $dummy_time")
 flush(stdout)
