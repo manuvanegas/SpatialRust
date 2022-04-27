@@ -20,4 +20,30 @@ allfiles = vcat(agesfiles, cyclesfiles)
 end
 
 # penalties!.(agesfiles)
-v = pmap(penalties!, allfiles; retry_delays = fill(0.1, 3))
+# v = pmap(penalties!, allfiles; retry_delays = fill(0.1, 3))
+
+@everywhere function negatives!(file::String)
+    df = copy(DataFrame(Arrow.Table(file)))
+    df[toobigsmall.(df.area_m), :area_m] .= -0.5
+    df[toobigsmall.(df.spores_m), :spores_m] .= -0.5
+    # replace!(df[!, :area_m], NaN => -1.0, -Inf => -0.5, Inf => -0.5)
+    # replace!(df[!, :spores_m], NaN => -1.0, -Inf => -0.5, Inf => -0.5)
+    Arrow.write(file, df)
+    df = nothing
+    # println(num)
+    # flush(stdout)
+    GC.gc()
+    return nothing
+end
+
+@everywhere function toobigsmall(x::Float64)::Bool
+    if x < 0.0 && x != -1.0
+        return true
+    elseif x > 5.0
+        return true
+    else
+        return false
+    end
+end
+
+v = pmap(negatives!, allfiles; retry_delays = fill(0.1, 3))
