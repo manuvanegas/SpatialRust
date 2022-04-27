@@ -1,3 +1,4 @@
+Pkg.activate(".")
 using Arrow, DataFrames, Distributed
 
 agesfiles = readdir("/scratch/mvanega1/ABC/sims/ages/", join = true, sort = false)
