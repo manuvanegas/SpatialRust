@@ -1,12 +1,13 @@
-Pkg.activate(".")
-using Arrow, DataFrames, Distributed
+@everywhere using DrWatson
+@everywhere @quickactivate "SpatialRust"
+@everywhere using Arrow, DataFrames, Distributed
 
 agesfiles = readdir("/scratch/mvanega1/ABC/sims/ages/", join = true, sort = false)
 cyclesfiles = readdir("/scratch/mvanega1/ABC/sims/cycles/", join = true, sort = false)
 
 allfiles = vcat(agesfiles, cyclesfiles)
 
-function penalties!(file::String)
+@everywhere function penalties!(file::String)
     df = DataFrame(Arrow.Table(file))
     replace!(df[!, :area_m], NaN => -1.0)
     replace!(df[!, :spores_m], NaN => -1.0)
