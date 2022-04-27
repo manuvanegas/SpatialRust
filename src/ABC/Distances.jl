@@ -56,8 +56,9 @@ end
 # sq_diff_var(sim::Float64, emp::Float64, norm::Float64)::Float64 = norm == 0 ? 0.0 : ((sim - emp)^2) / norm
 sq_diff_var(sim::Float64, emp::Float64, norm::Float64)::Float64 = ((sim - emp)^2) / norm
 sq_diff_var(sim::Float64, emp::Missing, norm::Float64)::Float64 = 0.0
-sq_diff_var(sim::Float64, emp::Missing, norm::Missing)::Float64 = 0.0
-sq_diff_var(sim::Missing, emp::Float64, norm::Float64)::Float64 = 1.0
+sq_diff_var(sim::Missing, emp::Missing, norm::Float64)::Float64 = 0.0
+# sq_diff_var(sim::Float64, emp::Missing, norm::Missing)::Float64 = 0.0
+sq_diff_var(sim::Missing, emp::Float64, norm::Float64)::Float64 = 2.0
 
 ## make sure that cycles correspond to ticks
 function correct_cycles!(df::DataFrame)
