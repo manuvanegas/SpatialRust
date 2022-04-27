@@ -9,8 +9,8 @@ allfiles = vcat(agesfiles, cyclesfiles)
 
 @everywhere function penalties!(file::String)
     df = copy(DataFrame(Arrow.Table(file)))
-    replace!(df[!, :area_m], NaN => -1.0)
-    replace!(df[!, :spores_m], NaN => -1.0)
+    replace!(df[!, :area_m], NaN => -1.0, -Inf => -0.5, Inf => -0.5)
+    replace!(df[!, :spores_m], NaN => -1.0, -Inf => -0.5, Inf => -0.5)
     Arrow.write(file, df)
     df = nothing
     # println(num)
