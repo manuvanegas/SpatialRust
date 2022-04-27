@@ -1,7 +1,7 @@
 @everywhere using DrWatson
 @everywhere @quickactivate "SpatialRust"
 @everywhere begin
-    using CSV, DataFrames, Distributed, FileTrees
+    using Arrow, CSV, DataFrames, Distributed, FileTrees
     include(srcdir("ABC/Distances.jl"))
 end
 #ARGS: calculate variances?(Bool)
@@ -17,12 +17,19 @@ time_joins = @elapsed begin
     ages = CSV.read("data/exp_pro/compare/Sun_AreaSpore_Age.csv", DataFrame)
     cycles = CSV.read("data/exp_pro/compare/Sun_Appr_Areas_Fallen.csv", DataFrame)[:, [2,3,4,5,7]]
     cprod = CSV.read("data/exp_pro/compare/Sun_Plant_Production.csv", DataFrame)[:, 2:4]
-    # load variance files
-    σ2_ages = CSV.read(projectdir("results/ABC/variances/v_ages.csv"), DataFrame)
-    σ2_cycles = CSV.read(projectdir("results/ABC/variances/v_cycles.csv"), DataFrame)
-    σ2_prod = CSV.read(projectdir("results/ABC/variances/v_prod.csv"), DataFrame)
 
-    correct_cycles!.((σ2_ages, σ2_cycles))
+    # load variance files
+    if isfile(projectdir("results/ABC/variances/v_ages_c.csv"))
+        σ2_ages = CSV.read(projectdir("results/ABC/variances/v_ages_c.csv"), DataFrame)
+        σ2_cycles = CSV.read(projectdir("results/ABC/variances/v_cycles_c.csv"), DataFrame)
+    else
+        σ2_ages = CSV.read(projectdir("results/ABC/variances/v_ages.csv"), DataFrame)
+        σ2_cycles = CSV.read(projectdir("results/ABC/variances/v_cycles.csv"), DataFrame)
+        correct_cycles!.((σ2_ages, σ2_cycles))
+        CSV.write(projectdir("results/ABC/variances/v_ages_c.csv"), σ2_ages)
+        CSV.write(projectdir("results/ABC/variances/v_cycles_c.csv"), σ2_cycles)
+    end
+    σ2_prod = CSV.read(projectdir("results/ABC/variances/v_prod.csv"), DataFrame)
 
     # join variances into field data
     leftjoin!(ages, σ2_ages, on = [:day_n => :tick, :sample_cycle => :cycle, :age_week => :age])
