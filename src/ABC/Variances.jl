@@ -82,14 +82,3 @@ function dfize(ostats::GroupBy, folder::Symbol) # "dataframe-ize"
 
     return var_df
 end
-
-## sanity check: is there a variance value for each empirical data point?
-function find_missings(df::DataFrame)
-    if "median_spores" in names(df)
-        df = df[:, Not(:median_spores)]
-    end
-    for r in eachrow(df)
-        ismissing(sum(r)) && return true
-    end
-    return false
-end

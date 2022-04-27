@@ -58,3 +58,14 @@ sq_diff_var(sim::Float64, emp::Float64, norm::Float64)::Float64 = ((sim - emp)^2
 sq_diff_var(sim::Float64, emp::Missing, norm::Float64)::Float64 = 0.0
 sq_diff_var(sim::Float64, emp::Missing, norm::Missing)::Float64 = 0.0
 sq_diff_var(sim::Missing, emp::Float64, norm::Float64)::Float64 = 1.0
+
+## sanity check: is there a variance value for each empirical data point?
+function find_missings(df::DataFrame)
+    if "median_spores" in names(df)
+        df = df[:, Not(:median_spores)]
+    end
+    for r in eachrow(df)
+        ismissing(sum(r)) && return true
+    end
+    return false
+end
