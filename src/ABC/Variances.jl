@@ -9,9 +9,11 @@ end
 
 function σ2_a(folder::String)
     files = readdir(string(folder,"ages"), join = true, sort = false)
-    @inline v_itr(arr) = ((r.tick, r.cycle, r.age) => (r.area_m, r.spores_m) for r in eachrow(arr))
+    @inline v_itr(arr) = ((r.tick, r.cycle, r.age) =>
+        (r.area_m, r.spores_m) for r in eachrow(arr))
     vars = @distributed merge for f in files
-        fit!(GroupBy(Tuple, Series(2Variance(), 2Counter())), v_itr(DataFrame(Arrow.Table(f))) )
+        fit!(GroupBy(Tuple, FTSeries(2Variance(), 2Counter();
+            filter = !isnan)), v_itr(DataFrame(Arrow.Table(f))) )
     end
 
     return dfize(vars, :ages)
@@ -21,7 +23,8 @@ function σ2_c(folder::String)
     files = readdir(string(folder,"cycles"), join = true, sort = false)
     @inline v_itr(arr) = ((r.tick, r.cycle) => (r.area_m, r.spores_m, r.fallen) for r in eachrow(arr))
     vars = @distributed merge for f in files
-        fit!(GroupBy(Tuple, Series(3Variance(), 3Counter())), v_itr(DataFrame(Arrow.Table(f))) )
+        fit!(GroupBy(Tuple, FTSeries(3Variance(), 3Counter();
+            filter = !isnan)), v_itr(DataFrame(Arrow.Table(f))) )
     end
 
     return dfize(vars, :cycles)
@@ -31,7 +34,8 @@ function σ2_p(folder::String)
     files = readdir(string(folder,"prod"), join = true, sort = false)
     @inline v_itr(arr) = (r.tick => r.coffee_production for r in eachrow(arr))
     vars = @distributed merge for f in files
-        fit!(GroupBy(Int, Series(Variance(), Counter())), v_itr(DataFrame(Arrow.Table(f))) )
+        fit!(GroupBy(Int, FTSeries(Variance(), Counter();
+            filter = !isnan)), v_itr(DataFrame(Arrow.Table(f))) )
     end
 
     return dfize(vars, :prod)
