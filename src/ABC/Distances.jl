@@ -59,6 +59,26 @@ sq_diff_var(sim::Float64, emp::Missing, norm::Float64)::Float64 = 0.0
 sq_diff_var(sim::Float64, emp::Missing, norm::Missing)::Float64 = 0.0
 sq_diff_var(sim::Missing, emp::Float64, norm::Float64)::Float64 = 1.0
 
+## make sure that cycles correspond to ticks
+function correct_cycles!(df::DataFrame)
+    if any(df.tick .== 350 .&& df.cycle .== 5)
+        transform!(df, AsTable([:tick, :cycle]) => ByRow(tick_cycle) => AsTable)
+    end
+end
+
+function tick_cycle(r::NamedTuple)
+    # switches only made at 372 and 442
+    if r.tick < 350 || r.tick == 372
+        return (tick = r.tick, cycle = r.cycle)
+    elseif r.tick < 406
+        return (tick = r.tick, cycle =(r.cycle + 1))
+    elseif r.tick == 434
+        return (tick = r.tick, cycle =(r.cycle + 3))
+    else
+        return (tick = r.tick, cycle =(r.cycle + 2))
+    end
+end
+
 ## sanity check: is there a variance value for each empirical data point?
 function find_missings(df::DataFrame)
     if "median_spores" in names(df)
