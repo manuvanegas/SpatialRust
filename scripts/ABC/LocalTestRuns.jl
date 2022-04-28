@@ -1,11 +1,13 @@
 Pkg.activate(".")
+using Revise
+using SpatialRust
 using Agents, DrWatson, Random
 using Statistics: median, mean
 
 using Arrow, DataFrames
 using CSV: read as crd
 
-when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
+const when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
 const when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
 
 # const when_rust = sort!(union(when_plant, when_rust)) # needed because the first 5 dates of when_prod are not in when_rust
@@ -15,8 +17,8 @@ const rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1]
 const temp_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[2])
 const paramss = crd(datadir("ABC", "parameters_10.csv"), DataFrame)
 
-include(projectdir("SpatialRust.jl"))
-using .SpatialRust
+# include(srcdir("SpatialRust.jl"))
+# using .SpatialRust
 
 # Random.seed!(1234)
 # for rr in eachrow(paramss)[1:2]
@@ -24,6 +26,11 @@ using .SpatialRust
 # end
 
 sim_abc(eachrow(paramss)[1], rain_data, temp_data, when_rust, when_plant, 0.5, 231)
+
+# bye() = println("b"); 0
+# atexit(bye)
+#
+# atexit(() -> 0)
 
 using BenchmarkTools
 Random.seed!(1234)

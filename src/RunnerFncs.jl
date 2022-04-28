@@ -1,7 +1,5 @@
 export dummyrun_spatialrust, justtwosteps
 
-dummyrun_spatialrust(steps::Int = 200, side::Int = 60) = dummyrun_spatialrust(steps, side, 25)
-
 function dummyrun_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int = 25)
     pars = Parameters(steps = steps, map_side = side, max_lesions = maxlesions)
     model = init_spatialrust(pars, create_fullsun_farm_map(), create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
@@ -13,6 +11,8 @@ function dummyrun_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int 
         adata = [(:n_lesions, median, justrusts), (:production, mean, justcofs)],
         mdata = [incidence])
 end
+
+dummyrun_spatialrust(steps::Int = 200, side::Int = 60) = dummyrun_spatialrust(steps, side, 25)
 
 medsum(x) = (median(sum.(x)))
 
