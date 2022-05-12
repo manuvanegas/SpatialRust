@@ -13,9 +13,11 @@ Base.@kwdef mutable struct Books
     temperature:: Float64 = 0.0
     rain::Bool = true
     wind::Bool = true
+    wind_h::Float64 = 0.0
+    fung_effect::Int = 0
     costs::Float64 = 0.0
     net_rev::Float64 = 0.0
-    yield::Float64 = 0.0
+    prod::Float64 = 0.0
 end
 
 struct Props
