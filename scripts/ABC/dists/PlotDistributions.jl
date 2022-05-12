@@ -13,6 +13,7 @@ selected = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(4),
 # selected3 = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(3), 100)))
 # selected4 = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(4), 100)))
 # selected = subset(parameters, :RowN => x -> x .∈ Ref(best_100(dists, [:area_cycle, :spore_cycle, :fallen])))
+medians = combine(selected, names(selected) .=> median)
 
 longpars = long_and_separate(parameters)
 longsel = long_and_separate(selected)
