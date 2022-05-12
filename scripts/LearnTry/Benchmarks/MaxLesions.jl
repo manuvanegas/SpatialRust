@@ -1,11 +1,10 @@
 Pkg.activate(".")
 # push!(LOAD_PATH, pwd())
-# using Revise
 using Agents, DrWatson, Random
 using Statistics: median, mean
-
-include(projectdir("SpatialRust.jl"))
-using .SpatialRust
+using Revise
+# include(srcdir("SpatialRust.jl"))
+using SpatialRust
 
 # tmodel = SpatialRust.init_spatialrust(Parameters(), SpatialRust.create_fullsun_farm_map())
 tmodel = justtwosteps()
@@ -19,9 +18,6 @@ SpatialRust.step_model!(tmodel)
 # median(getproperty.((tmodel[id] for id in tmodel.current.coffee_ids), :area))
 # maximum(getproperty.(trusts,:spores))
 # maximum.(getproperty.(trusts,:area))
-
-
-# dm_adf, dm_mdf = dummyrun_spatialrust(10, 100)
 
 tadf, tmdf = dummyrun_spatialrust(10, 100, 10)
 
@@ -47,10 +43,12 @@ tadf, tmdf = nlesions_spatialrust(500, 100, 50)
 
 # Juno.@profiler dummyrun_spatialrust(10, 100) #doesnt run (too many things happenning?)
 
-ttmodel = init_spatialrust(Parameters(map_side = 100, max_lesions = 25), SpatialRust.create_fullsun_farm_map())
+ttmodel = SpatialRust.init_spatialrust(SpatialRust.Parameters(map_side = 100, max_lesions = 25), SpatialRust.create_fullsun_farm_map())
 for i in 1:50
     SpatialRust.step_model!(ttmodel)
 end
+# ttmodel.current.rain = true
+# ttmodel.current.wind = true
 
 @time SpatialRust.step_model!(ttmodel)
 
@@ -58,7 +56,7 @@ using Profile
 Profile.init()
 Profile.init(n = 10^9)
 
-Juno.@profiler for i in 1:2
+Juno.@profiler for i in 1:10
     for rust_i in shuffle(ttmodel.rng, ttmodel.current.rust_ids)
         SpatialRust.rust_step!(ttmodel, ttmodel[rust_i], ttmodel[ttmodel[rust_i].hg_id])
     end
