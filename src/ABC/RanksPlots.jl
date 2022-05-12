@@ -28,7 +28,7 @@ function three_violins(pars::NamedTuple, sel::NamedTuple, height = 800, width = 
 
     fviolins = Figure(resolution = (height, width));
     ax1 = Axis(fviolins[1,1];
-        xticks = (1:7, names(parameters)[2:8]),
+        xticks = (2:2:14, names(parameters)[2:8]),
         xticklabelrotation = π/4
     )
     ax2 = Axis(fviolins[1,2];
@@ -86,7 +86,7 @@ function three_boxplots(pars::NamedTuple, sel::NamedTuple, height = 800, width =
     boxplot!(ax3, par3.group, par3.value, dodge = 1, dodge_gap = 2.4, color = (:orange, 0.8))
 
     colsize!(fbox.layout, 1, Relative(15/18))
-    colgap!(fig1.layout, 5)
+    colgap!(fbox.layout, 5)
     fbox
 end
 
