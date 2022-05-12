@@ -16,25 +16,30 @@ Base.@kwdef struct Parameters
     start_days_at::Int = 0
     p_rusts::Float64 = 0.01            # % of initial rusts
     harvest_cycle::Int = 365           # or 365/2, depending on the region
-    karma::Bool = true                 # does producing more spores means more spores coming from elsewhere?
     #par_row::Int = 0                  # parameter combination number (for ABC)
     switch_cycles::Vector{Int} = []
 
     # farm management
-    fungicide_period::Int = 182        # days
     prune_period::Int = 91             # days
-    inspect_period::Int = 7            # days
-    inspect_effort::Float64 = 0.01     # % coffees inspected each time
     target_shade::Float64 = 0.3        # shade provided by each, after pruning
     pruning_effort::Float64 = 0.75     # % shades pruned each time
+    prune_cost::Float64 = 1.0          # per shade
+    fungicide_period::Int = 182        # days
+    # fung_rates::NamedTuple = (growth = 0.95, spor = 0.8, germ = 0.9)
+    # fung_effect::Int = 15              # days with f effect
+    fung_cost::Float64 = 1.0           # per coffee
+    inspect_period::Int = 7            # days
+    inspect_effort::Float64 = 0.01     # % coffees inspected each time
+    # n_inspected::Int = 100             # n of coffees inspected
+    inspect_cost::Float64 = 1.0        # per coffee inspected
     coffee_price::Float64 = 1.0
-    prune_cost::Float64 = 1.0
 
     # abiotic parameters
     rain_distance::Float64 = 1.0
     wind_distance::Float64 = 5.0
     rain_prob::Float64 = 0.5
     wind_prob::Float64 = 0.4
+    # wind_disp_prob::Float64 = 0.5
     mean_temp::Float64 = 22.5
     uv_inact::Float64 = 0.1            # extent of effect of UV inactivation (0 to 1)
     rain_washoff::Float64 = 0.1        # " " " rain wash-off (0 to 1)
@@ -44,7 +49,7 @@ Base.@kwdef struct Parameters
     diff_wind::Float64 = 1.2           # % extra wind distance due to increased openness
     disp_block::Float64 = 0.8          # prob a tree will block rust dispersal
     shade_g_rate::Float64 = 0.1        # shade growth rate
-    shade_r::Int = 1
+    shade_r::Int = 1#2                   # radius of influence of shades
 
     # coffee and rust parameters
     exhaustion::Float64 = 0.8          # rust level (relative to max) that causes plant exhaustion
@@ -58,8 +63,16 @@ Base.@kwdef struct Parameters
 
     # farm parameters (used if farm_map is not provided)
     map_side::Int = 100                # side size
-    shade_percent::Float64 = 0.3
-    shade_arrangement::Symbol = :rand  # :fragment or :regular
+    row_d::Int = 2                     # distance between rows (options: 1, 2, 3)
+    plant_d::Int = 1                   # distance between plants (options: 1, 2)
+    shade_d::Int = 6                   # distance between shades (only considered when :regular)
+    shade_arrangement::Symbol = :regular  # :rand
+    # shade_barriers::Int = 0            # n of shade barriers
+    shade_barriers::Int = 1            # or 2 = double
+    barrier_arr::NTuple{4, Int} = (1, 1, 2, 2)
+    # 1->internal,horizontal; 2->int,v; 3-> edge,h 4->e,v
+
+
     # fragmentation::Bool = false
     # random::Bool = true
     #p_density::Float64 = 1.0
@@ -120,6 +133,35 @@ function create_weather(
     return Weather{steps}(
         rain_data,
         rand(steps) .< wind_prob,
+        temp_data
+        # rain_data,
+        # rand(steps) .< wind_prob,
+        # temp_data
+    )
+end
+
+function create_weather(
+    rain_prob::Float64,
+    mean_temp::Float64,
+    steps::Int,
+    )
+    return Weather{steps}(
+        rand(steps) .< rain_prob,
+        # rand(steps) .* 360.0,
+        fill(mean_temp, steps) .+ randn() .* 2
+        # rain_data,
+        # rand(steps) .< wind_prob,
+        # temp_data
+    )
+end
+function create_weather(
+    rain_data::AbstractVector{Bool},
+    temp_data::Vector{Float64},
+    steps::Int,
+    )
+    return Weather{steps}(
+        rain_data,
+        # rand(steps) .* 360.0,
         temp_data
         # rain_data,
         # rand(steps) .< wind_prob,

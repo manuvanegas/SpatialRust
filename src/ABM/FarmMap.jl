@@ -1,7 +1,142 @@
 
+function create_farm_map(pars::Parameters)
+    side = pars.map_side
+    # base
+    farm_map = zeros(Int, side, side)
 
-function create_farm_map(parameters::Parameters)
+    # add coffees
+    for r in 1:pars.row_d:side # these are farm "rows", but in the array they are columns
+        for p in 1:pars.plant_d:side
+            @inbounds farm_map[p, r] = 1
+        end
+    end
+
+    # add shades
+    if pars.shade_d != 0
+        if pars.shade_arrangement == :regular
+            for si in 1:6:100
+                for sj in 1:6:100
+                    @inbounds farm_map[sj, si] = 2
+                end
+            end
+        else
+            nshades = round(Int, (side / pars.shade_d)^2)
+            @inbounds farm_map[sample(1:side^2, nshades, replace = false)] .= 2
+        end
+    end
+
+    barriers = findall(x -> x > 0, pars.barrier_arr)
+
+    if !isempty(barriers)
+        arr = pars.barrier_arr
+        for type in barriers
+            if type == 1 # internal horizontal
+                placements = @inbounds barr_places(side, arr[type], pars.shade_barriers)
+
+                if pars.shade_barriers == 1 && pars.plant_d == 2 # try to avoid coffees
+                    @inbounds for pb in placements
+                        if isodd(pb)
+                            @inbounds farm_map[(pb + 1), :] .= 2
+                        else
+                            @inbounds farm_map[pb, :] .= 2
+                        end
+                    end
+                else
+                    @inbounds for pb in placements
+                        @inbounds farm_map[pb, :] .= 2
+                    end
+                end
+            elseif type == 2 # internal vertical
+                # spacing = fld(side, (@inbounds arr[type] + 1))
+                # placements = spacing .* collect(@inbounds 1:arr[type])
+                # if pars.shade_barriers == 2
+                #     placements = vcat(placements, (placements .+ 1))
+                # end
+                placements = @inbounds barr_places(side, arr[type], pars.shade_barriers)
+
+                if pars.row_d == 2 && pars.shade_barriers == 1
+                    @inbounds for pb in placements
+                        if isodd(pb)
+                            @inbounds farm_map[:, (pb + 1)] .= 2
+                        else
+                            @inbounds farm_map[:, pb] .= 2
+                        end
+                    end
+                elseif pars.row_d == 3
+                    if pars.shade_barriers == 1
+                        @inbounds for pb in placements
+                            if pb % 3 == 1
+                                @inbounds farm_map[:, (pb + 1)] .= 2
+                            else
+                                @inbounds farm_map[:, pb] .= 2
+                            end
+                        end
+                    else
+                        conflicting = findall(x -> (x % 3 == 1), placements)
+                        for cn in conflicting
+                            if cn <= arr[type]
+                                placements[[cn, (cn + arr[type])]] .+= 1
+                            else
+                                placements[[cn, (cn + arr[type])]] .-= 1
+                            end
+                        end
+                        @inbounds for pb in placements
+                            @inbounds farm_map[:, pb] .= 2
+                        end
+                    end
+                else
+                    @inbounds for pb in placements
+                        @inbounds farm_map[:, pb] .= 2
+                    end
+                end
+
+            elseif type == 3 # edge horizontal
+                if @inbounds arr[type] == 1
+                    @inbounds farm_map[1,:] .= 2
+                else
+                    @inbounds farm_map[[1,100], :] .= 2
+                end
+            else # edge vertical
+                if @inbounds arr[type] == 1
+                    @inbounds farm_map[:,100] .= 2
+                    # coffee placement starts at 1, then a barrier at 1 would wipe away a whole cof row, always
+                else
+                    @inbounds farm_map[:,[1,100]] .= 2
+                end
+            end
+        end
+    end
+    return farm_map
 end
+
+function create_fullsun_farm_map()
+    farm_map = zeros(Int,100,100)
+    for c in 1:2:100
+        @inbounds farm_map[:,c] .= 1
+    end
+    return farm_map
+end
+
+function create_midshade_farm_map()
+    farm_map = create_fullsun_farm_map()
+    for si in 1:6:100
+        for sj in 1:6:100
+            @inbounds farm_map[sj, si] = 2
+        end
+    end
+    return farm_map
+end
+
+## Helper
+function barr_places(side::Int, num::Int, singledouble::Int)::Vector{Int}
+    spacing = fld(side, (num + 1))
+    placements = spacing .* collect(1:num)
+    if singledouble == 2
+        placements = vcat(placements, (placements .+ 1))
+    end
+    return placements
+end
+
 # function create_bitmap(dims::Int, shade_percent::Float64, fragmentation::Bool = false, random::Bool = true)::BitArray
 #     n_shades = round(Int, shade_percent * dims ^ 2)
 #     if random == true # random placement of shade trees
@@ -107,12 +242,3 @@ end
 #     end
 #     return b_map
 # end
-
-
-function create_fullsun_farm_map()
-    farm_map = zeros(Int,100,100)
-    for c in 1:2:100
-        farm_map[:,c] .= 1
-    end
-    return farm_map
-end
