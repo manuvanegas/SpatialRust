@@ -12,8 +12,6 @@ function dummyrun_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int 
         mdata = [incidence])
 end
 
-dummyrun_spatialrust(steps::Int = 200, side::Int = 60) = dummyrun_spatialrust(steps, side, 25)
-
 medsum(x) = (median(sum.(x)))
 
 medsum_s(x) = (median(sum.(x[3,:])))
