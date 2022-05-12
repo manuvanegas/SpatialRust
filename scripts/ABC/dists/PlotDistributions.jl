@@ -4,11 +4,11 @@ using Arrow, CairoMakie, CSV, DataFrames
 violin(repeat([1,2], 10), 1:20)
 boxplot(repeat([1,2], 10), 1:20)
 
-include("RanksPlots.jl")
+include("../../../src/ABC/RanksPlots.jl")
 
 parameters = DataFrame(Arrow.Table(string("data/ABC/", "parameters_", 10^6, ".arrow")))
 dists = CSV.read("results/ABC/dists/hand_dists.csv", DataFrame)
-selected = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(1), 100)))
+selected = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(4), 100)))
 # selected2 = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(2), 100)))
 # selected3 = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(3), 100)))
 # selected4 = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(4), 100)))
