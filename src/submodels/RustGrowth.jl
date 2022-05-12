@@ -90,9 +90,12 @@
 
  max area recorded in exp data is ~0.6 at age 7w (49 days). 0.6/5 = 0.12
 =#
-using Plots
+
+Pkg.activate(".")
+using CairoMakie
 
 g_r = 0.15
+g_r = 3.1
 
 days = collect(1:100)
 size = zeros(length(days))
@@ -100,11 +103,15 @@ size[1] = 0.0002
 
 for day in 2:length(days)
     size[day] = size[day - 1] + (g_r * size[day - 1] * (1.0 - size[day - 1])) #* temp_modif#* prod[day - 1]
+    if size[day] < 0.0 #> 1.0
+        size[day] = 0.0
+    end
+
 end
 
 size[49]
 
-plot(days, size)
+lines(days, size)
 
 local_temp = 20.0
 temp_modif = (-0.0178 * ((local_temp - 22.5) ^ 2.0) + 1.0)
@@ -116,4 +123,72 @@ for day in 2:length(days)
     sizep[day] = sizep[day - 1] + (g_r * sizep[day - 1] * (1.0 - sizep[day - 1])) * prod[day - 1] * temp_modif
 end
 
-plot(days, sizep)
+lines(days, sizep)
+
+## Implementing Runge-Kutta to correct extreme changes. Then benchmark
+
+function rungekutta()
+    g_r = 3.1
+
+    days = collect(1:100)
+    size = zeros(length(days))
+    size[1] = 0.0002
+
+    growth_f(x) = x * (1.0 - x)
+    # rk1(x, g_r) = growth_f(x, g_r)
+    # rk2(x) = growth_f(x + growth_f(x) * 0.5)
+    rk2(x,k1) = growth_f(x + k1 * 0.5)
+    # rk3(x) = growth_f(x + rk2(x) * 0.5)
+    rk3(x,k2) = growth_f(x + k2 * 0.5)
+    # rk4(x) = growth_f(x + rk3(x))
+    rk4(x,k3) = growth_f(x + k3)
+    function appr_df(x, g_r)
+        let k1 = growth_f(x), k2 = rk2(x, k1), k3 = rk3(x, k2), k4 = rk4(x, k3)
+            return g_r * (k1 + 2k2 + 2k3 + k4) / 6
+        end
+    end
+
+    for day in 2:length(days)
+        size[day] = size[day - 1] + appr_df(size[day - 1], g_r)
+    end
+    return size
+end
+
+function maxone()
+    g_r = 3.1
+
+    days = collect(1:100)
+    size = zeros(length(days))
+    size[1] = 0.0002
+
+    for day in 2:length(days)
+        size[day] = size[day - 1] + (g_r * size[day - 1] * (1.0 - size[day - 1])) #* temp_modif#* prod[day - 1]
+        if size[day] > 1.0
+            size[day] = 1.0
+        end
+    end
+    return size
+end
+
+function eqsol()
+    g_r = 3.1
+
+    days = collect(1:100)
+    size = zeros(length(days))
+    size[1] = 0.0002
+
+    growth_f(x, g_r) =  (x * exp(g_r)) / (1 - x + (x * exp(g_r)))
+
+    for day in 2:length(days)
+        size[day] = size[day - 1] + growth_f(size[day - 1], g_r)
+    end
+    return size
+end
+
+using BenchmarkTools
+
+@benchmark rungekutta() # ~2 µs
+
+@benchmark maxone() # ~450 ns
+
+@benchmark eqsol() #this one is incorrect (and slower than maxone)
