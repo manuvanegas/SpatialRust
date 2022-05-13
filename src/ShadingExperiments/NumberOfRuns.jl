@@ -2,13 +2,12 @@
 
 function coeff_vars(n::Int, mtemp::Float64, rainp::Float64)
     ns = vcat(collect(10:10:90), collect(100:100:n))
-    if n == 100
-        ns = collect(10:10:100)
-    end
+
     actual_ns = filter(x -> x .<= n, ns)
     coeff_vars = DataFrame(n = Int[], prod = Float64[], area = Float64[])
     df = cv_n_sims(n, mtemp, rainp)
 
+"should try sequential instead of samples"
     for samples in actual_ns
         rows = sample(1:n, samples, replace = false)
         thisdf = df[rows, :]
@@ -68,11 +67,8 @@ end
 function one_cv_sim(pars::Parameters, farm_map::Array{Int,2})::DataFrame
     # one_sim for par has to create its own farm_map each time
     model = init_spatialrust(pars, farm_map)
-    _ , mdf = run!(model, dummystep, SpatialRust.step_model!, pars.steps;
+    _ , mdf = run!(model, dummystep, step_model!, pars.steps;
         when_model = [pars.steps],
         mdata = [totprod, maxA])
     return mdf[:, [:totprod, :maxA]]
 end
-
-totprod(model::ABM) = model.current.prod
-maxA(model::ABM) = model.current.max_rust
