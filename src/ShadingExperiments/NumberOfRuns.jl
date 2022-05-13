@@ -1,7 +1,7 @@
 ## Functions to run parameter space exploration for Chapter 1
 
 function coeff_vars(n::Int, mtemp::Float64, rainp::Float64)
-    ns = collect(100:100:1000)
+    ns = vcat(collect(10:10:90), collect(100:100:n))
     if n == 100
         ns = collect(10:10:100)
     end
