@@ -15,7 +15,7 @@ include(srcdir("ABM/RustDispersal.jl"))
 include(srcdir("ABM/RustGrowth.jl"))
 include(srcdir("ABM/ShadeSteps.jl"))
 
-include(srcdir("RunnerFncs.jl"))
+include(srcdir("QuickRuns.jl"))
 
 include(srcdir("ABC", "Sims.jl"))
 
