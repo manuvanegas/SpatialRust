@@ -31,9 +31,9 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
         arr = pars.barrier_arr
         for type in barriers
             if type == 1 # internal horizontal
-                placements = @inbounds barr_places(side, arr[type], pars.shade_barriers)
+                placements = @inbounds barr_places(side, arr[type], pars.barrier_rows)
 
-                if pars.shade_barriers == 1 && pars.plant_d == 2 # try to avoid coffees
+                if pars.barrier_rows == 1 && pars.plant_d == 2 # try to avoid coffees
                     @inbounds for pb in placements
                         if isodd(pb)
                             @inbounds farm_map[(pb + 1), :] .= 2
@@ -49,12 +49,12 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
             elseif type == 2 # internal vertical
                 # spacing = fld(side, (@inbounds arr[type] + 1))
                 # placements = spacing .* collect(@inbounds 1:arr[type])
-                # if pars.shade_barriers == 2
+                # if pars.barrier_rows == 2
                 #     placements = vcat(placements, (placements .+ 1))
                 # end
-                placements = @inbounds barr_places(side, arr[type], pars.shade_barriers)
+                placements = @inbounds barr_places(side, arr[type], pars.barrier_rows)
 
-                if pars.row_d == 2 && pars.shade_barriers == 1
+                if pars.row_d == 2 && pars.barrier_rows == 1
                     @inbounds for pb in placements
                         if isodd(pb)
                             @inbounds farm_map[:, (pb + 1)] .= 2
@@ -63,7 +63,7 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
                         end
                     end
                 elseif pars.row_d == 3
-                    if pars.shade_barriers == 1
+                    if pars.barrier_rows == 1
                         @inbounds for pb in placements
                             if pb % 3 == 1
                                 @inbounds farm_map[:, (pb + 1)] .= 2

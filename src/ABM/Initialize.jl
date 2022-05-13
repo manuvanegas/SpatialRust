@@ -68,7 +68,7 @@ Base.@kwdef struct Parameters
     shade_d::Int = 6                   # distance between shades (only considered when :regular)
     shade_arrangement::Symbol = :regular  # :rand
     # shade_barriers::Int = 0            # n of shade barriers
-    shade_barriers::Int = 1            # or 2 = double
+    barrier_rows::Int = 1            # or 2 = double
     barrier_arr::NTuple{4, Int} = (1, 1, 2, 2)
     # 1->internal,horizontal; 2->int,v; 3-> edge,h 4->e,v
 
