@@ -38,7 +38,7 @@ end
 
 @benchmark nlesions_spatialrust(500, 100, 1)
 
-tadf, tmdf = nlesions_spatialrust(500, 100, 50)
+tadf, tmdf = dummyrun_spatialrust(500, 100, 50)
 
 
 # Juno.@profiler dummyrun_spatialrust(10, 100) #doesnt run (too many things happenning?)

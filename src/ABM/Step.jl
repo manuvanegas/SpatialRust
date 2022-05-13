@@ -45,19 +45,23 @@ function pre_step!(model)
     end
 
     # update sampling cycle (for ABC)
-    if (model.current.ticks - 1) in model.pars.switch_cycles
-        # popfirst!(model.pars.switch_cycles)
-        if model.current.cycle[1] == 5 && !isassigned(model.current.cycle, 2)
-            push!(model.current.cycle, 6)
-        else
-            model.current.cycle .+= 1
-        end
-    end
+    # if (model.current.ticks - 1) in model.pars.switch_cycles
+    #     # popfirst!(model.pars.switch_cycles)
+    #     if model.current.cycle[1] == 5 && !isassigned(model.current.cycle, 2)
+    #         push!(model.current.cycle, 6)
+    #     else
+    #         model.current.cycle .+= 1
+    #     end
+    # end
 
     if model.current.fung_effect > 0
         model.current.fung_effect -= 1
     end
 
+    areas = median(rusted_area.((model[id] for id in model.current.rust_ids)))
+    if areas > model.current.max_rust
+        model.current.max_rust = areas
+    end
 end
 
 function shade_step!(model::ABM)
@@ -269,6 +273,7 @@ function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float
                 @inbounds germinate!(rust.state[:, lesion])
             end
         end
+    end
 
         # for les in 1:rust.n_lesions
         #     if rust.germinated[les]
@@ -308,7 +313,7 @@ function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float
         #         end
         #     end
         # end
-    end
+
 end
 
 function parasitize!(model::ABM, rust::Rust, cof::Coffee)

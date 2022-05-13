@@ -229,10 +229,6 @@ function ind_data(model::ABM)::DataFrame
 end
 
 ## Process raw data to obtain per_age and per_cycle dfs
-"collect_rust_data"
-
-
-
 
 function update_dfs!(
     per_age::DataFrame,
@@ -307,3 +303,5 @@ pct(col::SubArray) = count(col) / length(col)
 median5(col::Union{SubArray, Base.SkipMissing}) = ifelse(isempty(col), missing, median(col) * 5)
 # SpatialRust.median5(col::Base.SkipMissing) = median(col) * 5
 nanmedian5(col::SubArray) = nanmedian(col) * 5
+
+rusted_area(rust::Rust) = sum(rust.state[2,:])

@@ -1,5 +1,5 @@
 
-function create_farm_map(pars::Parameters)
+function create_farm_map(pars::Parameters)::Array{Int,2}
     side = pars.map_side
     # base
     farm_map = zeros(Int, side, side)
@@ -109,7 +109,7 @@ function create_farm_map(pars::Parameters)
     return farm_map
 end
 
-function create_fullsun_farm_map()
+function create_fullsun_farm_map()::Array{Int,2}
     farm_map = zeros(Int,100,100)
     for c in 1:2:100
         @inbounds farm_map[:,c] .= 1
@@ -117,7 +117,7 @@ function create_fullsun_farm_map()
     return farm_map
 end
 
-function create_midshade_farm_map()
+function create_midshade_farm_map()::Array{Int,2}
     farm_map = create_fullsun_farm_map()
     for si in 1:6:100
         for sj in 1:6:100

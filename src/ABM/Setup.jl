@@ -18,6 +18,7 @@ Base.@kwdef mutable struct Books
     costs::Float64 = 0.0
     net_rev::Float64 = 0.0
     prod::Float64 = 0.0
+    max_rust::Float64 = 0.0
 end
 
 struct Props
