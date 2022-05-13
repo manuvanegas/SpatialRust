@@ -15,8 +15,9 @@ function calc_dists(df_a::DataFrame, df_c::DataFrame, df_p::DataFrame)::DataFram
     dists_c = reducevalues(vcat, mapvalues(x -> sq_diff_var_c(x, df_c), c_file_tree))
     dists_p = reducevalues(vcat, mapvalues(x -> sq_diff_var_p(x, df_p), p_file_tree))
 
-    dists_mid = leftjoin(exec(dists_a), exec(dists_c), on = :p_row)
-    dists = leftjoin(dists_mid, exec(dists_p), on = :p_row)
+	dists = leftjoin(leftjoin(cda, cdc, on = :p_row), cdp, on = :p_row) 
+    #dists_mid = leftjoin(exec(dists_a), exec(dists_c), on = :p_row)
+    #dists = leftjoin(dists_mid, exec(dists_p), on = :p_row)
 
     return dists #leftjoin(exec(dists_c), exec(dists_p), on = :p_row) #dists
 end
