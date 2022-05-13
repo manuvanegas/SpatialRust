@@ -1,3 +1,5 @@
+export step_model!
+
 function step_model!(model::ABM)
     # if model.current.ticks == 0
     #     sh = model[pop!(model.current.shade_ids)]
@@ -119,7 +121,7 @@ function farmer_step!(model)
         harvest!(model)
     end
 
-    if model.current.days % model.pars.fungicide_period == 0
+    if (model.current.days - fld(model.pars.harvest_cycle / 2)) % model.pars.fungicide_period == 0
         fungicide!(model)
     end
 
