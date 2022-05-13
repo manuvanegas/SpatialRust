@@ -2,10 +2,10 @@
 
 function coeff_vars(n::Int, mtemp::Float64, rainp::Float64)
     ns = collect(100:100:1000)
-    if n == 10
-        ns = collect(1:10)
+    if n == 100
+        ns = collect(10:10:100)
     end
-    actual_ns = filter(x -> x .=< n, ns)
+    actual_ns = filter(x -> x .<= n, ns)
     coeff_vars = DataFrame(n = Int[], prod = Float64[], area = Float64[])
     df = cv_n_sims(n, mtemp, rainp)
 
@@ -25,7 +25,7 @@ function cv_n_sims(n::Int, mtemp::Float64, rainp::Float64)::DataFrame
     pars = Parameters(
         steps = 1460,
         prune_period = 365,
-        taget_shade = 0.4,
+        target_shade = 0.4,
         shade_d = 10,
         barrier_arr = (0,0,0,0),
         rain_prob = rainp,
@@ -41,27 +41,37 @@ function cv_n_sims(n::Int, mtemp::Float64, rainp::Float64)::DataFrame
         wind_distance = 3.29275,
         exhaustion = 0.17458)
 
-    map = create_farm_map(pars)
+    fmap = SpatialRust.create_farm_map(pars)
 
     # df = DataFrame(run = Int[], totprod = Float64[], maxA = Float64[])
     # for 1:n
     #     push!(df, one_cv_sim(pars, map))
     # end
 
-    dfs = pmap(x - > wrapper_one_cv(pars, farm_map, x), 1:n)
+    dfs = pmap(x -> wrapper_one_cv(pars, fmap, x), 1:n)
 
     df = reduce(vcat, dfs)
+
+    if length(df.totprod) != n
+        println("need to take steps")
+        println("df is $(length(df.totprod)) long")
+        flush(stdout)
+    end
 
     return df
 end
 
-function one_cv_sim(pars::Parameters, farm_map::Array{Int,2})::DataFrameRow
+function wrapper_one_cv(pars::Parameters, farm_map::Array{Int,2}, x::Int)::DataFrame
+    return one_cv_sim(pars, farm_map)
+end
+
+function one_cv_sim(pars::Parameters, farm_map::Array{Int,2})::DataFrame
     # one_sim for par has to create its own farm_map each time
     model = init_spatialrust(pars, farm_map)
-    _ , mdf = run!(model, dummystep, step_model!, pars.steps;
-        when_model = pars.steps,
-        mdata = [totprod, maxA]))
-    return mdf[end, [:totprod, :maxA]]
+    _ , mdf = run!(model, dummystep, SpatialRust.step_model!, pars.steps;
+        when_model = [pars.steps],
+        mdata = [totprod, maxA])
+    return mdf[:, [:totprod, :maxA]]
 end
 
 totprod(model::ABM) = model.current.prod

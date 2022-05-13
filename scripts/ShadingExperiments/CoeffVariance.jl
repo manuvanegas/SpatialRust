@@ -1,15 +1,19 @@
-using DrWatson
-@quickactivate "SpatialRust"
+@everywhere using DrWatson
+@everywhere @quickactivate "SpatialRust"
+@everywhere begin
 using Agents, CSV, DataFrames, Distributed
 using StatsBase: sample
+using Statistics: std, mean
 using SpatialRust
+include("../../src/ShadingExperiments/NumberOfRuns.jl")
+end
 
-include("src/ShadingExperiments/NumberOfRuns.jl")
 mkpath("results/Shading")
 
-mean_temp = parse(Int, ARGS[2])
-rain_prob = parse(Int, ARGS[3])
+n = parse(Int, ARGS[1]) * parse(Int, ARGS[4])
+mean_temp = parse(Float64, ARGS[2])
+rain_prob = parse(Float64, ARGS[3])
 
-cvs = coeff_vars(parse(Int, ARGS[1]), mean_temp, rain_prob)
+cvs = coeff_vars(n, mean_temp, rain_prob)
 
 CSV.write(projectdir("results/Shading/CVs-$mean_temp-$rain_prob.csv"), cvs)
