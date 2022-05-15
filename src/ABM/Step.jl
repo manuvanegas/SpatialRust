@@ -121,7 +121,7 @@ function farmer_step!(model)
         harvest!(model)
     end
 
-    if (model.current.days - fld(model.pars.harvest_cycle / 2)) % model.pars.fungicide_period == 0
+    if (model.current.days - fld(model.pars.harvest_cycle, 2)) % model.pars.fungicide_period == 0
         fungicide!(model)
     end
 
