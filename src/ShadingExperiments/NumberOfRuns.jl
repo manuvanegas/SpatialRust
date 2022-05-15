@@ -1,26 +1,33 @@
 ## Functions to run parameter space exploration for Chapter 1
 
 function coeff_vars(n::Int, mtemp::Float64, rainp::Float64)
-    ns = vcat(collect(10:10:90), collect(100:100:n))
+    ns = vcat(collect(100:100:600), 800, 1000)
 
-    actual_ns = filter(x -> x .<= n, ns)
-    coeff_vars = DataFrame(n = Int[], prod = Float64[], area = Float64[])
-    df = cv_n_sims(n, mtemp, rainp)
+    # actual_ns = filter(x -> x .<= n, ns)
+    # coeff_vars = DataFrame(n = Int[], prod = Float64[], area = Float64[])
 
-"should try sequential instead of samples"
-    for samples in actual_ns
-        rows = sample(1:n, samples, replace = false)
-        thisdf = df[rows, :]
-        sds_means = combine(thisdf, All() .=> std, All() .=> mean)
-        push!(coeff_vars, (samples, (sds_means[1, :totprod_std] / sds_means[1, :totprod_mean]),
-        (sds_means[1, :maxA_std] / sds_means[1, :maxA_mean])))
+    run_ns = reduce(vcat, fill.(ns, ns))
+
+    df = cv_n_sims(run_ns, mtemp, rainp)
+
+    coeff_vars = combine(groupby(df, :n), [:totprod, :maxA] =>
+        (p, a) -> (prod = (std(p) / mean(p)), area = (std(a) / mean(a))) => AsTable)
+
+    # for run in run_ns
+# "should try sequential instead of samples"
+        # df = cv_n_sims(n, mtemp, rainp)
+        # rows = sample(1:n, samples, replace = false)
+        # thisdf = df[rows, :]
+        # sds_means = combine(thisdf, All() .=> std, All() .=> mean)
+        # push!(coeff_vars, (samples, (sds_means[1, :totprod_std] / sds_means[1, :totprod_mean]),
+        # (sds_means[1, :maxA_std] / sds_means[1, :maxA_mean])))
         # append!(coeff_vars, sds_means)
-    end
+    # end
 
     return coeff_vars
 end
 
-function cv_n_sims(n::Int, mtemp::Float64, rainp::Float64)::DataFrame
+function cv_n_sims(run_ns::Vector{Int}, mtemp::Float64, rainp::Float64)::DataFrame
     pars = Parameters(
         steps = 1460,
         prune_period = 365,
@@ -47,28 +54,29 @@ function cv_n_sims(n::Int, mtemp::Float64, rainp::Float64)::DataFrame
     #     push!(df, one_cv_sim(pars, map))
     # end
 
-    dfs = pmap(x -> wrapper_one_cv(pars, fmap, x), 1:n)
+    dfs = pmap(x -> one_cv_sim(pars, fmap, x), run_ns)
 
     df = reduce(vcat, dfs)
 
-    if length(df.totprod) != n
-        println("need to take steps")
-        println("df is $(length(df.totprod)) long")
-        flush(stdout)
-    end
+    # if length(df.totprod) != n
+    #     println("need to take steps")
+    #     println("df is $(length(df.totprod)) long")
+    #     flush(stdout)
+    # end
 
     return df
 end
 
-function wrapper_one_cv(pars::Parameters, farm_map::Array{Int,2}, x::Int)::DataFrame
-    return one_cv_sim(pars, farm_map)
-end
+# function wrapper_one_cv(pars::Parameters, farm_map::Array{Int,2}, x::Int)::DataFrame
+#     return one_cv_sim(pars, farm_map)
+# end
 
-function one_cv_sim(pars::Parameters, farm_map::Array{Int,2})::DataFrame
+function one_cv_sim(pars::Parameters, farm_map::Array{Int,2}, n::Int)::DataFrame
     # one_sim for par has to create its own farm_map each time
     model = init_spatialrust(pars, farm_map)
     _ , mdf = run!(model, dummystep, step_model!, pars.steps;
         when_model = [pars.steps],
         mdata = [totprod, maxA])
-    return mdf[:, [:totprod, :maxA]]
+    mdf[:, :n] .= n
+    return mdf[:, [:totprod, :maxA, :n]]
 end
