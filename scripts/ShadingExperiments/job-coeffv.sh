@@ -18,4 +18,4 @@ module load julia/1.7.2
 
 export SLURM_NODEFILE=`generate_pbs_nodefile`
 julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/ShadingExperiments/CoeffVariance.jl 200 22.5 0.8
+~/SpatialRust/scripts/ShadingExperiments/CoeffVariance.jl 1003 22.5 0.8

@@ -1,17 +1,21 @@
 ## Functions to run parameter space exploration for Chapter 1
 
 function coeff_vars(n::Int, mtemp::Float64, rainp::Float64)
-    ns = vcat(collect(100:100:600), 800, 1000)
-
-    # actual_ns = filter(x -> x .<= n, ns)
+    ns = vcat(collect(25:25:75), collect(100:100:600), 800, 1000)
+    #if n == 100
+    #    ns = collect(20:20:100)
+    #end
+    a_ns = filter(x -> x .<= n, ns)
     # coeff_vars = DataFrame(n = Int[], prod = Float64[], area = Float64[])
 
-    run_ns = reduce(vcat, fill.(ns, ns))
+    run_ns = reduce(vcat, fill.(a_ns, a_ns))
 
     df = cv_n_sims(run_ns, mtemp, rainp)
 
     coeff_vars = combine(groupby(df, :n), [:totprod, :maxA] =>
-        (p, a) -> (prod = (std(p) / mean(p)), area = (std(a) / mean(a))) => AsTable)
+        ((p, a) -> (prod = (std(p) / mean(p)),
+            area = (std(a) / mean(a)),
+            corrprod = (std(p) / mean(p))) => AsTable))
 
     # for run in run_ns
 # "should try sequential instead of samples"
