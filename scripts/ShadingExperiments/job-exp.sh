@@ -2,12 +2,12 @@
 #SBATCH --ntasks=20
 #SBATCH --ntasks-per-core=1
 
-# #SBATCH -p debug
-# #SBATCH -q wildfire
-# #SBATCH -J debug-shadeexp
-# #SBATCH -t 0-00:15:00
-#SBATCH -J shadeexp
-#SBATCH -t 0-04:00:00
+#SBATCH -p debug
+#SBATCH -q wildfire
+#SBATCH -J debug-shadeexp
+#SBATCH -t 0-00:15:00
+# #SBATCH -J shadeexp
+# #SBATCH -t 0-04:00:00
 
 #SBATCH -o logs/shading/o-%A.o
 #SBATCH -e logs/shading/o-%A.e
