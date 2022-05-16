@@ -1,4 +1,4 @@
-using Plots
+using CairoMakie
 
 days = 100
 
@@ -10,6 +10,6 @@ function growsh(days::Int, init::Float64, rate::Float64)
     return shades
 end
 
-tss = growsh(days, 0.01, 0.1)
+tss = growsh(days, 0.5, 0.05)
 tss[60] / 0.95
-plot(tss)
+lines(tss)
