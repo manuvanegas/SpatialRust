@@ -7,19 +7,36 @@ include("../../src/ShadingExperiments/Shading.jl")
 end
 
 reps = parse(Int, ARGS[1])
+mean_temp = parse(Float64, ARGS[2])
+rain_prob = parse(Float64, ARGS[3])
 
 conds = Dict(
     :shade_d => [0, 6, 10],
     :barrier_arr => [(0,0,0,0), (1,1,0,0), (1,1,2,2)],
-    :target_shade => @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)),
-        collect(0.2:0.1:0.8)),
-    :prune_period => [1461, 365, 182],
+    :target_shade => vcat(
+        @onlyif((:shade_d == 0 && :barrier_arr == (0,0,0,0)), 0.0),
+        @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period == 1461, 1.0),
+        @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period != 1461,
+            collect(0.2:0.1:0.9))),
+    :prune_period => vcat(
+        @onlyif((:shade_d == 0 && :barrier_arr == (0,0,0,0)), 1461),
+        @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)), [1461, 365, 182])),
     :fungicide_period => 365,
     :barrier_rows => 2,
+    :shade_g_rate => 0.05,
     :steps => 1460,
+    :mean_temp => mean_temp,
+    :rain_prob => rain_prob,
     :reps => collect(1:reps)
 )
 
+# combs2 = dict_list(conds2)
+
+# combsdf = DataFrame(combs2)
+
+# frag_distg = groupby(combsdf, [:barrier_arr, :shade_d])
+# describe(frag_distg[1])
+
 results = shading_experiment(conds)
 
-CSV.write(projectdir("results/Shading/results-$reps.csv"), results)
+CSV.write(projectdir("results/Shading/results-$mean_temp-$rain_prob-$reps.csv"), results)

@@ -20,4 +20,5 @@ module load julia/1.7.2
 
 export SLURM_NODEFILE=`generate_pbs_nodefile`
 julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/ShadingExperiments/RunExperiment.jl 20 #ARG: repetitions
+~/SpatialRust/scripts/ShadingExperiments/RunExperiment.jl 5 22.5 0.8
+#ARGs: repetitions, mean temp, rain prob
