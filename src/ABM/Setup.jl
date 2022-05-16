@@ -173,6 +173,7 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
     # move from a random cell outside
     # need to update the path function
     n_rusts = max(round(Int, p_rusts * length(model.current.coffee_ids)), 1)
+    # rusted_ids = inoculate_farm(model, n_rusts)
     rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
 
     for rusted in rusted_ids
