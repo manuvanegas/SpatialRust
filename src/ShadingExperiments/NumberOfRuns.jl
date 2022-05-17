@@ -15,7 +15,7 @@ function coeff_vars(n::Int, mtemp::Float64, rainp::Float64)
     coeff_vars = combine(groupby(df, :n), [:totprod, :maxA] =>
         ((p, a) -> (prod = (std(p) / mean(p)),
             area = (std(a) / mean(a)),
-            corrprod = (std(p) / mean(p))) => AsTable))
+            corrprod = (std(log10.(p)) / mean(log10.(p))))) => AsTable)
 
     # for run in run_ns
 # "should try sequential instead of samples"

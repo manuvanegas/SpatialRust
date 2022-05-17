@@ -23,7 +23,7 @@ function run_par_combination(combination::Dict{Symbol, Any})
     #     fungicide_period = combination[:fungicide_period],
     #     barrier_rows = combination[:barrier_rows]
     # )
-    end
+    # end
 
     model = init_spatialrust(pars) # farm_map may change for each iteration
     _ , mdf = run!(model, dummystep, step_model!, pars.steps;
@@ -39,12 +39,14 @@ function run_par_combination(combination::Dict{Symbol, Any})
     #     mdf[:, :target_shade] .= 0.0
     #     return mdf
     # end
+    return mdf
 end
 
 function shading_experiment(conds::Dict{Symbol, Any})
     combinations = DrWatson.dict_list(conds)
-    dfs = pmap(run_par_combination, combinations)
-    df = reduce(vcat, dfs)
+    runtime = @elapsed dfs = pmap(run_par_combination, combinations)
+    reducetime = @elapsed df = reduce(vcat, dfs)
+    println("Run: $runtime, Reduce: $reducetime")
     return df
 end
 

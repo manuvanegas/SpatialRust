@@ -19,7 +19,5 @@ module purge
 module load julia/1.7.2
 
 export SLURM_NODEFILE=`generate_pbs_nodefile`
-julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/ShadingExperiments/RunExperiment.jl 300 23.5 0.65 false
-#ARGs: repetitions, mean temp, rain prob
-# false -> 35, true -> 51
+time julia --machine-file $SLURM_NODEFILE \
+~/SpatialRust/scripts/ShadingExperiments/InitTimes.jl $SLURM_NTASKS

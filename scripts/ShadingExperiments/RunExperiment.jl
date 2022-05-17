@@ -9,10 +9,19 @@ end
 reps = parse(Int, ARGS[1])
 mean_temp = parse(Float64, ARGS[2])
 rain_prob = parse(Float64, ARGS[3])
+barriers = parse(Bool, ARGS[4])
+
+if barriers
+    b_arr = (1,1,0,0)
+else
+    b_arr = (0,0,0,0)
+end
+mkpath("results/Shading/r-$mean_temp-$rain_prob")
+filename = "results/Shading/r-$mean_temp-$rain_prob/r-$reps-$barriers.csv"
 
 conds = Dict(
     :shade_d => [0, 6, 10],
-    :barrier_arr => [(0,0,0,0), (1,1,0,0), (1,1,2,2)],
+    :barrier_arr => b_arr,
     :target_shade => vcat(
         @onlyif((:shade_d == 0 && :barrier_arr == (0,0,0,0)), 0.0),
         @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period == 1461, 1.0),
@@ -39,4 +48,4 @@ conds = Dict(
 
 results = shading_experiment(conds)
 
-CSV.write(projectdir("results/Shading/results-$mean_temp-$rain_prob-$reps.csv"), results)
+CSV.write(projectdir(filename), results)
