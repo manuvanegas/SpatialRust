@@ -17,7 +17,7 @@ else
     b_arr = (0,0,0,0)
 end
 mkpath("results/Shading/r-$mean_temp-$rain_prob")
-filename = "results/Shading/r-$mean_temp-$rain_prob/r-$reps-$barriers.csv"
+filename = "results/Shading/r-$mean_temp-$rain_prob/r2-$reps-$barriers.csv"
 
 conds = Dict(
     :shade_d => [0, 6, 10],
@@ -36,6 +36,16 @@ conds = Dict(
     :steps => 1460,
     :mean_temp => mean_temp,
     :rain_prob => rain_prob,
+    # from ABC
+    :rust_gr => 1.63738,
+    :cof_gr => 0.393961,
+    :spore_pct => 0.821479,
+    :fruit_load => 0.597133,
+    :uv_inact => 0.166768,
+    :rain_washoff => 0.23116,
+    :rain_distance => 0.80621,
+    :wind_distance => 3.29275,
+    :exhaustion => 0.17458,
     :reps => collect(1:reps)
 )
 

@@ -49,7 +49,7 @@ Base.@kwdef struct Parameters
     diff_wind::Float64 = 1.2           # % extra wind distance due to increased openness
     disp_block::Float64 = 0.8          # prob a tree will block rust dispersal
     shade_g_rate::Float64 = 0.1        # shade growth rate
-    shade_r::Int = 1#2                   # radius of influence of shades
+    shade_r::Int = 1#2                 # radius of influence of shades
 
     # coffee and rust parameters
     exhaustion::Float64 = 0.8          # rust level (relative to max) that causes plant exhaustion
