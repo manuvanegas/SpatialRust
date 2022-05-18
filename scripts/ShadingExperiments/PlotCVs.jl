@@ -7,7 +7,7 @@ append!(cvs22, CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1000.csv"), Da
 
 cvs3 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1001.csv"), DataFrame)
 cvs4 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1002.csv"), DataFrame)
-cvs5 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1003.csv"), DataFrame)
+cvs5 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-1003.csv"), DataFrame)
 
 fig = Figure()
 ax = Axis(fig[1,1], xlabel = "Number of runs", ylabel = "CV")
@@ -40,13 +40,6 @@ lines!(ax4, cvs3.n, cvs3.area, label = L"Max Rust Area CV")
 axislegend()
 fig4
 
-fig5 = Figure();
-ax5 = Axis(fig5[1,1], xlabel = L"Number of runs",
-    ylabel = L"Coefficient of Variance, $C_V = \frac{μ}{σ^2}$",
-    xticks = collect(100:100:1000))
-lines!(ax5, cvs5.n, cvs5.corrprod, label = L"Coffee Production CV")
-lines!(ax5, cvs5.n, cvs5.area, label = L"Max Rust Area CV")
-axislegend()
-fig5
+fig5 = CV_plot(cvs5)
 
 # save("plots/Shading/CVs.png", fig)

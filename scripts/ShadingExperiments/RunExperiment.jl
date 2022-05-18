@@ -24,7 +24,7 @@ conds = Dict(
     :barrier_arr => b_arr,
     :target_shade => vcat(
         @onlyif((:shade_d == 0 && :barrier_arr == (0,0,0,0)), 0.0),
-        @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period == 1461, 1.0),
+        @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period == 1461, 0.95),
         @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period != 1461,
             collect(0.2:0.1:0.9))),
     :prune_period => vcat(
