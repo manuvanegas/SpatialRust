@@ -24,7 +24,7 @@ tadf, tmdf = dummyrun_spatialrust(10, 100, 10)
 
 using BenchmarkTools
 Random.seed!(1234)
-@btime a, m = dummyrun_spatialrust(500, 100, 25)
+@btime a, m = dummyrun_spatialrust(1600, 100, 25)
 
 
 maxlesions = [1, 5, 10, 25, 50]
