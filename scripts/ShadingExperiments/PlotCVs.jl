@@ -42,4 +42,4 @@ fig4
 
 fig5 = CV_plot(cvs5)
 
-# save("plots/Shading/CVs.png", fig)
+# save("plots/Shading/CVs.png", fig5)
