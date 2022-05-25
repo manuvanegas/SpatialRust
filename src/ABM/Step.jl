@@ -80,37 +80,55 @@ function coffee_step!(model::ABM)
     #         coffee_harvest_step!(model, model[cof_i])
     #     end
     # else
-        cids = model.current.coffee_ids
-        for cof_i in cids
-            @inbounds coffee_nh_step!(model, model[cof_i])
+        # cids = model.current.coffee_ids
+        # for cof_i in cids
+        #     @inbounds coffee_nh_step!(model, model[cof_i])
+        # end
+        for cof in Iterators.filter(c -> c isa Coffee, allagents(model))
+            coffee_nh_step!(model, cof)
         end
     # end
 end
 
 function rust_step!(model::ABM)
-    rids = shuffle(model.rng, model.current.rust_ids)
+    # rids = shuffle(model.rng, model.current.rust_ids)
     # fung_growth = model.current.fung_effect > 0 ? 0.98 : 1.0
     # fung_germ = model.current.fung_effect > 0 ? : 1.0
     fung = ifelse(model.current.fung_effect > 0, (growth = 0.95, spor = 0.8, germ = 0.9),
         (growth = 1.0, spor = 1.0, germ = 1.0))
 
+    rusts = Iterators.filter(r -> r isa Rust, allagents(model))
+
     if model.current.wind
         if model.current.rain
-            for rust_i in rids
-                @inbounds rust_step_r_w!(model, model[rust_i], model[model[rust_i].hg_id], fung)
+            # for rust_i in rids
+            #     @inbounds rust_step_r_w!(model, model[rust_i], model[model[rust_i].hg_id], fung)
+            # end
+            for rust in rusts
+                @inbounds rust_step_r_w!(model, rust, model[rust.hg_id], fung)
             end
         else
-            for rust_i in rids
-                @inbounds rust_step_w!(model, model[rust_i], model[model[rust_i].hg_id], fung)
+            # for rust_i in rids
+            #     @inbounds rust_step_w!(model, model[rust_i], model[model[rust_i].hg_id], fung)
+            # end
+            for rust in rusts
+                @inbounds rust_step_w!(model, rust, model[rust.hg_id], fung)
             end
         end
     elseif model.current.rain
-        for rust_i in rids
-            @inbounds rust_step_r!(model, model[rust_i], model[model[rust_i].hg_id], fung)
+        # for rust_i in rids
+        #     @inbounds rust_step_r!(model, model[rust_i], model[model[rust_i].hg_id], fung)
+        # end
+        for rust in rusts
+            @inbounds rust_step_r!(model, rust, model[rust.hg_id], fung)
         end
     else
-        for rust_i in rids
-            @inbounds rust_step_!(model, model[rust_i], model[model[rust_i].hg_id], fung)
+        # for rust_i in rids
+        #     @inbounds rust_step_!(model, model[rust_i], model[model[rust_i].hg_id], fung)
+        #     #could just be grow_rust! ?
+        # end
+        for rust in rusts
+            @inbounds rust_step_!(model, rust, model[rust.hg_id], fung)
             #could just be grow_rust! ?
         end
     end
