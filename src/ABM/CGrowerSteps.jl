@@ -4,7 +4,7 @@ function harvest!(model::ABM)
     # for c in (model[id] for id in ids)
     for c in Iterators.filter(c -> c isa Coffee, allagents(model))
         harvest += c.production / model.pars.harvest_cycle
-        c.production = 1.0
+        c.production = 0.0
         # if plant.fung_this_cycle
         #     plant.fung_this_cycle = false
         #     plant.productivity = plant.productivity / 0.8

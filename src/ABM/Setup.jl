@@ -47,7 +47,7 @@ mutable struct Coffee <: AbstractAgent
     #fung_countdown::Int
 end
 
-Coffee(id, pos; production = 1.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, []) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+Coffee(id, pos; production = 0.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, []) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
 
 mutable struct Shade <: AbstractAgent
     id::Int
