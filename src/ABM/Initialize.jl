@@ -24,7 +24,7 @@ Base.@kwdef struct Parameters
     target_shade::Float64 = 0.3        # shade provided by each, after pruning
     pruning_effort::Float64 = 0.75     # % shades pruned each time
     prune_cost::Float64 = 1.0          # per shade
-    fungicide_period::Int = 182        # days
+    fungicide_period::Int = 1461        # days
     # fung_rates::NamedTuple = (growth = 0.95, spor = 0.8, germ = 0.9)
     # fung_effect::Int = 15              # days with f effect
     fung_cost::Float64 = 1.0           # per coffee
@@ -49,7 +49,7 @@ Base.@kwdef struct Parameters
     diff_wind::Float64 = 1.2           # % extra wind distance due to increased openness
     disp_block::Float64 = 0.8          # prob a tree will block rust dispersal
     shade_g_rate::Float64 = 0.1        # shade growth rate
-    shade_r::Int = 1#2                 # radius of influence of shades
+    shade_r::Int = 3                   # radius of influence of shades
 
     # coffee and rust parameters
     exhaustion::Float64 = 0.8          # rust level (relative to max) that causes plant exhaustion
@@ -68,7 +68,7 @@ Base.@kwdef struct Parameters
     shade_d::Int = 6                   # distance between shades (only considered when :regular)
     shade_arrangement::Symbol = :regular  # :rand
     # shade_barriers::Int = 0            # n of shade barriers
-    barrier_rows::Int = 1            # or 2 = double
+    barrier_rows::Int = 2            # or 2 = double
     barrier_arr::NTuple{4, Int} = (1, 1, 2, 2)
     # 1->internal,horizontal; 2->int,v; 3-> edge,h 4->e,v
 
