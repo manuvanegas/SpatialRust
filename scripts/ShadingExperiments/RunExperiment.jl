@@ -19,6 +19,14 @@ end
 mkpath("results/Shading/r-$mean_temp-$rain_prob")
 filename = "results/Shading/r-$mean_temp-$rain_prob/r2-$reps-$barriers.csv"
 
+printinfo = """                                                             
+        Temp: $mean_temp,                                             
+        Rain: $rain_prob,                                             
+        Reps: $reps,                                         
+        Barriers: $b_arr)                                        
+    """                                                                         
+println(printinfo)
+
 conds = Dict(
     :shade_d => [0, 6, 10],
     :barrier_arr => b_arr,
