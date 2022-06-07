@@ -2,23 +2,16 @@
 
 ## Rust inoculation
 
-function inoculated_coffees(model::ABM, nrusts::Int)
-    side = model.pars.map_side
-    n_plants_v = side / (model.pars.plant_d * 2)
-    n_plants_h = side / (model.pars.row_d * 2)
-    quadrant = rand(model.rng, 1:4)
-    if quadrant == 1 # following the same order as in outside_spores!()
-    #     cof_ids =
-    #     model.space.s
-    # elseif quadrant == 2
-    #     cof_ids = [(i+1):(i+j) for i in 0:side:((n_plants_h - 1) * side) for j]
-    # elseif quadrant == 3
-    #     from = Tuple.(vcat.(100, sample(model.rng, 1:model.pars.map_side, nrusts)))
-    #     headings = 180.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    # else
-    #     from = Tuple.(vcat.(sample(model.rng, 1:model.pars.map_side, nrusts), 100))
-    #     headings = 90.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    end
+function init_rusted(model::ABM, r::Int)
+    minp = r + 1
+    maxp = model.pars.map_side - r
+    main = sample(model.rng, collect(Iterators.filter(
+        c -> (c isa Coffee && all(minp .<= c.pos .<= maxp)),
+        allagents(model))
+    ))
+    rusted = Iterators.filter(c -> c isa Coffee, nearby_agents(main, model, 2))
+
+    return rusted
 end
 
 function inoculate_farm(model::ABM, nrusts::Int) #PROBLEM: increased variability because each sim starts with != #rusts

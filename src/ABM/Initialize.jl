@@ -14,7 +14,7 @@ end
 Base.@kwdef struct Parameters
     steps::Int = 500
     start_days_at::Int = 0
-    p_rusts::Float64 = 0.01            # % of initial rusts
+    ini_rusts::Float64 = 0.01          # % of initial rusts (# of initial clusters, if > 1)
     harvest_cycle::Int = 365           # or 365/2, depending on the region
     #par_row::Int = 0                  # parameter combination number (for ABC)
     switch_cycles::Vector{Int} = []
@@ -24,9 +24,13 @@ Base.@kwdef struct Parameters
     target_shade::Float64 = 0.3        # shade provided by each, after pruning
     pruning_effort::Float64 = 0.75     # % shades pruned each time
     prune_cost::Float64 = 1.0          # per shade
-    fungicide_period::Int = 1461        # days
+    fungicide_period::Int = 1461       # days
     # fung_rates::NamedTuple = (growth = 0.95, spor = 0.8, germ = 0.9)
-    # fung_effect::Int = 15              # days with f effect
+    # fung_effect::Int = 15            # days with f effect
+    fung_rust_thresh::Float64 = 0.3    # mean area / incidence that triggers fungicide use
+    incidence_as_thr::Bool = false     # use incidence as threshold? alternative is area
+    max_fung_treatments::Int = 3       # maximum fung treatments per year
+    by_fragments::Bool = true          # apply fungicide differentially by fragments?
     fung_cost::Float64 = 1.0           # per coffee
     inspect_period::Int = 7            # days
     inspect_effort::Float64 = 0.01     # % coffees inspected each time
@@ -69,7 +73,7 @@ Base.@kwdef struct Parameters
     shade_arrangement::Symbol = :regular  # :rand
     # shade_barriers::Int = 0            # n of shade barriers
     barrier_rows::Int = 2            # or 2 = double
-    barrier_arr::NTuple{4, Int} = (1, 1, 2, 2)
+    barrier_arr::NTuple{4, Int} = (1, 1, 0, 0)
     # 1->internal,horizontal; 2->int,v; 3-> edge,h 4->e,v
 
 

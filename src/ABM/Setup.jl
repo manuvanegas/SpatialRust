@@ -169,14 +169,18 @@ function count_shades!(model::ABM)
     end
 end
 
-function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee plants
-    # move from a random cell outside
-    # need to update the path function
-    n_rusts = max(round(Int, p_rusts * length(model.current.coffee_ids)), 1)
-    # rusted_ids = inoculate_farm(model, n_rusts)
-    rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
+function init_rusts!(model::ABM, ini_rusts::Float64) # inoculate coffee plants
+    if ini_rusts < 1.0
+        n_rusts = max(round(Int, ini_rusts * length(model.current.coffee_ids)), 1)
+        rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
+        rusted_cofs = collect(model[i] for i in rusted_ids)
+    else
+        for i in 1:floor(ini_rusts)
+            rusted_cofs = init_rusted(model, 2)
+        end
+    end
 
-    for rusted in rusted_ids
+    for rusted in rusted_cofs
         nlesions = sample(model.rng, 1:model.pars.max_lesions)
         germinates = zeros(model.pars.max_lesions)
         areas = zeros(model.pars.max_lesions)
@@ -198,7 +202,7 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
         end
 
         new_rust = add_agent!(
-        model[rusted].pos, Rust, model,
+        rusted.pos, Rust, model,
         model.pars.max_lesions,
         model.pars.steps;
         germinated = germinates,
@@ -206,11 +210,11 @@ function init_rusts!(model::ABM, p_rusts::Float64) # inoculate random coffee pla
         spores = spores,
         age = ages,
         n_lesions = nlesions,
-        hg_id = model[rusted].id,
-        sample_cycle = model[rusted].sample_cycle
+        hg_id = rusted.id,
+        sample_cycle = rusted.sample_cycle
         )
-        model[rusted].hg_id = new_rust.id
-        model[rusted].area = model[rusted].area - (sum(areas) / model.pars.max_lesions)
+        rusted.hg_id = new_rust.id
+        rusted.area = rusted.area - (sum(areas) / model.pars.max_lesions)
         push!(model.current.rust_ids, new_rust.id)
     end
 end
@@ -243,7 +247,7 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
 
     count_shades!(model)
 
-    init_rusts!(model, parameters.p_rusts)
+    init_rusts!(model, parameters.ini_rusts)
 
     # if isempty(model.current.shade_ids)
     #     push!(model.current.shade_ids, add_agent!(random_empty(model), Shade, model; shade = -1.0).id)
