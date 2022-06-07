@@ -1,44 +1,19 @@
 
-# combinations(conds) = DrWatson.dict_list(conds)
-
 function run_par_combination(combination::Dict{Symbol, Any})
     pop!(combination, :reps)
-    pars = Parameters(; combination...)
-    # if :shade_target in keys(combination)
-    # pars = Parameters(
-    #     steps = combination[:steps],
-    #     shade_d = combination[:shade_d],
-    #     barrier_arr = combination[:barrier_arr],
-    #     target_shade = combination[:target_shade],
-    #     prune_period = combination[:prune_period],
-    #     fungicide_period = combination[:fungicide_period],
-    #     barrier_rows = combination[:barrier_rows]
-    # )
-    # else
-    # pars = Parameters(
-    #     steps = combination[:steps],
-    #     shade_d = combination[:shade_d],
-    #     barrier_arr = combination[:barrier_arr],
-    #     prune_period = combination[:prune_period],
-    #     fungicide_period = combination[:fungicide_period],
-    #     barrier_rows = combination[:barrier_rows]
-    # )
-    # end
+    frags = pop!(combination, :fragments)
+    combination[:barrier_arr] = ifelse(frags == 1, (0,0,0,0), ifelse(
+        frags = 4, (1,1,0,0), (2,2,0,0)))
 
+    pars = Parameters(; combination...)
     model = init_spatialrust(pars) # farm_map may change for each iteration
     _ , mdf = run!(model, dummystep, step_model!, pars.steps;
         when_model = [pars.steps],
-        mdata = [totprod, maxA])
-    pop!(combination, :barrier_rows)
-    pop!(combination, :fungicide_period)
+        mdata = [totprod, maxA, n_coffees])
     pop!(combination, :steps)
-    mdf = hcat(DataFrame(combination), mdf[:, [:totprod, :maxA]])
-    # if :target_shade in propertynames(mdf)
-    #     return mdf
-    # else
-    #     mdf[:, :target_shade] .= 0.0
-    #     return mdf
-    # end
+    combination[:fragments] = frags
+    mdf = hcat(DataFrame(combination), mdf[:, [:totprod, :maxA, :n_coffees]])
+
     return mdf
 end
 
@@ -49,17 +24,3 @@ function shading_experiment(conds::Dict{Symbol, Any})
     println("Run: $runtime, Reduce: $reducetime")
     return df
 end
-
-# function dict_to_pars(d::Dict{Symbol, Any})::Parameters
-#     for prop in keys(d)
-#     end
-#     for prop in fieldnames(pars)
-#     end
-# end
-#
-# struct A
-#     x
-#     y
-# end
-#
-# foo((; x, y)::A) = x + y

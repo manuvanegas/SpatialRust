@@ -33,8 +33,7 @@ conds = Dict(
     :fragments => fragments,
     :target_shade => vcat(
         @onlyif(:shade_d == 0 && :fragments == 1, 0.0),
-        @onlyif(:shade_d != 0 || :fragments != 1,
-            collect(0.2:0.1:0.8))),
+        @onlyif(:shade_d != 0 || :fragments != 1, collect(0.2:0.1:0.8))),
         # @onlyif((:shade_d == 0 && :barrier_arr == (0,0,0,0)), 0.0),
         # @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period == 1461, 0.95),
         # @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period != 1461,
@@ -51,7 +50,8 @@ conds = Dict(
     :mean_temp => mean_temp,
     :rain_prob => rain_prob,
     # from ABC
-    :rust_gr => 1.63738,
+    # :rust_gr => 1.63738,
+    :rust_gr => 0.15,
     :cof_gr => 0.393961,
     :spore_pct => 0.821479,
     :fruit_load => 0.597133,
