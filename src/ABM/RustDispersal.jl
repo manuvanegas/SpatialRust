@@ -68,7 +68,7 @@ function inoculate_farm(model::ABM, nrusts::Int) #PROBLEM: increased variability
                             continue
                         end
                     else
-                        model.current.outpour += 1
+                        # model.current.outpour += 1
                         break
                     end
                 end
@@ -199,7 +199,7 @@ function rain_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}
                     break
                 end
             else
-                model.current.outpour += 1
+                # model.current.outpour += 1
                 break
             end
         end
@@ -225,7 +225,7 @@ function wind_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}
                     continue
                 end
             else
-                model.current.outpour += 1
+                # model.current.outpour += 1
                 break
             end
         end

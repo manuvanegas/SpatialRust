@@ -37,14 +37,15 @@ function pre_step!(model)
     model.current.wind = model.weather.wind_data[model.current.ticks]
     if model.current.wind
         model.current.wind_h = rand(model.rng) * 360
+        outside_spores!(model)
     end
     model.current.temperature = model.weather.temp_data[model.current.ticks]
 
     # spore outpour decay, then outpour can return spores to the farm
-    model.current.outpour = model.current.outpour * 0.9
-    if rand(model.rng) < sqrt(model.current.outpour)/(model.pars.map_side^2)
-        outside_spores!(model)
-    end
+    # model.current.outpour = model.current.outpour * 0.9
+    # if rand(model.rng) < sqrt(model.current.outpour)/(model.pars.map_side^2)
+    #     outside_spores!(model)
+    # end
 
     # update sampling cycle (for ABC)
     # if (model.current.ticks - 1) in model.pars.switch_cycles
