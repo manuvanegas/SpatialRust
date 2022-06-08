@@ -51,9 +51,9 @@ jobs:
           julia --project=. -e '
             using Pkg;
             Pkg.instantiate()'
-      - name: Benchmark
-        run: |
-          julia --project=. bench/BenchmarkABM.jl
+      #- name: Benchmark
+      #  run: |
+      #    julia --project=. bench/BenchmarkABM.jl
 
       - name: Store benchmark result
         uses: manuvanegas/github-action-benchmark@v1
