@@ -1,5 +1,7 @@
 name: Benchmark ABM
+
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -44,7 +46,7 @@ jobs:
 #            ${{ runner.os }}-test-
 #            ${{ runner.os }}-
       - name: Instantiate
-       if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           julia --project=. -e '
             using Pkg;
