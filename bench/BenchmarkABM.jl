@@ -20,15 +20,16 @@ seed!(1234)
 results = run(suite, verbose = true)
 
 ## Get time in seconds, not ns
-function in_seconds!(group::BenchmarkGroup)
+function in_seconds(group::BenchmarkGroup)
     for k in keys(group)
         for subk in keys(group[k])
             group[k][subk].time /= 10^9
             group[k][subk].gctime /= 10^9
         end
     end
+    return group
 end
 ##
 
-estimates = in_seconds!(median(results))
+estimates = in_seconds(median(results))
 BenchmarkTools.save("bench/output.json", estimates)
