@@ -3,8 +3,8 @@ name: Benchmark ABM
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
+    #branches:
+#      - master
     paths:
       - 'src/ABM'
       - 'src/Quick*'
