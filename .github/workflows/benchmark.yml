@@ -1,0 +1,66 @@
+name: Julia Example with BenchmarkTools.jl
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'src/ABM'
+      - 'src/Quick*'
+
+#permissions:
+#  contents: write
+#  deployments: write
+
+jobs:
+  benchmark:
+    name: Run julia benchmark example
+    runs-on: ubuntu-latest
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        version:
+#          - '1'
+#        os:
+#          - ubuntu-latest
+#        arch:
+#          - x64
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.7.2'
+      - name: Cache artifacts and packages
+        uses: julia-actions/cache@v1
+        id: cache
+#      - uses: actions/cache@v1
+#        env:
+#          cache-name: cache-artifacts
+#        with:
+#          path: ~/.julia/artifacts
+#          key: runner.os−test−env.cache−name−{{ hashFiles('**/Project.toml') }}
+#          restore-keys: |
+#            runner.os−test−
+#            ${{ env.cache-name }}-
+#            ${{ runner.os }}-test-
+#            ${{ runner.os }}-
+      - name: Instantiate
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          julia --project=. -e '
+            using Pkg;
+            Pkg.instantiate()'
+      - name: Benchmark
+        run: |
+          julia bench/BenchmarkABM.jl
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Julia benchmark result
+          tool: 'julia'
+          output-file-path: bench/output.json
+          auto-push: false
+          
+      - name: Push results to gh-pages branch
+        run: |
+          git push 'https://manuvanegas:${{ secrets.GITHUB_TOKEN }}@github.com/manuvanegas/SpatialRust.git' gh-pages:gh-pages
