@@ -1,5 +1,7 @@
 name: Julia Example with BenchmarkTools.jl
 on:
+  workflow_dispatch:
+  
   push:
     branches:
       - master
