@@ -3,29 +3,15 @@ name: Benchmark ABM
 on:
   workflow_dispatch:
   push:
-    #branches:
-#      - master
     paths:
       - 'src/ABM'
       - 'src/Quick*'
-
-#permissions:
-#  contents: write
-#  deployments: write
 
 jobs:
   benchmark:
     name: Run julia benchmark example
     runs-on: ubuntu-latest
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        version:
-#          - '1'
-#        os:
-#          - ubuntu-latest
-#        arch:
-#          - x64
+
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
@@ -51,9 +37,9 @@ jobs:
           julia --project=. -e '
             using Pkg;
             Pkg.instantiate()'
-      #- name: Benchmark
-      #  run: |
-      #    julia --project=. bench/BenchmarkABM.jl
+      - name: Benchmark
+        run: |
+          julia --project=. bench/BenchmarkABM.jl
 
       - name: Store benchmark result
         uses: manuvanegas/github-action-benchmark@v1
@@ -68,7 +54,6 @@ jobs:
           comment-on-alert: true
           fail-on-alert: false
           alert-comment-cc-users: '@manuvanegas'
-          #auto-push: false
 #          
 #      - name: Push results to gh-pages branch
 #        run: |
