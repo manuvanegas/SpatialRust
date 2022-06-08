@@ -1,2 +1,1 @@
-This is an awesome new scientific project that uses `DrWatson`!
-
+This is a spatially explicit Coffee Leaf Rust (CLR) model. Further documentation will be released shortly.
