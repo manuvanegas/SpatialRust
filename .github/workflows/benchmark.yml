@@ -1,7 +1,5 @@
-name: Julia Example with BenchmarkTools.jl
+name: Benchmark ABM
 on:
-  workflow_dispatch:
-  
   push:
     branches:
       - master
@@ -46,23 +44,24 @@ jobs:
 #            ${{ runner.os }}-test-
 #            ${{ runner.os }}-
       - name: Instantiate
-        if: steps.cache.outputs.cache-hit != 'true'
+       if: steps.cache.outputs.cache-hit != 'true'
         run: |
           julia --project=. -e '
             using Pkg;
             Pkg.instantiate()'
       - name: Benchmark
         run: |
-          julia bench/BenchmarkABM.jl
+          julia --project=. scripts/ABC/sims/helloo.jl
+        # bench/BenchmarkABM.jl
 
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: Julia benchmark result
-          tool: 'julia'
-          output-file-path: bench/output.json
-          auto-push: false
-          
-      - name: Push results to gh-pages branch
-        run: |
-          git push 'https://manuvanegas:${{ secrets.GITHUB_TOKEN }}@github.com/manuvanegas/SpatialRust.git' gh-pages:gh-pages
+      #- name: Store benchmark result
+#        uses: benchmark-action/github-action-benchmark@v1
+#        with:
+#          name: Julia benchmark result
+#          tool: 'julia'
+#          output-file-path: bench/output.json
+#          auto-push: false
+#          
+#      - name: Push results to gh-pages branch
+#        run: |
+#          git push 'https://manuvanegas:${{ secrets.GITHUB_TOKEN }}@github.com/manuvanegas/SpatialRust.git' gh-pages:gh-pages
