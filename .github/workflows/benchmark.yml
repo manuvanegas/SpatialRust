@@ -61,8 +61,18 @@ jobs:
           name: Julia benchmark result
           tool: 'julia'
           output-file-path: bench/output.json
-          auto-push: false
-          
-      - name: Push results to gh-pages branch
-        run: |
-          git push 'https://manuvanegas:${{ secrets.GITHUB_TOKEN }}@github.com/manuvanegas/SpatialRust.git' gh-pages:gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          # Show alert with commit comment on detecting possible performance regression
+          alert-threshold: '50%'
+          comment-on-alert: true
+          fail-on-alert: false
+          alert-comment-cc-users: '@manuvanegas'
+          #auto-push: false
+#          
+#      - name: Push results to gh-pages branch
+#        run: |
+#          git checkout gh-pages
+#          git commit -m "Update benchmarks"
+#          git push origin gh-pages
+#          git push 'https://manuvanegas:${{ secrets.GITHUB_TOKEN }}@github.com/manuvanegas/SpatialRust.git' gh-pages:gh-pages
