@@ -25,19 +25,19 @@ window.BENCHMARK_DATA = {
         "benches": [
           {
             "name": "ABM/steps: 1600, nlesions: 1",
-            "value": 22026054602,
+            "value": 22.026054602,
             "unit": "ns",
             "extra": "gctime=855032091\nmemory=2680319859\nallocs=105843799\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
             "name": "ABM/steps: 1600, nlesions: 5",
-            "value": 15566413628,
+            "value": 15.566413628,
             "unit": "ns",
             "extra": "gctime=828632305\nmemory=5302769336\nallocs=170222758\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
             "name": "ABM/steps: 1600, nlesions: 25",
-            "value": 20118914876,
+            "value": 20.118914876,
             "unit": "ns",
             "extra": "gctime=1092204354\nmemory=9231284184\nallocs=190911354\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
@@ -65,19 +65,19 @@ window.BENCHMARK_DATA = {
         "benches": [
           {
             "name": "ABM/steps: 1600, nlesions: 1",
-            "value": 18190611632,
+            "value": 18.190611632,
             "unit": "ns",
             "extra": "gctime=671082499\nmemory=2693362003\nallocs=106217362\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
             "name": "ABM/steps: 1600, nlesions: 5",
-            "value": 11048474148,
+            "value": 11.048474148,
             "unit": "ns",
             "extra": "gctime=609416604\nmemory=5240503864\nallocs=170125271\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
             "name": "ABM/steps: 1600, nlesions: 25",
-            "value": 15692649467,
+            "value": 15.692649467,
             "unit": "ns",
             "extra": "gctime=997676884\nmemory=9757427592\nallocs=193483234\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
