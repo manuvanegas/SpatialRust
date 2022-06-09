@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1654731540984,
+  "lastUpdate": 1654736714956,
   "repoUrl": "https://github.com/manuvanegas/SpatialRust",
   "entries": {
     "Julia benchmark result": [
@@ -120,6 +120,46 @@ window.BENCHMARK_DATA = {
             "value": 12.255442037,
             "unit": "s",
             "extra": "gctime=0.909380521\nmemory=9312006152\nallocs=191010241\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "manuvanegas",
+            "username": "manuvanegas",
+            "email": "44076078+manuvanegas@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "86084ebb9cfbf7a789711430285edc7fd2fab9d6",
+          "message": "Update benchmark.yml",
+          "timestamp": "2022-06-08T23:29:20Z",
+          "url": "https://github.com/manuvanegas/SpatialRust/commit/86084ebb9cfbf7a789711430285edc7fd2fab9d6"
+        },
+        "date": 1654736714216,
+        "tool": "julia",
+        "benches": [
+          {
+            "name": "ABM/steps: 1600, nlesions: 1",
+            "value": 7.69258241,
+            "unit": "ns",
+            "extra": "gctime=0.5303424045\nmemory=2131010632\nallocs=95720196\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
+          },
+          {
+            "name": "ABM/steps: 1600, nlesions: 5",
+            "value": 15.903970468,
+            "unit": "ns",
+            "extra": "gctime=0.877442953\nmemory=5208033864\nallocs=169317614\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
+          },
+          {
+            "name": "ABM/steps: 1600, nlesions: 25",
+            "value": 24.402466434,
+            "unit": "ns",
+            "extra": "gctime=1.778297921\nmemory=9358455928\nallocs=191204600\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
         ]
       }
