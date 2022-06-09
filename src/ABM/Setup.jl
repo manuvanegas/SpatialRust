@@ -8,6 +8,7 @@ Base.@kwdef mutable struct Books
     coffee_ids::Vector{Int} = Int[]
     shade_ids::Vector{Int} = Int[]
     rust_ids::Vector{Int} = Int[]
+    # ind_shade::Float64 = 0.0
     outpour::Float64 = 0.0
     #temp_var::Float64 = 0.0
     temperature:: Float64 = 0.0
@@ -24,11 +25,14 @@ end
 struct Props
     # input parameters
     pars::Parameters
-
     # record-keeping
     current::Books
-
+    # weather time-series
     weather::Weather
+    # farm map
+    # farm_map::Array{Int,2}
+    # shade map
+    # shade_map::Array{Int, 2}
 end
 
 ## Agent types and constructor fcts
@@ -49,16 +53,16 @@ end
 
 Coffee(id, pos; production = 0.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, []) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
 
-mutable struct Shade <: AbstractAgent
-    id::Int
-    pos::NTuple{2, Int}
-    shade::Float64 # between 20 and 90 %
-    production::Float64
-    age::Int
-    hg_id::Int
-end
-
-Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
+# mutable struct Shade <: AbstractAgent
+#     id::Int
+#     pos::NTuple{2, Int}
+#     shade::Float64 # between 20 and 90 %
+#     production::Float64
+#     age::Int
+#     hg_id::Int
+# end
+#
+# Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
 
 mutable struct Rust <: AbstractAgent
     id::Int
@@ -139,30 +143,39 @@ end
 
 ## Setup functions
 
-function add_trees!(model::ABM, farm_map::Array{Int,2})
+function add_trees!(model::ABM, farm_map::Array{Int,2}, start_days_at::Int)
+#     cof_pos = findall(x -> x == 1, farm_map)
+#     for (c,pos) in enumerate(cof_pos)
+#         push!(model.current.coffee_ids, add_agent!(Tuple(pos), Coffee, model; production = start_days_at).id)
+#     end
+# end
     for patch in positions(model)
         if farm_map[patch...] == 1
             push!(model.current.coffee_ids, add_agent!(patch, Coffee, model).id) # push! works because add_agent! returns the new agent
-        elseif farm_map == 2
-            push!(model.current.shade_ids, add_agent!(patch, Shade, model; shade = model.pars.target_shade).id)
+        # elseif farm_map == 2
+        #     push!(model.current.shade_ids, add_agent!(patch, Shade, model; shade = model.pars.target_shade).id)
         end
     end
 end
 
-function add_trees!(model::ABM, farm_map::Array{Int,2}, start_days_at::Int)
-    cycle_adv = mod(start_days_at, model.pars.harvest_cycle) # how advanced in the harvest cycle are we
-    prod_dist = truncated(Normal(cycle_adv, cycle_adv * 0.02), 0.0, cycle_adv)
-
-    for patch in positions(model)
-        if farm_map[patch...] == 1
-            push!(model.current.coffee_ids, add_agent!(patch, Coffee, model; production = rand(model.rng, prod_dist)).id)
-        elseif farm_map == 2
-            push!(model.current.shade_ids, add_agent!(patch, Shade, model; shade = model.pars.target_shade).id)
-        end
-    end
-end
+# function add_trees!(model::ABM, farm_map::Array{Int,2}, start_days_at::Int)
+#     cycle_adv = mod(start_days_at, model.pars.harvest_cycle) # how advanced in the harvest cycle are we
+#     prod_dist = truncated(Normal(cycle_adv, cycle_adv * 0.02), 0.0, cycle_adv)
+#
+#     for patch in positions(model)
+#         if farm_map[patch...] == 1
+#             push!(model.current.coffee_ids, add_agent!(patch, Coffee, model; production = rand(model.rng, prod_dist)).id)
+#         elseif farm_map == 2
+#             push!(model.current.shade_ids, add_agent!(patch, Shade, model; shade = model.pars.target_shade).id)
+#         end
+#     end
+# end
 
 function count_shades!(model::ABM)
+    # shade_map = shade_map(model.farm_map)
+    # for c in allagents(model)
+    #
+    # end
     for c in model.current.coffee_ids
         neighbors = nearby_ids(model[c], model, model.pars.shade_r) # get ids of neighboring plants
         model[c].shade_neighbors = collect(Iterators.Filter(id -> model[id] isa Shade, neighbors))
@@ -223,35 +236,29 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
     space = GridSpace((parameters.map_side, parameters.map_side), periodic = false, metric = :chebyshev)
 
     if parameters.start_days_at <= 132
-        model = ABM(Union{Shade, Coffee, Rust}, space;
-            properties = Props(parameters, Books(days = parameters.start_days_at), weather),
-            warn = false) # ...
+        properties = Props(parameters, Books(days = parameters.start_days_at,
+        # ind_shade = parameters.target_shade,
+        ), weather)
     else
+        properties = Props(parameters, Books(days = parameters.start_days_at,
+        # ind_shade = parameters.target_shade,
+        # ticks = ?,
+        cycle = [4]), weather)
+    end
+
+    model = ABM(Union{Coffee, Rust}, space; properties = properties, warn = false)
+
         # model = ABM(Union{Shade, Coffee, Rust}, space;
-        #     properties = Props(parameters, Books(days = parameters.start_days_at, ticks = parameters.start_days_at - 132, cycle = [4]), weather),
+        #     properties = Props(parameters, Books(days = parameters.start_days_at,
+        "ticks = parameters.start_days_at - 132"
+        # , cycle = [4]), weather),
         #     warn = false)
-        model = ABM(Union{Shade, Coffee, Rust}, space;
-            properties = Props(parameters, Books(days = parameters.start_days_at, cycle = [4]), weather),
-            warn = false)
-    end
 
-    if all(farm_map .!= 2)
-        model = ABM(Union{Coffee, Rust}, model.space; model.properties, warn = false)
-    end
-
-    if parameters.start_days_at == 0 # simulation starts at the beginning of a harvest cycle
-        add_trees!(model, farm_map)
-    else
-        add_trees!(model, farm_map, parameters.start_days_at) # simulation starts later in harvest cycle, so accumulated production is drawn from truncated normal dist
-    end
+    add_trees!(model, farm_map, parameters.start_days_at)
 
     count_shades!(model)
 
     init_rusts!(model, parameters.ini_rusts)
-
-    # if isempty(model.current.shade_ids)
-    #     push!(model.current.shade_ids, add_agent!(random_empty(model), Shade, model; shade = -1.0).id)
-    # end
 
     return model
 end
