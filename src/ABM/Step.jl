@@ -152,20 +152,20 @@ end
 
 ## Step contents for inds
 
-function coffee_harvest_step!(model::ABM, coffee::Coffee)
-    if coffee.exh_countdown > 1
-        coffee.exh_countdown -= 1
-    elseif coffee.exh_countdown == 1
-        coffee.area = 1.0
-        coffee.exh_countdown = 0
-    else
-        !isempty(coffee.shade_neighbors) && update_sunlight!(model, coffee)
-        grow_coffee!(coffee, model.pars.cof_gr)
-        acc_production!(coffee)
-    end
-    model.current.prod += coffee.production / model.pars.harvest_cycle
-    coffee.production = 1.0
-end
+# function coffee_harvest_step!(model::ABM, coffee::Coffee)
+#     if coffee.exh_countdown > 1
+#         coffee.exh_countdown -= 1
+#     elseif coffee.exh_countdown == 1
+#         coffee.area = 1.0
+#         coffee.exh_countdown = 0
+#     else
+#         !isempty(coffee.shade_neighbors) && update_sunlight!(model, coffee)
+#         grow_coffee!(coffee, model.pars.cof_gr)
+#         acc_production!(coffee)
+#     end
+#     model.current.prod += coffee.production / model.pars.harvest_cycle
+#     coffee.production = 1.0
+# end
 
 function coffee_nh_step!(model::ABM, coffee::Coffee)
     if coffee.exh_countdown > 1
@@ -174,7 +174,8 @@ function coffee_nh_step!(model::ABM, coffee::Coffee)
         coffee.area = 1.0
         coffee.exh_countdown = 0
     else
-        !isempty(coffee.shade_neighbors) && update_sunlight!(model, coffee)
+        # !isempty(coffee.shade_neighbors) &&
+        update_sunlight!(model, coffee)
         grow_coffee!(coffee, model.pars.cof_gr)
         acc_production!(coffee)
     end
@@ -236,8 +237,10 @@ function update_sunlight!(model::ABM, cof::Coffee)
     # shades::Array{Float64} = getproperty.(model[cof.shade_neighbors],:shade)
     # shade = sum(shades)
 
-    @inbounds cof.sunlight = 1.0 - sum(getproperty.((model[s] for s in cof.shade_neighbors), :shade)) / (((model.pars.shade_r * 2.0) + 1.0)^2.0 - 1.0)
+    # @inbounds cof.sunlight = 1.0 - sum(getproperty.((model[s] for s in cof.shade_neighbors), :shade)) / (((model.pars.shade_r * 2.0) + 1.0)^2.0 - 1.0)
     # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
+
+    cof.sunlight = model.shade_map[cof.pos...] * (1 - model.current.ind_shade)
 end
 
 function grow_coffee!(cof::Coffee, cof_gr)
