@@ -1,4 +1,3 @@
-# "Commit Stuff, then use shade_map in wind dispersal"
 export Coffee, Rust
 
 Base.@kwdef mutable struct Books
