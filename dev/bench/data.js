@@ -24,22 +24,22 @@ window.BENCHMARK_DATA = {
         "tool": "julia",
         "benches": [
           {
-            "name": "ABM/steps: 1600, nlesions: 1",
-            "value": 22.026054602,
+            "name": "ABM/steps: 1000, nlesions: 25",
+            "value": 20.118914876,
             "unit": "s",
-            "extra": "gctime=855032091\nmemory=2680319859\nallocs=105843799\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
+            "extra": "gctime=1092204354\nmemory=9231284184\nallocs=190911354\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
-            "name": "ABM/steps: 1600, nlesions: 5",
+            "name": "ABM/steps: 1000, nlesions: 5",
             "value": 15.566413628,
             "unit": "s",
             "extra": "gctime=828632305\nmemory=5302769336\nallocs=170222758\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
-            "name": "ABM/steps: 1600, nlesions: 25",
-            "value": 20.118914876,
+            "name": "ABM/steps: 1000, nlesions: 1",
+            "value": 22.026054602,
             "unit": "s",
-            "extra": "gctime=1092204354\nmemory=9231284184\nallocs=190911354\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
+            "extra": "gctime=855032091\nmemory=2680319859\nallocs=105843799\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
         ]
       },
@@ -64,22 +64,22 @@ window.BENCHMARK_DATA = {
         "tool": "julia",
         "benches": [
           {
-            "name": "ABM/steps: 1600, nlesions: 1",
-            "value": 18.190611632,
+            "name": "ABM/steps: 1000, nlesions: 25",
+            "value": 15.692649467,
             "unit": "s",
-            "extra": "gctime=671082499\nmemory=2693362003\nallocs=106217362\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
+            "extra": "gctime=997676884\nmemory=9757427592\nallocs=193483234\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
-            "name": "ABM/steps: 1600, nlesions: 5",
+            "name": "ABM/steps: 1000, nlesions: 5",
             "value": 11.048474148,
             "unit": "s",
             "extra": "gctime=609416604\nmemory=5240503864\nallocs=170125271\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
-            "name": "ABM/steps: 1600, nlesions: 25",
-            "value": 15.692649467,
+            "name": "ABM/steps: 1000, nlesions: 1",
+            "value": 18.190611632,
             "unit": "s",
-            "extra": "gctime=997676884\nmemory=9757427592\nallocs=193483234\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
+            "extra": "gctime=671082499\nmemory=2693362003\nallocs=106217362\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
         ]
       },
@@ -104,22 +104,22 @@ window.BENCHMARK_DATA = {
         "tool": "julia",
         "benches": [
           {
-            "name": "ABM/steps: 1600, nlesions: 1",
-            "value": 3.645650176,
+            "name": "ABM/steps: 1000, nlesions: 25",
+            "value": 12.255442037,
             "unit": "s",
-            "extra": "gctime=0.261784753\nmemory=2131010632\nallocs=95720196\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
+            "extra": "gctime=0.909380521\nmemory=9312006152\nallocs=191010241\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
-            "name": "ABM/steps: 1600, nlesions: 5",
+            "name": "ABM/steps: 1000, nlesions: 5",
             "value": 8.5211754095,
             "unit": "s",
             "extra": "gctime=0.4778689875\nmemory=5201087624\nallocs=169421582\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
-            "name": "ABM/steps: 1600, nlesions: 25",
-            "value": 12.255442037,
+            "name": "ABM/steps: 1000, nlesions: 1",
+            "value": 3.645650176,
             "unit": "s",
-            "extra": "gctime=0.909380521\nmemory=9312006152\nallocs=191010241\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
+            "extra": "gctime=0.261784753\nmemory=2131010632\nallocs=95720196\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
         ]
       },
@@ -144,22 +144,22 @@ window.BENCHMARK_DATA = {
         "tool": "julia",
         "benches": [
           {
-            "name": "ABM/steps: 1600, nlesions: 1",
-            "value": 7.69258241,
+            "name": "ABM/steps: 1000, nlesions: 25",
+            "value": 24.402466434,
             "unit": "ns",
-            "extra": "gctime=0.5303424045\nmemory=2131010632\nallocs=95720196\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
+            "extra": "gctime=1.778297921\nmemory=9358455928\nallocs=191204600\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
-            "name": "ABM/steps: 1600, nlesions: 5",
+            "name": "ABM/steps: 1000, nlesions: 5",
             "value": 15.903970468,
             "unit": "ns",
             "extra": "gctime=0.877442953\nmemory=5208033864\nallocs=169317614\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
           },
           {
-            "name": "ABM/steps: 1600, nlesions: 25",
-            "value": 24.402466434,
+            "name": "ABM/steps: 1000, nlesions: 1",
+            "value": 7.69258241,
             "unit": "ns",
-            "extra": "gctime=1.778297921\nmemory=9358455928\nallocs=191204600\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
+            "extra": "gctime=0.5303424045\nmemory=2131010632\nallocs=95720196\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
         ]
       },
@@ -175,7 +175,6 @@ window.BENCHMARK_DATA = {
             "name": "GitHub",
             "username": "web-flow"
           },
-          "distinct": true,
           "id": "ee3b99671cc0e4323d75172120932400a1fd725f",
           "message": "Merge pull request #2 from manuvanegas/SynthShades\n\nSynthesized shades",
           "timestamp": "2022-06-12T15:53:35-07:00",
