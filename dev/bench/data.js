@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1654736714956,
+  "lastUpdate": 1655075068946,
   "repoUrl": "https://github.com/manuvanegas/SpatialRust",
   "entries": {
     "Julia benchmark result": [
@@ -160,6 +160,48 @@ window.BENCHMARK_DATA = {
             "value": 24.402466434,
             "unit": "ns",
             "extra": "gctime=1.778297921\nmemory=9358455928\nallocs=191204600\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":120,\"overhead\":0,\"memory_tolerance\":0.01}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "44076078+manuvanegas@users.noreply.github.com",
+            "name": "manuvanegas",
+            "username": "manuvanegas"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ee3b99671cc0e4323d75172120932400a1fd725f",
+          "message": "Merge pull request #2 from manuvanegas/SynthShades\n\nSynthesized shades",
+          "timestamp": "2022-06-12T15:53:35-07:00",
+          "tree_id": "e0548f2ba65283a11557fec1f9e2d1e6fd13fc9c",
+          "url": "https://github.com/manuvanegas/SpatialRust/commit/ee3b99671cc0e4323d75172120932400a1fd725f"
+        },
+        "date": 1655075068567,
+        "tool": "julia",
+        "benches": [
+          {
+            "name": "ABM/steps: 1000, nlesions: 25",
+            "value": 8.385914858,
+            "unit": "ns",
+            "extra": "gctime=0.698045406\nmemory=3347907848\nallocs=87180484\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
+          },
+          {
+            "name": "ABM/steps: 1000, nlesions: 5",
+            "value": 4.911024589,
+            "unit": "ns",
+            "extra": "gctime=0.276771666\nmemory=1755034504\nallocs=69178433\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
+          },
+          {
+            "name": "ABM/steps: 1000, nlesions: 1",
+            "value": 3.175215788,
+            "unit": "ns",
+            "extra": "gctime=0.172311035\nmemory=1298409976\nallocs=59292579\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
         ]
       }
