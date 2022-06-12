@@ -3,6 +3,8 @@ name: Benchmark ABM
 on:
   workflow_dispatch:
   push:
+    branches:
+      - master
     paths:
       - 'src/ABM'
       - 'src/Quick*'
@@ -54,7 +56,7 @@ jobs:
           comment-on-alert: true
           fail-on-alert: false
           alert-comment-cc-users: '@manuvanegas'
-#          
+#
 #      - name: Push results to gh-pages branch
 #        run: |
 #          git checkout gh-pages
