@@ -14,8 +14,8 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
     # add shades
     if pars.shade_d != 0
         if pars.shade_arrangement == :regular
-            for si in 1:6:100
-                for sj in 1:6:100
+            for si in 1:pars.shade_d:side
+                for sj in 1:pars.shade_d:side
                     @inbounds farm_map[sj, si] = 2
                 end
             end
@@ -43,7 +43,13 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
                     end
                 else
                     @inbounds for pb in placements
-                        @inbounds farm_map[pb, :] .= 2
+                        if iseven(pb)
+                            @inbounds farm_map[pb, 1:2:side] .= 0
+                            @inbounds farm_map[pb, 2:2:side] .= 2
+                        else
+                            @inbounds farm_map[pb, 1:2:side] .= 2
+                            @inbounds farm_map[pb, 2:2:side] .= 0
+                        end
                     end
                 end
             elseif type == 2 # internal vertical
@@ -66,7 +72,7 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
                     if pars.barrier_rows == 1
                         @inbounds for pb in placements
                             if pb % 3 == 1
-                                @inbounds farm_map[:, (pb + 1)] .= 2
+                                farm_map[:, (pb + 1)] .= 2
                             else
                                 @inbounds farm_map[:, pb] .= 2
                             end
@@ -74,19 +80,32 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
                     else
                         conflicting = findall(x -> (x % 3 == 1), placements)
                         for cn in conflicting
-                            if cn <= arr[type]
+                            @inbounds if cn <= length(placements)/2
+                                # barr_places() vcats the extra barrier rows, so the second half of placements corresponds to the '+1's
                                 placements[[cn, (cn + arr[type])]] .+= 1
                             else
-                                placements[[cn, (cn + arr[type])]] .-= 1
+                                placements[[cn, (cn - arr[type])]] .-= 1
                             end
                         end
                         @inbounds for pb in placements
-                            @inbounds farm_map[:, pb] .= 2
+                            if iseven(pb)
+                                farm_map[1:2:side, pb] .= 0
+                                farm_map[2:2:side, pb] .= 2
+                            else
+                                farm_map[1:2:side, pb] .= 2
+                                farm_map[2:2:side, pb] .= 0
+                            end
                         end
                     end
                 else
                     @inbounds for pb in placements
-                        @inbounds farm_map[:, pb] .= 2
+                        if iseven(pb)
+                            farm_map[1:2:side, pb] .= 0
+                            farm_map[2:2:side, pb] .= 2
+                        else
+                            farm_map[1:2:side, pb] .= 2
+                            farm_map[2:2:side, pb] .= 0
+                        end
                     end
                 end
 
@@ -94,14 +113,14 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
                 if @inbounds arr[type] == 1
                     @inbounds farm_map[1,:] .= 2
                 else
-                    @inbounds farm_map[[1,100], :] .= 2
+                    @inbounds farm_map[[1, side], :] .= 2
                 end
             else # edge vertical
                 if @inbounds arr[type] == 1
-                    @inbounds farm_map[:,100] .= 2
+                    @inbounds farm_map[:, side] .= 2
                     # coffee placement starts at 1, then a barrier at 1 would wipe away a whole cof row, always
                 else
-                    @inbounds farm_map[:,[1,100]] .= 2
+                    @inbounds farm_map[:,[1, side]] .= 2
                 end
             end
         end
@@ -109,9 +128,9 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
     return farm_map
 end
 
-function create_fullsun_farm_map()::Array{Int,2}
-    farm_map = zeros(Int,100,100)
-    for c in 1:2:100
+function create_fullsun_farm_map(side)::Array{Int,2}
+    farm_map = zeros(Int,side,side)
+    for c in 1:2:side
         @inbounds farm_map[:,c] .= 1
     end
     return farm_map
@@ -119,8 +138,8 @@ end
 
 function create_midshade_farm_map()::Array{Int,2}
     farm_map = create_fullsun_farm_map()
-    for si in 1:6:100
-        for sj in 1:6:100
+    for si in 1:6:side
+        for sj in 1:6:side
             @inbounds farm_map[sj, si] = 2
         end
     end
