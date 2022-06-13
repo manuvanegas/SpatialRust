@@ -156,7 +156,7 @@ function update_shade_map!(model)
         end
     end
     shade_map = min.(1.0, shade_map)
-    model.shade_map .+= shade_map
+    model.shade_map .= shade_map
 end
 
 function shade_dist(pos1::CartesianIndex, pos2::CartesianIndex)
@@ -175,7 +175,7 @@ end
 
 function add_trees!(model::ABM, farm_map::Array{Int,2}, start_days_at::Int)
     cof_pos = Tuple.(findall(x -> x == 1, farm_map))
-    for (c,pos) in enumerate(cof_pos)
+    for pos in cof_pos
         push!(model.current.coffee_ids, add_agent!(pos, Coffee, model; production = start_days_at).id)
     end
 end
@@ -250,13 +250,13 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
         properties = Props(parameters, Books(
         days = parameters.start_days_at,
         ind_shade = parameters.target_shade,
-        ), weather, farm_map, zeros(size(farm_map)))
+        ), weather, farm_map, farm_map)
     else
         properties = Props(parameters, Books(
         days = parameters.start_days_at,
         ind_shade = parameters.target_shade,
         # ticks = ?,
-        cycle = [4]), weather, farm_map, zeros(size(farm_map)))
+        cycle = [4]), weather, farm_map, farm_map)
     end
 
     model = ABM(Union{Coffee, Rust}, space; properties = properties, warn = false)
