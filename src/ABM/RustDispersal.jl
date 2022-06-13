@@ -89,8 +89,10 @@ end
 
 function r_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
     let path = rain_path(model, sunlight)
-        if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions  # self-infected
-            rust.n_lesions += 1
+        if length(path) <= 1 # self-infected
+            if rust.n_lesions < model.pars.max_lesions
+                rust.n_lesions += 1
+            end
         else
             rain_travel!(model, rust.pos, path)
         end
@@ -99,8 +101,10 @@ end
 
 function w_rust_dispersal!(model::ABM, rust::Rust, wdistance::Float64)
     let path = wind_path(model, wdistance)
-        if length(path) <= 1 && rust.n_lesions < model.pars.max_lesions # self-infected
-            rust.n_lesions += 1
+        if length(path) <= 1 # self-infected
+            if rust.n_lesions < model.pars.max_lesions
+                rust.n_lesions += 1
+            end
         else
             wind_travel!(model, rust.pos, path)
         end
