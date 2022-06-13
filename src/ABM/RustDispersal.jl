@@ -112,63 +112,36 @@ function w_rust_dispersal!(model::ABM, rust::Rust, wdistance::Float64)
 end
 
 function rain_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}})
-    let pos = pos, path = path
-        @inbounds for s in path[2:end]
-            if all(1 .<= (new_pos = add_tuples(s, pos)) .<= model.pars.map_side)
-                trees = agents_in_position(new_pos, model)
-                if isempty(trees)
-                    continue
-                elseif (c = first(trees)) isa Coffee &&
-                    (s == last(path) || rand(model.rng) < model.pars.disp_block * 0.5)
-                    # if the coffee is where the spore was supposed to land || it blocked the dispersal
-                    inoculate_rust!(model, c)
-                    break
-                elseif rand(model.rng) < model.pars.disp_block * 0.5
-                    break
-                end
+    probs, landings = r_coffee_probs(model.farm_map, model.pars.disp_block, pos, path)
+    r = rand(model.rng)
+    for (i, p) in enumerate(probs)
+        if r < p
+            if landings[i] == (-1, -1)
+                # placeholder for future functionality: keep track of outpour to 8 neighbors
             else
-                # model.current.outpour += 1
-                break
+                inoculate_rust!(model, first(agents_in_position(landings[i], model)))
             end
+            break
         end
     end
 end
 
 function wind_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}})
-    let pos = pos, path = path, pathlength = length(path)
-        notlanded = true
-        notblocked = true
-        infarm = true
-        pathstep = 1 # doesn't start at 0 because the case of pathlength == 1 is already contemplated
-        new_pos = pos
-
-        while notlanded && infarm
-            pathstep += 1
-            new_pos = pos .+ path[pathstep]
-            if all(1 .<= new_pos .<= model.pars.map_side)
-                if notblocked
-                    if pathstep == pathlength
-                        notlanded = false
-                    elseif rand(model.rng) < (model.shade_map[new_pos...] * model.current.ind_shade)
-                        notblocked = false
-                    end
-                else
-                    notlanded = false
-                end
+    probs, landings = w_coffee_probs(
+        model.farm_map,
+        model.shade_map,
+        (model.current.ind_shade * model.pars.disp_block),
+        pos, path
+    )
+    r = rand(model.rng)
+    for (i, p) in enumerate(probs)
+        if r < p
+            if landings[i] == (-1, -1)
+                # placeholder for future functionality: keep track of outpour to 8 neighbors
             else
-                infarm = false
+                inoculate_rust!(model, first(agents_in_position(landings[i], model)))
             end
-        end
-
-        if !infarm
-            # placeholder for future functionality: keep track of outpour to 8 neighbors
-        end
-
-        if !notlanded
-            trees = agents_in_position(new_pos, model)
-            if !isempty(trees)
-                inoculate_rust!(model, first(trees))
-            end
+            break
         end
     end
 end
@@ -181,17 +154,9 @@ function inoculate_rust!(model::ABM, target::Coffee) # inoculate target coffee
         if model[target.hg_id].n_lesions < model.pars.max_lesions
             model[target.hg_id].n_lesions += 1
         end
-    # if length(here) > 1
-    #     if here[2].n_lesions < model.pars.max_lesions
-    #         here[2].n_lesions += 1
-    #     end
     else
-        # if isdisjoint(target.sample_cycle, model.current.cycle)
-        #     new_id = add_agent!(target.pos, Rust, model; age = (model.pars.steps + 1), hg_id = target.id, sample_cycle = target.sample_cycle).id
-        # else
         new_id = add_agent!(target.pos, Rust, model, model.pars.max_lesions, model.pars.steps;
             hg_id = target.id, sample_cycle = target.sample_cycle).id
-        # end
         target.hg_id = new_id
         push!(model.current.rust_ids, new_id)
     end
@@ -213,6 +178,66 @@ end
 
 # inoculate_rust!(model::ABM, none::Bool) = nothing
 
+## Path-dependent probabilities
+
+function r_coffee_probs(farm_map::Array{Int}, disp_block::Float64, pos::Tuple, path::Vector{NTuple{2, Int}})::Tuple{Vector{Float64},Vector{NTuple{2,Int}}}
+    probs = Float64[]
+    landings = NTuple{2,Int}[] # landing positions
+    cumulative_p = 1.0
+    side = size(farm_map)[1]
+    for s in path[2:end]
+        if all(1 .<= (new_pos = s .+ pos) .<= side)
+            if farm_map[new_pos...] == 1
+                if s == path[end]
+                    pushfirst!(probs, cumulative_p)
+                    pushfirst!(landings, new_pos)
+                else
+                    landing_p = cumulative_p * disp_block * 0.5
+                    pushfirst!(probs, landing_p)
+                    pushfirst!(landings, new_pos)
+                    cumulative_p *= (1 - disp_block * 0.5)
+                end
+            else
+                cumulative_p *= (1 - disp_block * 0.5)
+            end
+        else
+            pushfirst!(probs, cumulative_p)
+            pushfirst!(landings, (-1, -1))
+            break
+        end
+    end
+    return probs, landings
+end
+
+function w_coffee_probs(farm_map::Array{Int}, shade_map::Array{Float64}, shade_block::Float64, pos::Tuple, path::Vector{NTuple{2, Int}})::Tuple{Vector{Float64},Vector{NTuple{2,Int}}}
+    probs = Float64[]
+    landings = NTuple{2,Int}[] # landing positions
+    cumulative_p = 1.0
+    side = size(farm_map)[1]
+    for s in path[2:end]
+        if all(1 .<= (new_pos = s .+ pos) .<= side)
+            if farm_map[new_pos...] == 1
+                if s == path[end]
+                    pushfirst!(probs, cumulative_p)
+                    pushfirst!(landings, new_pos)
+                else
+                    landing_p = cumulative_p * shade_map[new_pos...] * shade_block
+                    pushfirst!(probs, landing_p)
+                    pushfirst!(landings, new_pos)
+                    cumulative_p *= (1 - shade_map[new_pos...] * shade_block)
+                end
+            else
+                cumulative_p *= (1 - shade_map[new_pos...] * shade_block)
+            end
+        else
+            pushfirst!(probs, cumulative_p)
+            pushfirst!(landings, (-1, -1))
+            break
+        end
+    end
+    return probs, landings
+end
+
 ## Helper functions to calculate the path followed by each spore (lesion)
 
 function rain_path(model::ABM, sunlight)::Vector{NTuple{2, Int}}
@@ -224,10 +249,7 @@ function rain_path(model::ABM, sunlight)::Vector{NTuple{2, Int}}
 end
 
 function wind_path(model::ABM, wdistance)::Vector{NTuple{2, Int}}
-    # let distance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
-
-        return travel_path(wdistance, (model.current.wind_h + (rand(model.rng) * 5) - 2.5))
-    # end
+    return travel_path(wdistance, (model.current.wind_h + (rand(model.rng) * 5) - 2.5))
 end
 
 # function coffee_here(pos::NTuple{2,Int}, model::ABM)::Union{Coffee, Bool}
@@ -242,14 +264,14 @@ end
 
 function travel_path(distance::Float64, heading::Float64)::Vector{NTuple{2, Int}}
     let ca = cosd(heading), co = sind(heading)
-        return unique(round.(Int, (ca * h, co * h)) for h in 0.5:0.5:distance)
+        return unique!(collect(round.(Int, (ca * h, co * h)) for h in 0.5:0.5:distance))
     end
     # unique!((round.(Int, (cosd(heading) .* collect(0.5:0.5:distance))), round.(Int, (sind(heading) .* collect(0.5:0.5:distance)))))
 end
 
 # travel_path(distance::Float64, heading::Float64)::Vector{NTuple{2, Int}} = unique((round(Int, cosd(heading) * h), round(Int, sind(heading) * h)) for h in 0.5:0.5:distance)
 
-add_tuples(t_a::Tuple{Int, Int}, t_b::Tuple{Int, Int}) = @inbounds (t_a[1] + t_b[1], t_a[2] + t_b[2])
+# add_tuples(t_a::Tuple{Int, Int}, t_b::Tuple{Int, Int}) = @inbounds (t_a[1] + t_b[1], t_a[2] + t_b[2])
 add_tuples(t_a::Tuple{Int, Int}, t_b::Vector{Tuple{Int, Int}}) = @inbounds (t_a[1] .+ t_b[1], t_a[2] .+ t_b[2])
 
 
@@ -289,7 +311,7 @@ function inoculate_farm(model::ABM, nrusts::Int) #PROBLEM: increased variability
             let pos = starting, path = travel_path(distance, heading)
                 blockedwind = false
                 for s in path[2:end]
-                    if all(1 .<= (new_pos = add_tuples(s, pos)) .<= model.pars.map_side)
+                    if all(1 .<= (new_pos = s .+ pos) .<= model.pars.map_side)
                         trees = agents_in_position(new_pos, model)
                         if isempty(trees)
                             if blockedwind
