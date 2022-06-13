@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1655105762274,
+  "lastUpdate": 1655110828170,
   "repoUrl": "https://github.com/manuvanegas/SpatialRust",
   "entries": {
     "Julia benchmark result": [
@@ -243,6 +243,48 @@ window.BENCHMARK_DATA = {
             "value": 3.7560352995,
             "unit": "ns",
             "extra": "gctime=0.163220761\nmemory=1302860232\nallocs=59398552\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "44076078+manuvanegas@users.noreply.github.com",
+            "name": "manuvanegas",
+            "username": "manuvanegas"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5710701f9986d0de28ebde7a030c3c5a53c89e25",
+          "message": "Merge pull request #3 from manuvanegas/dispersal-probs\n\nDispersal probs",
+          "timestamp": "2022-06-13T01:48:14-07:00",
+          "tree_id": "0e3903856e383d74809c84023c85130c1b2b7224",
+          "url": "https://github.com/manuvanegas/SpatialRust/commit/5710701f9986d0de28ebde7a030c3c5a53c89e25"
+        },
+        "date": 1655110827282,
+        "tool": "julia",
+        "benches": [
+          {
+            "name": "ABM/steps: 1000, nlesions: 25",
+            "value": 12.590113747,
+            "unit": "ns",
+            "extra": "gctime=1.105201452\nmemory=5350878440\nallocs=114334586\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
+          },
+          {
+            "name": "ABM/steps: 1000, nlesions: 5",
+            "value": 7.9222402405,
+            "unit": "ns",
+            "extra": "gctime=0.4999726355\nmemory=3017157016\nallocs=100999462\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
+          },
+          {
+            "name": "ABM/steps: 1000, nlesions: 1",
+            "value": 3.394346259,
+            "unit": "ns",
+            "extra": "gctime=0.171164459\nmemory=1304297928\nallocs=59450031\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
         ]
       }
