@@ -1,7 +1,5 @@
 Pkg.activate(".")
 # push!(LOAD_PATH, pwd())
-using Agents, DrWatson, Random
-using Statistics: median, mean
 using Revise
 # include(srcdir("SpatialRust.jl"))
 using SpatialRust
@@ -20,13 +18,14 @@ SpatialRust.step_model!(tmodel)
 # maximum(getproperty.(trusts,:spores))
 # maximum.(getproperty.(trusts,:area))
 
-tadf, tmdf = dummyrun_spatialrust(10, 100, 10)
+tadf, tmdf = dummyrun_fullsun_spatialrust(10, 100, 10)
 
-using BenchmarkTools
-Random.seed!(1234)
-@btime a, m = dummyrun_spatialrust(1000, 100, 25)
+using BenchmarkTools, Random
+Random.seed!(1234); @btime a, m = dummyrun_fullsun_spatialrust(1000, 100, 25)
 
 
+using Agents, DrWatson, Random
+using Statistics: median, mean
 maxlesions = [1, 5, 10, 25, 50]
 medians = []
 mins = []

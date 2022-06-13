@@ -1,7 +1,7 @@
 using BenchmarkTools, SpatialRust
 using Random: seed!
 
-steps_nlesions(steps, nlesions) = dummyrun_spatialrust(steps, 100, nlesions)
+steps_nlesions(steps, nlesions) = dummyrun_fullsun_spatialrust(steps, 100, nlesions)
 steps_nlesions(500, 25)
 
 suite = BenchmarkGroup()

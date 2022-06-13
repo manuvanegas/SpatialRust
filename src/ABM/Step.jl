@@ -240,7 +240,7 @@ function update_sunlight!(model::ABM, cof::Coffee)
     # @inbounds cof.sunlight = 1.0 - sum(getproperty.((model[s] for s in cof.shade_neighbors), :shade)) / (((model.pars.shade_r * 2.0) + 1.0)^2.0 - 1.0)
     # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
 
-    cof.sunlight = model.shade_map[cof.pos...] * (1 - model.current.ind_shade)
+    cof.sunlight = 1 - model.shade_map[cof.pos...] * model.current.ind_shade 
 end
 
 function grow_coffee!(cof::Coffee, cof_gr)
