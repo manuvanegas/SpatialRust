@@ -18,11 +18,10 @@ SpatialRust.step_model!(tmodel)
 # maximum(getproperty.(trusts,:spores))
 # maximum.(getproperty.(trusts,:area))
 
-tadf, tmdf = dummyrun_spatialrust(10, 100, 10)
+tadf, tmdf = dummyrun_fullsun_spatialrust(10, 100, 10)
 
 using BenchmarkTools, Random
-Random.seed!(1234)
-@btime a, m = dummyrun_spatialrust(1000, 100, 25)
+Random.seed!(1234); @btime a, m = dummyrun_fullsun_spatialrust(1000, 100, 25)
 
 
 using Agents, DrWatson, Random
