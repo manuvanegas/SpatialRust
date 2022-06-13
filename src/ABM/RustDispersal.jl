@@ -1,74 +1,5 @@
 # Spore dispersal and deposition
 
-## Rust inoculation
-
-function init_rusted(model::ABM, r::Int)
-    minp = r + 1
-    maxp = model.pars.map_side - r
-    main = sample(model.rng, collect(Iterators.filter(
-        c -> (c isa Coffee && all(minp .<= c.pos .<= maxp)),
-        allagents(model))
-    ))
-    rusted = Iterators.filter(c -> c isa Coffee, nearby_agents(main, model, 2))
-
-    return rusted
-end
-
-function inoculate_farm(model::ABM, nrusts::Int) #PROBLEM: increased variability because each sim starts with != #rusts
-    # byrain = rand(model.rng, 1:nrusts)
-    # bywind = nrusts - byrain
-    inoc_ids = Int[]
-
-    from_side = rand(model.rng, 1:4) #N,E,S,W <-> 1,2,3,4
-    if from_side == 4 # following the same order as in outside_spores!()
-        from = Tuple.(vcat.(1, sample(model.rng, 1:model.pars.map_side, nrusts)))
-        headings = 360.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    elseif from_side == 1
-        from = Tuple.(vcat.(sample(model.rng, 1:model.pars.map_side, nrusts), 1))
-        headings = 270.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    elseif from_side == 2
-        from = Tuple.(vcat.(100, sample(model.rng, 1:model.pars.map_side, nrusts)))
-        headings = 180.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    else
-        from = Tuple.(vcat.(sample(model.rng, 1:model.pars.map_side, nrusts), 100))
-        headings = 90.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    end
-
-    wdistances = abs.(2 .* randn(model.rng, nrusts)) .* model.pars.wind_distance .* model.pars.diff_wind
-
-    for (starting, heading, distance) in zip(from, headings, wdistances)
-        if length(travel_path(distance, heading)) <= 1
-            if !isempty(starting, model) && (c = first(agents_in_position(starting, model))) isa Coffee
-                push!(inoc_ids, c.id)
-            end
-        else
-            # wind_travel!(model, starting, travel_path(distance, heading))
-            let pos = starting, path = travel_path(distance, heading)
-                blockedwind = false
-                for s in path[2:end]
-                    if all(1 .<= (new_pos = add_tuples(s, pos)) .<= model.pars.map_side)
-                        trees = agents_in_position(new_pos, model)
-                        if isempty(trees)
-                            if blockedwind
-                                break
-                            end
-                        elseif (c = first(trees)) isa Coffee &&
-                            (blockedwind || s == last(path) || rand(model.rng) < model.pars.disp_block * 0.1)
-                                push!(inoc_ids, c.id)
-                                break
-                        elseif rand(model.rng) < model.pars.disp_block # blocked by shade
-                            blockedwind = true
-                            continue
-                        end
-                    else
-                        # model.current.outpour += 1
-                        break
-                    end
-                end
-            end
-        end
-    end
-end
 ## Rust agents' dispersal
 
 # function disperse!(model::ABM, rust::Rust, sunlight::Float64)
@@ -200,26 +131,39 @@ function rain_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}
 end
 
 function wind_travel!(model::ABM, pos::NTuple{2,Int}, path::Vector{NTuple{2,Int}})
-    let pos = pos, path = path
-        blockedwind = false
-        for s in path[2:end]
-            if all(1 .<= (new_pos = add_tuples(s, pos)) .<= model.pars.map_side)
-                trees = agents_in_position(new_pos, model)
-                if isempty(trees)
-                    if blockedwind
-                        break
+    let pos = pos, path = path, pathlength = length(path)
+        notlanded = true
+        notblocked = true
+        infarm = true
+        pathstep = 1 # doesn't start at 0 because the case of pathlength == 1 is already contemplated
+        new_pos = pos
+
+        while notlanded && infarm
+            pathstep += 1
+            new_pos = pos .+ path[pathstep]
+            if all(1 .<= new_pos .<= model.pars.map_side)
+                if notblocked
+                    if pathstep == pathlength
+                        notlanded = false
+                    elseif rand(model.rng) < (model.shade_map[new_pos...] * model.current.ind_shade)
+                        notblocked = false
                     end
-                elseif (c = first(trees)) isa Coffee &&
-                    (blockedwind || s == last(path) || rand(model.rng) < model.pars.disp_block * 0.1)
-                        inoculate_rust!(model, c)
-                        break
-                elseif rand(model.rng) < model.pars.disp_block # blocked by shade
-                    blockedwind = true
-                    continue
+                else
+                    notlanded = false
                 end
             else
-                # model.current.outpour += 1
-                break
+                infarm = false
+            end
+        end
+
+        if !infarm
+            # placeholder for future functionality: keep track of outpour to 8 neighbors
+        end
+
+        if !notlanded
+            trees = agents_in_position(new_pos, model)
+            if !isempty(trees)
+                inoculate_rust!(model, first(trees))
             end
         end
     end
@@ -303,3 +247,64 @@ end
 
 add_tuples(t_a::Tuple{Int, Int}, t_b::Tuple{Int, Int}) = @inbounds (t_a[1] + t_b[1], t_a[2] + t_b[2])
 add_tuples(t_a::Tuple{Int, Int}, t_b::Vector{Tuple{Int, Int}}) = @inbounds (t_a[1] .+ t_b[1], t_a[2] .+ t_b[2])
+
+
+
+## Rust initial inoculation (optional function, not in use currently)
+# This one assumes that rust epidemic has to come from an influx of wind-dispersed spores
+
+function inoculate_farm(model::ABM, nrusts::Int) #PROBLEM: increased variability because each sim starts with != #rusts
+    # byrain = rand(model.rng, 1:nrusts)
+    # bywind = nrusts - byrain
+    inoc_ids = Int[]
+
+    from_side = rand(model.rng, 1:4) #N,E,S,W <-> 1,2,3,4
+    if from_side == 4 # following the same order as in outside_spores!()
+        from = Tuple.(vcat.(1, sample(model.rng, 1:model.pars.map_side, nrusts)))
+        headings = 360.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
+    elseif from_side == 1
+        from = Tuple.(vcat.(sample(model.rng, 1:model.pars.map_side, nrusts), 1))
+        headings = 270.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
+    elseif from_side == 2
+        from = Tuple.(vcat.(100, sample(model.rng, 1:model.pars.map_side, nrusts)))
+        headings = 180.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
+    else
+        from = Tuple.(vcat.(sample(model.rng, 1:model.pars.map_side, nrusts), 100))
+        headings = 90.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
+    end
+
+    wdistances = abs.(2 .* randn(model.rng, nrusts)) .* model.pars.wind_distance .* model.pars.diff_wind
+
+    for (starting, heading, distance) in zip(from, headings, wdistances)
+        if length(travel_path(distance, heading)) <= 1
+            if !isempty(starting, model) && (c = first(agents_in_position(starting, model))) isa Coffee
+                push!(inoc_ids, c.id)
+            end
+        else
+            # wind_travel!(model, starting, travel_path(distance, heading))
+            let pos = starting, path = travel_path(distance, heading)
+                blockedwind = false
+                for s in path[2:end]
+                    if all(1 .<= (new_pos = add_tuples(s, pos)) .<= model.pars.map_side)
+                        trees = agents_in_position(new_pos, model)
+                        if isempty(trees)
+                            if blockedwind
+                                break
+                            end
+                        elseif (c = first(trees)) isa Coffee &&
+                            (blockedwind || s == last(path) || rand(model.rng) < model.pars.disp_block * 0.1)
+                                push!(inoc_ids, c.id)
+                                break
+                        elseif rand(model.rng) < model.pars.disp_block # blocked by shade
+                            blockedwind = true
+                            continue
+                        end
+                    else
+                        # model.current.outpour += 1
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
