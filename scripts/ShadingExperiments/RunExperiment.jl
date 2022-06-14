@@ -29,7 +29,7 @@ println(printinfo)
 
 conds = Dict(
     :shade_d => [0, 6, 9, 12],
-    # :barrier_arr => b_arr,
+    :barrier_arr => (0,0,0,0),
     :fragments => fragments,
     :target_shade => vcat(
         @onlyif(:shade_d == 0 && :fragments == 1, 0.0),
