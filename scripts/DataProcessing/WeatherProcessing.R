@@ -3,7 +3,7 @@ library(ggplot2)
 library(wesanderson)
 
 # Two options: "Sun" or "Shade" (both in Turrialba)
-SunOrShade <- "Sun"
+SunOrShade <- "Heredia"
 
 #file paths
 data_path <- "~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_pro/"
@@ -14,8 +14,9 @@ WeatherDB <- read.csv("~/Documents/ASU/Coffee Rust/SpatialRust/data/exp_raw/Moni
 WeatherDB$fDate <- as.Date(WeatherDB$Date, format="%m/%d/%y")
 
 # subset weather data for "TFS" treatment. Change to "TMS" for shaded plot
-p.treatment <- ifelse(SunOrShade == "Sun", "TFS", "TMS") 
-wSelected <- select(WeatherDB, fDate, QuantRain = "RainTFS", MeanTa = paste0("meanTa", p.treatment))
+p.treatment <- ifelse(SunOrShade == "Sun", "TFS", ifelse(SunOrShade == "Shade", "TMS", "HMS")) 
+p.rain <- ifelse(SunOrShade == "Sun" || SunOrShade == "Shade", "RainTFS", "RainHMS")
+wSelected <- select(WeatherDB, fDate, QuantRain = paste0(p.rain), MeanTa = paste0("meanTa", p.treatment))
 # CATIE-provided historical data reports number of days with 0.1 mm rain or more. Hence the use of 0.1 as threshold
 # Datos de CATIE reportan como días de lluvia cuando hubo 0.1 mm o más, pero el mínimo de lectura es 0.1. O sea, da igual poner != 0 que >= 0.1
 wSelected$Rainy <- wSelected$QuantRain >= 0.1
