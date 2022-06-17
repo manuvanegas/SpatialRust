@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1655110828170,
+  "lastUpdate": 1655457301886,
   "repoUrl": "https://github.com/manuvanegas/SpatialRust",
   "entries": {
     "Julia benchmark result": [
@@ -285,6 +285,48 @@ window.BENCHMARK_DATA = {
             "value": 3.394346259,
             "unit": "ns",
             "extra": "gctime=0.171164459\nmemory=1304297928\nallocs=59450031\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mvanega1@asu.edu",
+            "name": "Manuela Vanegas Ferro",
+            "username": "manuvanegas"
+          },
+          "committer": {
+            "email": "mvanega1@asu.edu",
+            "name": "Manuela Vanegas Ferro",
+            "username": "manuvanegas"
+          },
+          "distinct": true,
+          "id": "0587072f37fed8422992ed737de25fafba283cb9",
+          "message": "Update grower steps to use coffee vector",
+          "timestamp": "2022-06-17T01:59:45-07:00",
+          "tree_id": "b8c036a7449624e3e04afc82a7ea20c491d1cf27",
+          "url": "https://github.com/manuvanegas/SpatialRust/commit/0587072f37fed8422992ed737de25fafba283cb9"
+        },
+        "date": 1655457300897,
+        "tool": "julia",
+        "benches": [
+          {
+            "name": "ABM/steps: 1000, nlesions: 25",
+            "value": 5.259138235,
+            "unit": "ns",
+            "extra": "gctime=0.258780635\nmemory=2401589672\nallocs=57797384\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
+          },
+          {
+            "name": "ABM/steps: 1000, nlesions: 5",
+            "value": 3.931362078,
+            "unit": "ns",
+            "extra": "gctime=0.163605378\nmemory=1597219432\nallocs=54765603\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
+          },
+          {
+            "name": "ABM/steps: 1000, nlesions: 1",
+            "value": 1.9139874365,
+            "unit": "ns",
+            "extra": "gctime=0.074782315\nmemory=743505832\nallocs=34730618\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":90,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
         ]
       }
