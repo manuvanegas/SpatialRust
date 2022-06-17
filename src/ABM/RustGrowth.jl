@@ -63,11 +63,11 @@ function kill_rust!(model::ABM, rust::Rust, cof::Coffee)
     rm_id = rust.id
     delete!(model.agents, rust.id)
     @inbounds deleteat!(model.space.s[rust.pos...], 2)
-    @inbounds deleteat!(model.current.rust_ids, findfirst(i -> i == rm_id, model.current.rust_ids))
+    @inbounds deleteat!(model.current.rusts, findfirst(i -> i.id == rm_id, model.current.rusts))
 end
 
 # kill_rust!(model::ABM, nothing) = nothing
 
 # kill_rust!(model::ABM, ru::Int) = kill_rust!(model, model[ru])
 
-kill_rust!(model, rust::Rust) = @inbounds kill_rust!(model, rust, model[rust.hg_id])
+kill_rust!(model, rust::Rust) = kill_rust!(model, rust, model[rust.hg_id])

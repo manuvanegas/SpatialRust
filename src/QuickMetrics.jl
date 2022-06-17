@@ -4,9 +4,9 @@ totprod(model::ABM) = model.current.prod
 
 maxA(model::ABM) = model.current.max_rust
 
-incidence(model::ABM) = length(model.current.rust_ids) / length(model.current.coffee_ids)
+incidence(model::ABM) = length(model.current.rusts) / length(model.current.coffees)
 
-n_coffees(model::ABM) = length(model.current.coffee_ids)
+n_coffees(model::ABM) = length(model.current.coffees)
 
 ## Not exported
 

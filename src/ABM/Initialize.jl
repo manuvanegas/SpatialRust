@@ -3,7 +3,7 @@ Input-handling structs and functions. If necessary, call create farm_map or Weat
 then call init_abm_obj. Returns model object ready to be run
 =#
 
-export Weather, Parameters, init_spatialrust#, create_weather, create_farm_map, create_fullsun_farm_map
+export Weather, Parameters, init_spatialrust, create_weather, create_farm_map, create_fullsun_farm_map, create_midshade_farm_map
 
 struct Weather{S}
     rain_data::SVector{S, Bool}

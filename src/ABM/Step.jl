@@ -12,11 +12,11 @@ function step_model!(model::ABM)
     #     shade_step!(model, model[shade_i])
     # end
     #
-    # for cof_i in model.current.coffee_ids
+    # for cof_i in model.current.coffees
     #     coffee_step!(model, model[cof_i])
     # end
 
-    # for rust_i in shuffle(model.rng, model.current.rust_ids)
+    # for rust_i in shuffle(model.rng, model.current.rusts)
     #     rust_step!(model, model[rust_i], model[model[rust_i].hg_id])
     # end
     shade_step!(model)
@@ -61,7 +61,7 @@ function pre_step!(model)
         model.current.fung_effect -= 1
     end
 
-    areas = median(rusted_area.((model[id] for id in model.current.rust_ids)))
+    areas = median(rusted_area.(model.current.rusts))
     if areas > model.current.max_rust
         model.current.max_rust = areas
     end
@@ -76,60 +76,45 @@ function shade_step!(model::ABM)
 end
 
 function coffee_step!(model::ABM)
-    # if model.current.days % model.pars.harvest_cycle == 0
-    #     for cof_i in model.current.coffee_ids
-    #         coffee_harvest_step!(model, model[cof_i])
-    #     end
-    # else
-        # cids = model.current.coffee_ids
-        # for cof_i in cids
-        #     @inbounds coffee_nh_step!(model, model[cof_i])
-        # end
-        for cof in Iterators.filter(c -> c isa Coffee, allagents(model))
-            coffee_nh_step!(model, cof)
-        end
-    # end
+    for cof in model.current.coffees
+        coffee_nh_step!(model, cof)
+    end
 end
 
 function rust_step!(model::ABM)
-    # rids = shuffle(model.rng, model.current.rust_ids)
-    # fung_growth = model.current.fung_effect > 0 ? 0.98 : 1.0
-    # fung_germ = model.current.fung_effect > 0 ? : 1.0
     fung = ifelse(model.current.fung_effect > 0, (growth = 0.95, spor = 0.8, germ = 0.9),
         (growth = 1.0, spor = 1.0, germ = 1.0))
-
-    rusts = Iterators.filter(r -> r isa Rust, allagents(model))
 
     if model.current.wind
         if model.current.rain
             # for rust_i in rids
             #     @inbounds rust_step_r_w!(model, model[rust_i], model[model[rust_i].hg_id], fung)
             # end
-            for rust in rusts
-                @inbounds rust_step_r_w!(model, rust, model[rust.hg_id], fung)
+            for rust in shuffle(model.rng, model.current.rusts)
+                rust_step_r_w!(model, rust, model[rust.hg_id], fung)
             end
         else
             # for rust_i in rids
             #     @inbounds rust_step_w!(model, model[rust_i], model[model[rust_i].hg_id], fung)
             # end
-            for rust in rusts
-                @inbounds rust_step_w!(model, rust, model[rust.hg_id], fung)
+            for rust in shuffle(model.rng, model.current.rusts)
+                rust_step_w!(model, rust, model[rust.hg_id], fung)
             end
         end
     elseif model.current.rain
         # for rust_i in rids
         #     @inbounds rust_step_r!(model, model[rust_i], model[model[rust_i].hg_id], fung)
         # end
-        for rust in rusts
-            @inbounds rust_step_r!(model, rust, model[rust.hg_id], fung)
+        for rust in shuffle(model.rng, model.current.rusts)
+            rust_step_r!(model, rust, model[rust.hg_id], fung)
         end
     else
         # for rust_i in rids
         #     @inbounds rust_step_!(model, model[rust_i], model[model[rust_i].hg_id], fung)
         #     #could just be grow_rust! ?
         # end
-        for rust in rusts
-            @inbounds rust_step_!(model, rust, model[rust.hg_id], fung)
+        for rust in shuffle(model.rng, model.current.rusts)
+            rust_step_!(model, rust, model[rust.hg_id], fung)
             #could just be grow_rust! ?
         end
     end
@@ -175,7 +160,7 @@ function coffee_nh_step!(model::ABM, coffee::Coffee)
         coffee.exh_countdown = 0
     else
         # !isempty(coffee.shade_neighbors) &&
-        update_sunlight!(model, coffee)
+        update_sunlight!(coffee, model.current.ind_shade)
         grow_coffee!(coffee, model.pars.cof_gr)
         acc_production!(coffee)
     end
@@ -229,7 +214,7 @@ end
 ## Coffee
 ###
 
-function update_sunlight!(model::ABM, cof::Coffee)
+function update_sunlight!(cof::Coffee, ind_shade)
     # shade = 0.0
     # for sh in cof.shade_neighbors
     #     shade += model[sh].shade
@@ -240,13 +225,13 @@ function update_sunlight!(model::ABM, cof::Coffee)
     # @inbounds cof.sunlight = 1.0 - sum(getproperty.((model[s] for s in cof.shade_neighbors), :shade)) / (((model.pars.shade_r * 2.0) + 1.0)^2.0 - 1.0)
     # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
 
-    cof.sunlight = 1 - model.shade_map[cof.pos...] * model.current.ind_shade 
+    cof.sunlight = 1.0 - @inbounds cof.shade_neighbors[1] * ind_shade
 end
 
 function grow_coffee!(cof::Coffee, cof_gr)
     # coffee plants can recover healthy tissue (dilution effect for sunlit plants)
 
-"This growth function has to change"
+# TODO: This growth function
     if 0.0 < cof.area < 1.0
         cof.area += cof_gr * (cof.area * cof.sunlight)
     elseif cof.area > 1.0
@@ -347,11 +332,17 @@ function parasitize!(model::ABM, rust::Rust, cof::Coffee)
     # # cof.progression = 1 / (1 + (0.75 / bal)^4)
     #     prog = 1 / (1 + (0.25 / bal)^4) # Hill function with steep increase
     #     cof.area = 1.0 - prog
-        cof.area = 1.0 - (sum(rust.state[2, :]) / model.pars.max_lesions)
-        #if rust.area * rust.n_lesions >= model.pars.exhaustion #|| bal >= 2.0
-        if (sum(rust.state[2, :]) / model.pars.max_lesions) >= model.pars.exhaustion
+    r_area = (sum(@view rust.state[2,:])) / model.pars.max_lesions
+    cof.area = 1.0 - r_area
+        # cof.area = 1.0 - (sum(rust.state[2, :]) / model.pars.max_lesions)
+
+        # # if rust.area * rust.n_lesions >= model.pars.exhaustion #|| bal >= 2.0
+
+        if r_area >= model.pars.exhaustion
+        # if (sum(rust.state[2, :]) / model.pars.max_lesions) >= model.pars.exhaustion
             cof.area = 0.0
-            cof.exh_countdown = (model.pars.harvest_cycle * 2) + 1
+            # assumes coffee is immediately replaced, but it takes 2 1/2 years to start to produce again
+            cof.exh_countdown = 731
             kill_rust!(model, rust)
         end
     # end

@@ -1,47 +1,12 @@
 export Coffee, Rust
 
-Base.@kwdef mutable struct Books
-    days::Int = 0 # same as ticks unless start_days_at != 0
-    ticks::Int = 0
-    cycle::Vector{Int} = [0]
-    coffee_ids::Vector{Int} = Int[]
-    # shade_ids::Vector{Int} = Int[]
-    rust_ids::Vector{Int} = Int[]
-    ind_shade::Float64 = 0.0
-    n_shades::Int = 0
-    outpour::Float64 = 0.0
-    #temp_var::Float64 = 0.0
-    temperature:: Float64 = 0.0
-    rain::Bool = true
-    wind::Bool = true
-    wind_h::Float64 = 0.0
-    fung_effect::Int = 0
-    costs::Float64 = 0.0
-    net_rev::Float64 = 0.0
-    prod::Float64 = 0.0
-    max_rust::Float64 = 0.0
-end
-
-struct Props
-    # input parameters
-    pars::Parameters
-    # record-keeping
-    current::Books
-    # weather time-series
-    weather::Weather
-    # farm map
-    farm_map::Array{Int,2}
-    # shade map
-    shade_map::Array{Float64, 2}
-end
-
 ## Agent types and constructor fcts
 mutable struct Coffee <: AbstractAgent
     id::Int
     pos::NTuple{2, Int}
     area::Float64 # healthy foliar area (= 25 - rust.area * rust.n_lesions/25)
     sunlight::Float64 # let through by shade trees
-    shade_neighbors::Vector{Int} # remember which neighbors are shade trees
+    shade_neighbors::Vector{Float64} #Float64 # remember which neighbors are shade trees
     progression::Float64
     production::Float64
     exh_countdown::Int
@@ -51,7 +16,8 @@ mutable struct Coffee <: AbstractAgent
     #fung_countdown::Int
 end
 
-Coffee(id, pos; production = 0.0) = Coffee(id, pos, 1.0, 1.0, Int[], 0.0, production, 0, 0, 0, []) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+Coffee(id, pos; shades = [0.0], production = 0.0) = Coffee(id, pos, 1.0, 1.0, shades, 0.0, production, 0, 0, 0, []) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+# Coffee(id, pos; shades = Int[], production = 0.0) = Coffee(id, pos, 1.0, 1.0, shades, 0.0, production, 0, 0, 0, Int[])
 
 # mutable struct Shade <: AbstractAgent
 #     id::Int
@@ -141,27 +107,71 @@ end
 #     sample_cycle = sample_cycle)
 # end
 
+## Model properties and book-keeping
+
+Base.@kwdef mutable struct Books
+    days::Int = 0 # same as ticks unless start_days_at != 0
+    ticks::Int = 0
+    cycle::Vector{Int} = [0]
+    coffees::Vector{Coffee} = Coffee[]
+    # shade_ids::Vector{Int} = Int[]
+    rusts::Vector{Rust} = Rust[]
+    ind_shade::Float64 = 0.0
+    n_shades::Int = 0
+    outpour::Float64 = 0.0
+    #temp_var::Float64 = 0.0
+    temperature:: Float64 = 0.0
+    rain::Bool = true
+    wind::Bool = true
+    wind_h::Float64 = 0.0
+    fung_effect::Int = 0
+    costs::Float64 = 0.0
+    net_rev::Float64 = 0.0
+    prod::Float64 = 0.0
+    max_rust::Float64 = 0.0
+end
+
+struct Props
+    # input parameters
+    pars::Parameters
+    # record-keeping
+    current::Books
+    # weather time-series
+    weather::Weather
+    # farm map
+    farm_map::Array{Int,2}
+    # shade map
+    shade_map::Matrix{Float64}
+end
+
 ## Setup functions
 
 # Shade map
 
-function update_shade_map!(model)
-    shades = Tuple.(findall(x -> x ==2, model.farm_map))
-    shade_map = zeros(size(model.farm_map))
+function create_shade_map(farm_map::Matrix{Int}, shade_r::Int, side::Int)
+    possible_ns = CartesianIndices((-shade_r:shade_r, -shade_r:shade_r))
+    # possible_ns = [CartesianIndex(a) for a in Iterators.product([(-shade_r):shade_r for d in 1:2]...)]
+    shades = findall(x -> x == 2, farm_map)
+    shade_map = zeros(size(farm_map))
+    # shade_map = map(x -> zeros(1), farm_map)
     for sh in shades
-        shade_map[sh...] += 1.0
-        neighs = nearby_positions(sh, model, model.pars.shade_r)
+        shade_map[sh] += 1.0
+        neighs = Iterators.filter(x -> in_farm(x, side), sh + n for n in possible_ns)
         for n in neighs
-            shade_map[n...] += 1 / shade_dist(sh, n)
+            shade_map[n] += 1 / shade_dist(sh, n)
         end
     end
+    # maxs = findall(y -> y[1] > 1.0, shade_map)
+    # for m in maxs
+    #     shade_map[m][1] = 1.0
+    # end
     shade_map = min.(1.0, shade_map)
-    model.shade_map .= shade_map
+    return shade_map
 end
 
-function shade_dist(pos1::CartesianIndex, pos2::CartesianIndex)
+function shade_dist(pos1::CartesianIndex{2}, pos2::CartesianIndex{2})
     caths = pos1 - pos2
-    dist = sqrt(caths[1]^2 + caths[2]^2)
+    @inbounds dist = sqrt(caths[1]^2 + caths[2]^2)
     return dist + 0.05
 end
 
@@ -171,14 +181,43 @@ function shade_dist(pos1::Tuple, pos2::Tuple)
     return dist + 0.05
 end
 
+function in_farm(coord::CartesianIndex, side::Int)::Bool
+    @inbounds for d in 1:2
+        1 <= coord[d] <= side || return false
+    end
+    return true
+end
 # Add coffee agents according to farm_map
 
-function add_trees!(model::ABM, farm_map::Array{Int,2}, start_days_at::Int)
-    cof_pos = Tuple.(findall(x -> x == 1, farm_map))
+# function add_trees!(model::ABM, start_days_at::Int)
+#     cof_pos = findall(x -> x == 1, model.farm_map)
+#     for pos in cof_pos
+#         push!(model.current.coffees, add_agent!(
+#         Tuple(pos), Coffee, model; shades = model.shade_map[pos], production = start_days_at).id
+#         )
+#     end
+# end
+
+function add_trees!(model::ABM, farm_map::Matrix{Int}, shade_map::Matrix{Float64}, start_days_at::Int)
+    cof_pos = findall(x -> x == 1, farm_map)
     for pos in cof_pos
-        push!(model.current.coffee_ids, add_agent!(pos, Coffee, model; production = start_days_at).id)
+        let shade = shade_map[pos]
+        push!(model.current.coffees, add_agent!(
+        # model, start_days_at, pos).id
+        Tuple(pos), Coffee, model; shades = [shade], production = start_days_at)
+        )
+        end
     end
 end
+function count_shades()
+end
+
+# function add_coffees!(model::ABM, start_days_at::Int, pos::CartesianIndex{2})
+#     # newcof = Coffee(nextid(model), Tuple(pos); shades = [round(Int, model.shade_map[pos])], production = float(start_days_at))
+#     newcof = Coffee(nextid(model), Tuple(pos), 1.0, 1.0, Int[], 0.0, 0.0, 0, 0, 0, Int[])
+#
+#     add_agent!(newcof, model)
+# end
 
 # Add initial rust agents
 
@@ -186,20 +225,20 @@ function init_rusted(model::ABM, r::Int) # Returns a "cluster" of initially rust
     minp = r + 1
     maxp = model.pars.map_side - r
     main = sample(model.rng, collect(Iterators.filter( # sample 1 coffee not in the map margins
-        c -> (c isa Coffee && all(minp .<= c.pos .<= maxp)), allagents(model)
+        c -> all(minp .<= c.pos .<= maxp), allagents(model)
     )))
-    cluster = Iterators.filter(c -> c isa Coffee, nearby_agents(main, model, 2))
+    cluster = nearby_agents(main, model, r)
 
     return cluster
 end
 
 function init_rusts!(model::ABM, ini_rusts::Float64) # inoculate coffee plants
     if ini_rusts < 1.0
-        n_rusts = max(round(Int, ini_rusts * length(model.current.coffee_ids)), 1)
-        rusted_ids = sample(model.rng, model.current.coffee_ids, n_rusts, replace = false)
-        rusted_cofs = collect(model[i] for i in rusted_ids)
+        n_rusts = max(round(Int, ini_rusts * length(model.current.coffees)), 1)
+        rusted_cofs = sample(model.rng, model.current.coffees, n_rusts, replace = false)
+        # rusted_cofs = collect(model[i] for i in rusted_ids)
     else
-        for i in 1:floor(ini_rusts)
+        for i in 1:floor(Int, ini_rusts)
             rusted_cofs = init_rusted(model, 2)
         end
     end
@@ -239,37 +278,45 @@ function init_rusts!(model::ABM, ini_rusts::Float64) # inoculate coffee plants
         )
         rusted.hg_id = new_rust.id
         rusted.area = rusted.area - (sum(areas) / model.pars.max_lesions)
-        push!(model.current.rust_ids, new_rust.id)
+        push!(model.current.rusts, new_rust)
     end
 end
 
 function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::Weather)::ABM
     space = GridSpace((parameters.map_side, parameters.map_side), periodic = false, metric = :chebyshev)
 
+    shade_map = create_shade_map(farm_map, parameters.shade_r, parameters.map_side)
+
     if parameters.start_days_at <= 132
         properties = Props(parameters, Books(
         days = parameters.start_days_at,
         ind_shade = parameters.target_shade,
-        ), weather, farm_map, farm_map)
+        ), weather,
+        farm_map,
+        shade_map
+        )
     else
         properties = Props(parameters, Books(
         days = parameters.start_days_at,
         ind_shade = parameters.target_shade,
         # ticks = ?,
-        cycle = [4]), weather, farm_map, farm_map)
+        cycle = [4]), weather,
+        farm_map,
+        shade_map
+        )
     end
 
     model = ABM(Union{Coffee, Rust}, space; properties = properties, warn = false)
 
         # model = ABM(Union{Shade, Coffee, Rust}, space;
         #     properties = Props(parameters, Books(days = parameters.start_days_at,
-        "ticks = parameters.start_days_at - 132"
+# "ticks = parameters.start_days_at - 132"
         # , cycle = [4]), weather),
         #     warn = false)
 
-    update_shade_map!(model)
+    # update_shade_map!(model)
 
-    add_trees!(model, farm_map, parameters.start_days_at)
+    add_trees!(model, farm_map, shade_map, parameters.start_days_at)
 
     init_rusts!(model, parameters.ini_rusts)
 
