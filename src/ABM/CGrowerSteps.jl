@@ -1,8 +1,8 @@
 function harvest!(model::ABM)
     harvest = 0.0
-    # ids = model.current.coffee_ids
+    # ids = model.current.coffees
     # for c in (model[id] for id in ids)
-    for c in Iterators.filter(c -> c isa Coffee, allagents(model))
+    for c in model.current.coffees
         harvest += c.production / model.pars.harvest_cycle
         c.production = 0.0
         # if plant.fung_this_cycle
@@ -20,7 +20,7 @@ function harvest!(model::ABM)
 end
 
 function fungicide!(model::ABM)
-    model.current.costs += length(model.current.coffee_ids) * 1.0 #model.pars.fung_cost
+    model.current.costs += length(model.current.coffees) * 1.0 #model.pars.fung_cost
     model.current.fung_effect = 15
 end
 
@@ -36,15 +36,15 @@ end
 # end
 
 function inspect!(model::ABM)
-    n_inspected = round(Int,(model.pars.inspect_effort * length(model.current.coffee_ids)), RoundToZero)
+    n_inspected = round(Int,(model.pars.inspect_effort * length(model.current.coffees)), RoundToZero)
     # n_inspected = model.pars.n_inspected
-    cofids = sample(model.rng, model.current.coffee_ids, n_inspected, replace = false)
+    cofs = sample(model.rng, model.current.coffees, n_inspected, replace = false)
 
-    for c in cofids
+    for c in cofs
         # cof = model[c]
-        if model[c].hg_id != 0# && rand < model.pars.inspect_effort * (sum(model[hg_id].state[2,]) / 3)
+        if c.hg_id != 0# && rand < model.pars.inspect_effort * (sum(model[hg_id].state[2,]) / 3)
             #elimina las que sean > 2.5, * effort
-            rust = model[model[c].hg_id]
+            rust = model[c.hg_id]
             @inbounds areas = rust.state[2, 1:rust.n_lesions]
             if any(areas .> 0.05)
                 replace!(a -> a .< 0.05 ? 0.0 : a, areas)
