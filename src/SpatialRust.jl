@@ -20,6 +20,7 @@ include(srcdir("QuickMetrics.jl"))
 
 include(srcdir("ABC", "Sims.jl"))
 
+precompile(dummyrun_spatialrust, (Int, Int, Int))
 end
 #
 # function dummyrun_spatialrust()
