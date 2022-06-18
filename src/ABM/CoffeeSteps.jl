@@ -1,4 +1,4 @@
-function coffee_step!(model::ABM, coffee::Coffee)
+function coffee_ind_step!(model::ABM, coffee::Coffee)
     if coffee.exh_countdown > 1
         coffee.exh_countdown -= 1
     elseif coffee.exh_countdown == 1

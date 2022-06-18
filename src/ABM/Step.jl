@@ -60,13 +60,13 @@ end
 
 function coffee_step!(model::ABM)
     for cof in model.current.coffees
-        coffee_step!(model, cof)
+        coffee_ind_step!(model, cof)
     end
 end
 
 function rust_step!(model::ABM)
-    fung = ifelse(model.current.fung_effect > 0, (growth = 0.95, spor = 0.8, germ = 0.9),
-        (growth = 1.0, spor = 1.0, germ = 1.0))
+    # fung = ifelse(model.current.fung_effect > 0, (growth = 0.95, spor = 0.8, germ = 0.9),
+    #     (growth = 1.0, spor = 1.0, germ = 1.0))
 
 
     for rust in shuffle(model.rng, model.current.rusts)
@@ -74,7 +74,8 @@ function rust_step!(model::ABM)
             let sunlight = host.sunlight
             # sunlight = host.sunlight
 
-                grow_rust!(model, rust, sunlight, host.production, fung)
+                # grow_rust!(model, rust, sunlight, host.production, host.fungicide > 0)
+                grow_rust!(model, rust, sunlight, host.production, model.current.fung_effect > 0)
                 if model.current.rain
                     disperse_rain!(model, rust, sunlight)
                 end

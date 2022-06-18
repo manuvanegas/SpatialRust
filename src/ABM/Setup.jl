@@ -10,6 +10,7 @@ mutable struct Coffee <: AbstractAgent
     progression::Float64
     production::Float64
     exh_countdown::Int
+    # fungicide::Int
     age::Int
     hg_id::Int # "host-guest id": coffee is host, then this stores corresponding rust's id
     sample_cycle::Vector{Int} # vector with cycles where coffee should be sampled
@@ -159,11 +160,9 @@ function create_shade_map(farm_map::Matrix{Int}, shade_r::Int, side::Int)
             shade_map[n] += 1.0 / shade_dist(sh, n)
         end
     end
-    max_shade!.(shade_map)
+    clamp!(shade_map, 0.0, 1.0)
     return shade_map
 end
-
-max_shade!(shade::Float64)::Float64 = min(1.0, shade)
 
 function shade_dist(pos1::CartesianIndex{2}, pos2::CartesianIndex{2})::Float64
     caths = pos1 - pos2
