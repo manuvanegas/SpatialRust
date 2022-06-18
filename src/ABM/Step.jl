@@ -68,38 +68,21 @@ function rust_step!(model::ABM)
     fung = ifelse(model.current.fung_effect > 0, (growth = 0.95, spor = 0.8, germ = 0.9),
         (growth = 1.0, spor = 1.0, germ = 1.0))
 
-    if model.current.wind
-        if model.current.rain
-            # for rust_i in rids
-            #     @inbounds rust_step_r_w!(model, model[rust_i], model[model[rust_i].hg_id], fung)
-            # end
-            for rust in shuffle(model.rng, model.current.rusts)
-                rust_step_r_w!(model, rust, model[rust.hg_id], fung)
+
+    for rust in shuffle(model.rng, model.current.rusts)
+        host = model[rust.hg_id]
+            let sunlight = host.sunlight
+            # sunlight = host.sunlight
+
+                grow_rust!(model, rust, sunlight, host.production, fung)
+                if model.current.rain
+                    disperse_rain!(model, rust, sunlight)
+                end
+                if model.current.wind
+                    disperse_wind!(model, rust, sunlight)
+                end
+                parasitize!(model, rust, host)
             end
-        else
-            # for rust_i in rids
-            #     @inbounds rust_step_w!(model, model[rust_i], model[model[rust_i].hg_id], fung)
-            # end
-            for rust in shuffle(model.rng, model.current.rusts)
-                rust_step_w!(model, rust, model[rust.hg_id], fung)
-            end
-        end
-    elseif model.current.rain
-        # for rust_i in rids
-        #     @inbounds rust_step_r!(model, model[rust_i], model[model[rust_i].hg_id], fung)
-        # end
-        for rust in shuffle(model.rng, model.current.rusts)
-            rust_step_r!(model, rust, model[rust.hg_id], fung)
-        end
-    else
-        # for rust_i in rids
-        #     @inbounds rust_step_!(model, model[rust_i], model[model[rust_i].hg_id], fung)
-        #     #could just be grow_rust! ?
-        # end
-        for rust in shuffle(model.rng, model.current.rusts)
-            rust_step_!(model, rust, model[rust.hg_id], fung)
-            #could just be grow_rust! ?
-        end
     end
 end
 
@@ -119,61 +102,3 @@ end
 
 
 ## Step contents for inds
-
-function coffee_step!(model::ABM, coffee::Coffee)
-    if coffee.exh_countdown > 1
-        coffee.exh_countdown -= 1
-    elseif coffee.exh_countdown == 1
-        coffee.area = 1.0
-        coffee.exh_countdown = 0
-    else
-        # !isempty(coffee.shade_neighbors) &&
-        update_sunlight!(coffee, model.current.ind_shade)
-        grow_coffee!(coffee, model.pars.cof_gr)
-        acc_production!(coffee)
-    end
-end
-
-
-function rust_step_r_w!(model::ABM, rust::Rust, host::Coffee, fung::NamedTuple)
-
-    # host = model[rust.hg_id]
-
-    if host.exh_countdown == 0 # not exhausted
-        sunlight = host.sunlight
-        # if any(rust.spores .> 0.0)
-        #     disperse!(rust, host, model)
-        # end
-        # parasitize!(rust, host, model)
-        grow_rust!(model, rust, sunlight, host.production, fung)
-        disperse_rain!(model, rust, sunlight)
-        disperse_wind!(model, rust, sunlight)
-        parasitize!(model, rust, host)
-    end
-end
-
-function rust_step_r!(model::ABM, rust::Rust, host::Coffee, fung::NamedTuple)
-    if host.exh_countdown == 0 # not exhausted
-        sunlight = host.sunlight
-        grow_rust!(model, rust, sunlight, host.production, fung)
-        disperse_rain!(model, rust, sunlight)
-        parasitize!(model, rust, host)
-    end
-end
-
-function rust_step_w!(model::ABM, rust::Rust, host::Coffee, fung::NamedTuple)
-    if host.exh_countdown == 0 # not exhausted
-        sunlight = host.sunlight
-        grow_rust!(model, rust, sunlight, host.production, fung)
-        disperse_wind!(model, rust, sunlight)
-        parasitize!(model, rust, host)
-    end
-end
-
-function rust_step_!(model::ABM, rust::Rust, host::Coffee, fung::NamedTuple)
-    if host.exh_countdown == 0 # not exhausted
-        sunlight = host.sunlight
-        grow_rust!(model, rust, sunlight, host.production, fung)
-        parasitize!(model, rust, host)
-    end
-end

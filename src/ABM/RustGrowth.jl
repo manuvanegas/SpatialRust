@@ -24,14 +24,14 @@ function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float
                     @inbounds area_growth!(rust.state[:, lesion], local_temp, growth_modif, false)
                 end
             elseif rand(model.rng) < (sunlight * max(model.pars.uv_inact,
-                        (model.current.rain ? model.pars.rain_washoff : 0.0)) )
+                        ifelse(model.current.rain, model.pars.rain_washoff, 0.0)) )
                         # higher % sunlight means more chances of inactivation by UV or rain
                         if rust.n_lesions > 1
                             rust.n_lesions -= 1
                         else
                             kill_rust!(model, rust)
                         end
-            elseif rand(model.rng) < infection_p(local_temp - (model.current.rain ? 6.0 : 0.0), fung.germ)
+            elseif rand(model.rng) < infection_p(local_temp - ifelse(model.current.rain, 6.0, 0.0), fung.germ)
                 @inbounds germinate!(rust.state[:, lesion])
             end
         end
@@ -39,11 +39,11 @@ function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float
 end
 
 function area_growth!(state::SubArray{Float64}, local_temp::Float64, growth_modif::Float64, spor_conds::Bool)
-# 1. germinated
-# 2. area
-# 3. spores
-# 4. age
-    if @inbounds state[4] < 500
+# 1. germinated - "Bool"
+# 2. area - Float64 (only one)
+# 3. spores - "Bool"
+# 4. age - "Int"
+    if @inbounds state[4] < 500.0
         @inbounds state[4] += 1.0
     end
     if 14.0 < local_temp < 30.0 # grow and sporulate
@@ -115,6 +115,7 @@ function parasitize!(model::ABM, rust::Rust, cof::Coffee)
         if r_area >= model.pars.exhaustion
         # if (sum(rust.state[2, :]) / model.pars.max_lesions) >= model.pars.exhaustion
             cof.area = 0.0
+            cof.production = 0.0
             # assumes coffee is immediately replaced, but it takes 2 1/2 years to start to produce again
             cof.exh_countdown = 731
             kill_rust!(model, rust)

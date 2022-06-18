@@ -47,11 +47,11 @@ function inspect!(model::ABM)
             rust = model[c.hg_id]
             @inbounds areas = rust.state[2, 1:rust.n_lesions]
             if any(areas .> 0.05)
-                replace!(a -> a .< 0.05 ? 0.0 : a, areas)
+                replace!(a -> ifelse(a .< 0.05, 0.0, a), areas)
                 spotted = sample(model.rng, 1:rust.n_lesions, weights(areas), 5)
                 newstate = rust.state[:, Not(spotted)]
                 rust.n_lesions = size(newstate)[2]
-                rust.state = hcat(newstate, ones(4, 25 - rust.n_lesions))
+                rust.state = hcat(newstate, zeros(4, 25 - rust.n_lesions))
             end
             # rust.n_lesions = round(Int, model[cof.hg_id].n_lesions * 0.1)
             # rust.area = round(Int, model[cof.hg_id].area * 0.1)

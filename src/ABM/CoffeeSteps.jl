@@ -1,3 +1,18 @@
+function coffee_step!(model::ABM, coffee::Coffee)
+    if coffee.exh_countdown > 1
+        coffee.exh_countdown -= 1
+    elseif coffee.exh_countdown == 1
+        coffee.area = 1.0
+        coffee.exh_countdown = 0
+    else
+        # !isempty(coffee.shade_neighbors) &&
+        update_sunlight!(coffee, model.current.ind_shade)
+        grow_coffee!(coffee, model.pars.cof_gr)
+        acc_production!(coffee)
+    end
+end
+
+
 function update_sunlight!(cof::Coffee, ind_shade)
     # shade = 0.0
     # for sh in cof.shade_neighbors

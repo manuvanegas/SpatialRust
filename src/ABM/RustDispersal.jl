@@ -106,8 +106,11 @@ function rain_travel!(model::ABM, pos::CartesianIndex{2}, dist::Float64, heading
                 end
                 if advanced
                     if in_farm(new_pos, side)
-                        if is_droplet_blocked(model.rng, new_pos, model.farm_map, prob_block)
-                            notlanded = false
+                        here = @inbounds model.farm_map[new_pos]
+                        if here == 2 || (here == 1 && first(agents_in_position(Tuple(new_pos),model)).exh_countdown == 0)
+                            if rand(model.rng) < prob_block
+                                notlanded = false
+                            end
                         end
                     else
                         infarm = false
@@ -196,7 +199,7 @@ end
 
 function next_pos(pos::CartesianIndex{2}, ca::Float64, co::Float64, traveled::Float64)::CartesianIndex{2}
     return pos + CartesianIndex(ca * traveled, co * traveled)
-end
+end #not in use
 
 function is_droplet_blocked(rng, pos::CartesianIndex{2}, farm_map::Matrix{Int}, shade_block::Float64)
     if @inbounds farm_map[pos] == 0
@@ -204,7 +207,7 @@ function is_droplet_blocked(rng, pos::CartesianIndex{2}, farm_map::Matrix{Int}, 
     else
         return rand(rng) < shade_block
     end
-end
+end # not in use
 
 function is_wind_blocked_shade(rng, pos::CartesianIndex{2}, shade_map::Matrix{Float64}, shade_block::Float64)
     return rand(rng) < (@inbounds shade_map[pos]) * shade_block
@@ -218,7 +221,8 @@ function inoculate_rust!(model::ABM, target::Coffee) # inoculate target coffee
         if model[target.hg_id].n_lesions < model.pars.max_lesions
             model[target.hg_id].n_lesions += 1
         end
-    else
+    elseif target.exh_countdown == 0
+    # else
         new = add_agent!(target.pos, Rust, model, model.pars.max_lesions, model.pars.steps;
             hg_id = target.id, sample_cycle = target.sample_cycle)
         target.hg_id = new.id
