@@ -20,3 +20,5 @@ medsum_s(x) = (median(sum.(x[3,:])))
 
 justcofs(a) = a isa Coffee
 justrusts(a) = a isa Rust
+
+emedian(arr) = isempty(arr) ? 0.0 : median(arr)

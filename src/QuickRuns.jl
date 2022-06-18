@@ -6,7 +6,7 @@ function dummyrun_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int 
 
     a_df, m_df = run!(model, dummystep, step_model!, steps;
         # adata = [(:n_lesions, median, justrusts), (:state, medsum_s, justrusts), (:production, mean, justcofs)],
-        adata = [(:n_lesions, median, justrusts), (:production, mean, justcofs)],
+        adata = [(:n_lesions, emedian, justrusts), (:production, mean, justcofs)],
         mdata = [incidence])
 
     return a_df, m_df, model
@@ -18,7 +18,7 @@ function dummyrun_fullsun_spatialrust(steps::Int = 200, side::Int = 60, maxlesio
 
     a_df, m_df = run!(model, dummystep, step_model!, steps;
         # adata = [(:n_lesions, median, justrusts), (:state, medsum_s, justrusts), (:production, mean, justcofs)],
-        adata = [(:n_lesions, median, justrusts), (:production, mean, justcofs)],
+        adata = [(:n_lesions, emedian, justrusts), (:production, mean, justcofs)],
         mdata = [incidence])
 
     # return a_df, m_df, model
