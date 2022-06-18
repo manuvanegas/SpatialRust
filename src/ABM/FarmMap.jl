@@ -12,7 +12,7 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
     end
 
     # add shades
-    if pars.shade_d != 0
+    if pars.shade_d != 0 && pars.shade_d != side
         if pars.shade_arrangement == :regular
             for si in 1:pars.shade_d:side
                 for sj in 1:pars.shade_d:side

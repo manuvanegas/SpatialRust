@@ -28,7 +28,7 @@ printinfo = """
 println(printinfo)
 
 conds = Dict(
-    :shade_d => [0, 6, 9, 12],
+    :shade_d => [6, 9, 12, 100],
     :barrier_arr => (0,0,0,0),
     :fragments => fragments,
     :target_shade => vcat(
@@ -44,7 +44,6 @@ conds = Dict(
         # @onlyif((:shade_d == 0 && :barrier_arr == (0,0,0,0)), 1461),
         # @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)), [365, 182])),
     :fungicide_period => 365,
-    :barrier_rows => 2,
     :shade_g_rate => 0.05,
     :steps => 1460,
     :mean_temp => mean_temp,
