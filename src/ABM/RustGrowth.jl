@@ -1,37 +1,42 @@
 ##Growth
 
-function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64, fung::NamedTuple)
-    # let (local_temp, growth_modif) = growth_conditions(model, sunlight, production)
+function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64, fung::Bool)
+    if fung
+        grow_f_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64, 1.0, 1.0, 1.0)
+    else
+        grow_f_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64, 0.95, 0.8, 0.9)
+    end
+end
+function grow_f_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64,
+        fung_growth::Float64, fung_spor::Float64, fung_germ::Float64)
     let local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - sunlight)),
         # growth_modif = growth_conds(model.pars.fruit_load, production, model.pars.harvest_cycle,
         #     model.pars.opt_g_temp, model.pars.rust_gr, local_temp, fung.growth)
         growth_modif = (1 + model.pars.fruit_load * production * inv(model.pars.harvest_cycle)) *
             (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0) * model.pars.rust_gr *
-            fung.growth
-
-        # growth_conds(model.pars.fruit_load, production, model.pars.harvest_cycle,
-        #     model.pars.opt_g_temp, model.pars.rust_gr, local_temp, model.current.fung_effect)
+            fung_growth
 
         @views for lesion in 1:rust.n_lesions
-            # rust.n_lesions += grow_each_rust!(rust.state[:, lesion], local_temp, sunlight, production)
-
             if @inbounds rust.state[1, lesion] == 1.0
+            # if germinated, grow
                 if @inbounds rust.state[3, lesion] == 0.0
                     @inbounds area_growth!(rust.state[:, lesion],local_temp, growth_modif,
-                        sporul_conds(rand(model.rng), rust.state[2, lesion], local_temp, fung.spor)
+                        sporul_conds(rand(model.rng), rust.state[2, lesion], local_temp, fung_spor)
                     )
                 else
                     @inbounds area_growth!(rust.state[:, lesion], local_temp, growth_modif, false)
                 end
             elseif rand(model.rng) < (sunlight * max(model.pars.uv_inact,
                         ifelse(model.current.rain, model.pars.rain_washoff, 0.0)) )
-                        # higher % sunlight means more chances of inactivation by UV or rain
-                        if rust.n_lesions > 1
-                            rust.n_lesions -= 1
-                        else
-                            kill_rust!(model, rust)
-                        end
-            elseif rand(model.rng) < infection_p(local_temp - ifelse(model.current.rain, 6.0, 0.0), fung.germ)
+                # if not germinated, see if UV or rain remove it
+                # higher % sunlight means more chances of inactivation by UV or rain
+                if rust.n_lesions > 1
+                    rust.n_lesions -= 1
+                else
+                    kill_rust!(model, rust)
+                end
+            elseif rand(model.rng) < infection_p(local_temp - ifelse(model.current.rain, 6.0, 0.0), fung_germ)
+                # if survived UV and rain, see if germination happens
                 @inbounds germinate!(rust.state[:, lesion])
             end
         end
@@ -40,7 +45,7 @@ end
 
 function area_growth!(state::SubArray{Float64}, local_temp::Float64, growth_modif::Float64, spor_conds::Bool)
 # 1. germinated - "Bool"
-# 2. area - Float64 (only one)
+# 2. area - Float64 (only real one)
 # 3. spores - "Bool"
 # 4. age - "Int"
     if @inbounds state[4] < 500.0
@@ -72,21 +77,7 @@ function germinate!(state::SubArray{Float64})
     @inbounds state[4] = 0.0
 end
 
-# Secondary and other helper functions
-
-## Rust growth
-
-# function parasitism!(cof::Coffee, rust::Rust, pars::Parameters)
-#     # rust = model[cof.hg_id]
-#     cof.area = 1.0 - (sum(rust.area) / pars.max_lesions)
-#     if (sum(rust.area) / pars.max_lesions) >= pars.exhaustion
-#         cof.area = 0.0
-#         cof.exh_countdown = (pars.harvest_cycle * 2) + 1
-#         # kill_rust!(model, rust, cof)
-#         return rust
-#     end
-#     return nothing
-# end
+## Helpers
 
 function calc_wetness_p(local_temp)
     w = (-0.5/16.0) * local_temp + (0.5*30.0/16.0)
@@ -144,4 +135,4 @@ function growth_conds(fruit_load::Float64, production::Float64, harvest_cycle::I
     # fung = fungicide > 0 ? 0.98 : 1.0
     return fung * (1 + fruit_load * production * inv(harvest_cycle)) *
         (-0.0178 * ((local_temp - opt_g_temp) ^ 2.0) + 1.0) * rust_gr
-end
+end # not in use
