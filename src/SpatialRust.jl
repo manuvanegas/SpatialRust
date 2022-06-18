@@ -10,6 +10,7 @@ include(srcdir("ABM/Setup.jl"))
 include(srcdir("ABM/Step.jl"))
 
 include(srcdir("ABM/CGrowerSteps.jl"))
+include(srcdir("ABM/CoffeeSteps.jl"))
 include(srcdir("ABM/FarmMap.jl"))
 include(srcdir("ABM/RustDispersal.jl"))
 include(srcdir("ABM/RustGrowth.jl"))

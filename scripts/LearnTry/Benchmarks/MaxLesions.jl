@@ -18,10 +18,20 @@ SpatialRust.step_model!(tmodel)
 # maximum(getproperty.(trusts,:spores))
 # maximum.(getproperty.(trusts,:area))
 
-tadf, tmdf = dummyrun_fullsun_spatialrust(10, 100, 10)
+tadf, tmdf = dummyrun_fullsun_spatialrust(10,
+    100, 10
+)
 
 using BenchmarkTools, Random
-Random.seed!(1234); @btime a, m = dummyrun_fullsun_spatialrust(1000, 100, 25)
+Random.seed!(1234); @btime a, m = dummyrun_fullsun_spatialrust(
+    1000, 100, 25
+)
+
+Random.seed!(1234); @btime model = init_spatialrust(Parameters(
+        steps = 1000, map_side = 100
+    ),
+    create_fullsun_farm_map(100)
+)
 
 
 using Agents, DrWatson, Random
@@ -42,9 +52,9 @@ tadf, tmdf = dummyrun_spatialrust(500, 100, 50)
 
 
 # Juno.@profiler dummyrun_spatialrust(10, 100) #doesnt run (too many things happenning?)
-
-ttmodel = SpatialRust.init_spatialrust(SpatialRust.Parameters(map_side = 100, max_lesions = 25), SpatialRust.create_fullsun_farm_map())
-for i in 1:50
+ttpars = Parameters(map_side = 100, max_lesions = 25)
+ttmodel = init_spatialrust(ttpars, create_farm_map(ttpars))
+for i in 1:100
     SpatialRust.step_model!(ttmodel)
 end
 # ttmodel.current.rain = true
@@ -63,6 +73,8 @@ Juno.@profiler for i in 1:10
     # println("hi")
 end
 
+ttmodel.current.ticks = 100
+ttmodel.current.days = 100
 Juno.@profiler for i in 1:3
     SpatialRust.step_model!(ttmodel)
 end
