@@ -4,7 +4,7 @@ function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float
     if fung
         grow_f_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64, 1.0, 1.0, 1.0)
     else
-        grow_f_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64, 0.95, 0.8, 0.9)
+        grow_f_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64, 0.75, 0.75, 0.9)
     end
 end
 function grow_f_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64,

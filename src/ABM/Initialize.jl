@@ -33,6 +33,7 @@ Base.@kwdef struct Parameters
     by_fragments::Bool = true          # apply fungicide differentially by fragments?
     fung_cost::Float64 = 1.0           # per coffee
     inspect_period::Int = 7            # days
+        # disease monitoring
     inspect_effort::Float64 = 0.01     # % coffees inspected each time
     # n_inspected::Int = 100             # n of coffees inspected
     inspect_cost::Float64 = 1.0        # per coffee inspected
