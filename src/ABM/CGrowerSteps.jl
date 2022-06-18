@@ -3,7 +3,7 @@ function harvest!(model::ABM)
     # ids = model.current.coffees
     # for c in (model[id] for id in ids)
     for c in model.current.coffees
-        harvest += c.production / model.pars.harvest_cycle
+        harvest += c.production * inv(model.pars.harvest_cycle)
         c.production = 0.0
         # if plant.fung_this_cycle
         #     plant.fung_this_cycle = false

@@ -21,7 +21,7 @@ function area_growth!(state::SubArray{Float64}, local_temp::Float64, growth_modi
 end
 
 function sporul_conds(r::Float64, area::Float64, temp::Float64, fung::Float64)::Bool
-    r < ((area * (temp + 5.0) / 30.0) * fung) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
+    r < ((area * (temp + 5.0) * inv(30.0)) * fung) # Merle et al 2020. sporulation prob for higher Tmax(until 30)
 end
 
 function germinate!(state::SubArray{Float64})

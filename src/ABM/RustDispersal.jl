@@ -19,7 +19,7 @@ end
 function disperse_wind!(model::ABM, rust::Rust, sunlight::Float64)
     # if rand(model.rng) < model.pars.wind_disp_prob
     # if model.current.wind
-    let wdistance = abs(2 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
+    let wdistance = abs(2.0 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
         for lesion in 1:rust.n_lesions
             if @inbounds rust.state[3, lesion] == 1.0 &&
                 @inbounds rand(model.rng) < (rust.state[2, lesion] * model.pars.spore_pct)
@@ -62,10 +62,10 @@ function outside_spores!(model::ABM)
 end
 
 function r_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
-    let distance = abs(2 * randn(model.rng) * model.pars.rain_distance) *
-        ((sunlight - 0.55)^2 * ((1 - model.pars.diff_splash) / 0.2025) + model.pars.diff_splash)
+    let distance = abs(2.0 * randn(model.rng) * model.pars.rain_distance) *
+        ((sunlight - 0.55)^2.0 * ((1.0 - model.pars.diff_splash) * inv(0.2025)) + model.pars.diff_splash)
 
-        rain_travel!(model, CartesianIndex(rust.pos), distance, rand(model.rng) * 360)
+        rain_travel!(model, CartesianIndex(rust.pos), distance, rand(model.rng) * 360.0)
     end
 end
 

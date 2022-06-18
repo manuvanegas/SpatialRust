@@ -6,7 +6,7 @@ mutable struct Coffee <: AbstractAgent
     pos::NTuple{2, Int}
     area::Float64 # healthy foliar area (= 25 - rust.area * rust.n_lesions/25)
     sunlight::Float64 # let through by shade trees
-    shade_neighbors::Vector{Float64} #Float64 # remember which neighbors are shade trees
+    shade_neighbors::Float64 #Float64 # remember which neighbors are shade trees
     progression::Float64
     production::Float64
     exh_countdown::Int
@@ -150,34 +150,24 @@ end
 
 function create_shade_map(farm_map::Matrix{Int}, shade_r::Int, side::Int)
     possible_ns = CartesianIndices((-shade_r:shade_r, -shade_r:shade_r))
-    # possible_ns = [CartesianIndex(a) for a in Iterators.product([(-shade_r):shade_r for d in 1:2]...)]
     shades = findall(x -> x == 2, farm_map)
     shade_map = zeros(size(farm_map))
-    # shade_map = map(x -> zeros(1), farm_map)
     for sh in shades
         shade_map[sh] += 1.0
         neighs = Iterators.filter(x -> in_farm(x, side), sh + n for n in possible_ns)
         for n in neighs
-            shade_map[n] += 1 / shade_dist(sh, n)
+            shade_map[n] += 1.0 / shade_dist(sh, n)
         end
     end
-    # maxs = findall(y -> y[1] > 1.0, shade_map)
-    # for m in maxs
-    #     shade_map[m][1] = 1.0
-    # end
-    shade_map = min.(1.0, shade_map)
+    max_shade!.(shade_map)
     return shade_map
 end
 
-function shade_dist(pos1::CartesianIndex{2}, pos2::CartesianIndex{2})
+max_shade!(shade::Float64)::Float64 = min(1.0, shade)
+
+function shade_dist(pos1::CartesianIndex{2}, pos2::CartesianIndex{2})::Float64
     caths = pos1 - pos2
     @inbounds dist = sqrt(caths[1]^2 + caths[2]^2)
-    return dist + 0.05
-end
-
-function shade_dist(pos1::Tuple, pos2::Tuple)
-    caths = pos1 .- pos2
-    dist = sqrt(caths[1]^2 + caths[2]^2)
     return dist + 0.05
 end
 
@@ -187,29 +177,18 @@ function in_farm(coord::CartesianIndex, side::Int)::Bool
     end
     return true
 end
-# Add coffee agents according to farm_map
 
-# function add_trees!(model::ABM, start_days_at::Int)
-#     cof_pos = findall(x -> x == 1, model.farm_map)
-#     for pos in cof_pos
-#         push!(model.current.coffees, add_agent!(
-#         Tuple(pos), Coffee, model; shades = model.shade_map[pos], production = start_days_at).id
-#         )
-#     end
-# end
+# Add coffee agents according to farm_map
 
 function add_trees!(model::ABM, farm_map::Matrix{Int}, shade_map::Matrix{Float64}, start_days_at::Int)
     cof_pos = findall(x -> x == 1, farm_map)
     for pos in cof_pos
-        let shade = shade_map[pos]
+        # let shade = shade_map[pos]
         push!(model.current.coffees, add_agent!(
-        # model, start_days_at, pos).id
-        Tuple(pos), Coffee, model; shades = [shade], production = start_days_at)
+        Tuple(pos), Coffee, model; shades = shade_map[pos], production = start_days_at)
         )
-        end
+        # end
     end
-end
-function count_shades()
 end
 
 # function add_coffees!(model::ABM, start_days_at::Int, pos::CartesianIndex{2})
@@ -277,7 +256,7 @@ function init_rusts!(model::ABM, ini_rusts::Float64) # inoculate coffee plants
         sample_cycle = rusted.sample_cycle
         )
         rusted.hg_id = new_rust.id
-        rusted.area = rusted.area - (sum(areas) / model.pars.max_lesions)
+        rusted.area -=  (sum(areas) / model.pars.max_lesions)
         push!(model.current.rusts, new_rust)
     end
 end
@@ -310,7 +289,7 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
 
         # model = ABM(Union{Shade, Coffee, Rust}, space;
         #     properties = Props(parameters, Books(days = parameters.start_days_at,
-# "ticks = parameters.start_days_at - 132"
+# TODO: "ticks = parameters.start_days_at - 132"
         # , cycle = [4]), weather),
         #     warn = false)
 

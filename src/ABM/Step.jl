@@ -77,7 +77,7 @@ end
 
 function coffee_step!(model::ABM)
     for cof in model.current.coffees
-        coffee_nh_step!(model, cof)
+        coffee_step!(model, cof)
     end
 end
 
@@ -137,22 +137,7 @@ end
 
 ## Step contents for inds
 
-# function coffee_harvest_step!(model::ABM, coffee::Coffee)
-#     if coffee.exh_countdown > 1
-#         coffee.exh_countdown -= 1
-#     elseif coffee.exh_countdown == 1
-#         coffee.area = 1.0
-#         coffee.exh_countdown = 0
-#     else
-#         !isempty(coffee.shade_neighbors) && update_sunlight!(model, coffee)
-#         grow_coffee!(coffee, model.pars.cof_gr)
-#         acc_production!(coffee)
-#     end
-#     model.current.prod += coffee.production / model.pars.harvest_cycle
-#     coffee.production = 1.0
-# end
-
-function coffee_nh_step!(model::ABM, coffee::Coffee)
+function coffee_step!(model::ABM, coffee::Coffee)
     if coffee.exh_countdown > 1
         coffee.exh_countdown -= 1
     elseif coffee.exh_countdown == 1
@@ -225,7 +210,7 @@ function update_sunlight!(cof::Coffee, ind_shade)
     # @inbounds cof.sunlight = 1.0 - sum(getproperty.((model[s] for s in cof.shade_neighbors), :shade)) / (((model.pars.shade_r * 2.0) + 1.0)^2.0 - 1.0)
     # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
 
-    cof.sunlight = 1.0 - @inbounds cof.shade_neighbors[1] * ind_shade
+    cof.sunlight = 1.0 - cof.shade_neighbors * ind_shade
 end
 
 function grow_coffee!(cof::Coffee, cof_gr)
@@ -233,7 +218,7 @@ function grow_coffee!(cof::Coffee, cof_gr)
 
 # TODO: This growth function
     if 0.0 < cof.area < 1.0
-        cof.area += cof_gr * (cof.area * cof.sunlight)
+        cof.area += *(cof_gr, cof.area, cof.sunlight)
     elseif cof.area > 1.0
         cof.area = 1.0
     end
@@ -252,7 +237,9 @@ end
 function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64, fung::NamedTuple)
     # let (local_temp, growth_modif) = growth_conditions(model, sunlight, production)
     let local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - sunlight)),
-        growth_modif = (1 + model.pars.fruit_load * production / model.pars.harvest_cycle) *
+        # growth_modif = growth_conds(model.pars.fruit_load, production, model.pars.harvest_cycle,
+        #     model.pars.opt_g_temp, model.pars.rust_gr, local_temp, fung.growth)
+        growth_modif = (1 + model.pars.fruit_load * production * inv(model.pars.harvest_cycle)) *
             (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0) * model.pars.rust_gr *
             fung.growth
 
@@ -325,6 +312,10 @@ function grow_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float
 
 end
 
+function rel_rusted_area(rust::Rust, lesions::Int)::Float64
+    return sum(@view rust.state[2,:]) * inv(lesions)
+end
+
 function parasitize!(model::ABM, rust::Rust, cof::Coffee)
 
     # if any(rust.germinated)
@@ -332,7 +323,8 @@ function parasitize!(model::ABM, rust::Rust, cof::Coffee)
     # # cof.progression = 1 / (1 + (0.75 / bal)^4)
     #     prog = 1 / (1 + (0.25 / bal)^4) # Hill function with steep increase
     #     cof.area = 1.0 - prog
-    r_area = (sum(@view rust.state[2,:])) / model.pars.max_lesions
+    # r_area = (sum(@view rust.state[2,:])) * inv(model.pars.max_lesions)
+    r_area = rel_rusted_area(rust, model.pars.max_lesions)
     cof.area = 1.0 - r_area
         # cof.area = 1.0 - (sum(rust.state[2, :]) / model.pars.max_lesions)
 
@@ -362,8 +354,8 @@ end
 #     return local_temp, growth_modif
 # end
 function growth_conds(fruit_load::Float64, production::Float64, harvest_cycle::Int,
-    opt_g_temp::Float64, rust_gr::Float64, local_temp::Float64, fungicide::Int)::Float64
-    fung = fungicide > 0 ? 0.98 : 1.0
-    return fung * (1 + fruit_load * production / harvest_cycle) *
+    opt_g_temp::Float64, rust_gr::Float64, local_temp::Float64, fung::Float64)::Float64
+    # fung = fungicide > 0 ? 0.98 : 1.0
+    return fung * (1 + fruit_load * production * inv(harvest_cycle)) *
         (-0.0178 * ((local_temp - opt_g_temp) ^ 2.0) + 1.0) * rust_gr
 end
