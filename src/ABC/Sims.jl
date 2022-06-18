@@ -90,7 +90,7 @@ function simulate_fullsun(p_row::DataFrameRow,
     model2 = init_spatialrust(Parameters(
         steps = 455 - restart_after,
         start_days_at = 132 + restart_after,
-        switch_cycles = when_prod,
+        switch_cycles = when_prod2,
         p_rusts = min((model1.current.outpour / length(model1.current.coffee_ids)), 1.0),
         rust_gr = p_row[:rust_gr],
         spore_pct = p_row[:spore_pct],
