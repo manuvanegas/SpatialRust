@@ -29,20 +29,20 @@ println(printinfo)
 
 conds = Dict(
     :shade_d => [6, 9, 12, 100],
-    :barrier_arr => (0,0,0,0),
+    :barriers => (0,0,0,0),
     :fragments => fragments,
     :target_shade => vcat(
         @onlyif(:shade_d == 0 && :fragments == 1, 0.0),
         @onlyif(:shade_d != 0 || :fragments != 1, collect(0.2:0.1:0.8))),
-        # @onlyif((:shade_d == 0 && :barrier_arr == (0,0,0,0)), 0.0),
-        # @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period == 1461, 0.95),
-        # @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)) && :prune_period != 1461,
+        # @onlyif((:shade_d == 0 && :barriers == (0,0,0,0)), 0.0),
+        # @onlyif((:shade_d != 0 || :barriers != (0,0,0,0)) && :prune_period == 1461, 0.95),
+        # @onlyif((:shade_d != 0 || :barriers != (0,0,0,0)) && :prune_period != 1461,
         #     collect(0.2:0.1:0.8))),
     :prune_period => vcat(
         @onlyif(:shade_d == 0 && :fragments == 1, 1461),
         @onlyif(:shade_d != 0 || :fragments != 1, [365, 182])),
-        # @onlyif((:shade_d == 0 && :barrier_arr == (0,0,0,0)), 1461),
-        # @onlyif((:shade_d != 0 || :barrier_arr != (0,0,0,0)), [365, 182])),
+        # @onlyif((:shade_d == 0 && :barriers == (0,0,0,0)), 1461),
+        # @onlyif((:shade_d != 0 || :barriers != (0,0,0,0)), [365, 182])),
     :fungicide_period => 365,
     :shade_g_rate => 0.05,
     :steps => 1460,
@@ -66,7 +66,7 @@ conds = Dict(
 
 # combsdf = DataFrame(combs2)
 
-# frag_distg = groupby(combsdf, [:barrier_arr, :shade_d])
+# frag_distg = groupby(combsdf, [:barriers, :shade_d])
 # describe(frag_distg[1])
 
 results = shading_experiment(conds)

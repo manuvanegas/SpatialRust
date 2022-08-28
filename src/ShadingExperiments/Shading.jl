@@ -2,7 +2,7 @@
 function run_par_combination(combination::Dict{Symbol, Any})
     pop!(combination, :reps)
     frags = pop!(combination, :fragments)
-    combination[:barrier_arr] = ifelse(frags == 1, (0,0,0,0), ifelse(
+    combination[:barriers] = ifelse(frags == 1, (0,0,0,0), ifelse(
         frags == 4, (1,1,0,0), (2,2,0,0)))
 
     pars = Parameters(; combination...)
