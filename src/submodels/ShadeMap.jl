@@ -1,3 +1,5 @@
+using Pkg
+Pkg.activate(".")
 using Agents
 
 ## Agent types and constructor fcts
@@ -28,7 +30,7 @@ function dist(pos1::Tuple, pos2::Tuple)
     return dist + 0.05
 end
 side = 100
-farm_map = create_farm_map(Parameters(map_side = side, shade_d = 6, row_d = 2, barriers = (0,0,0,0), barrier_rows = 1))
+farm_map = create_farm_map(Parameters(map_side = side, shade_d = 6, row_d = 2, barriers = (0,0), barrier_rows = 1))
 # heatmap(farm_map)
 
 myfarmmap = zeros(side,side); myfarmmap[2,2] = 2; myfarmmap[4,4] = 2

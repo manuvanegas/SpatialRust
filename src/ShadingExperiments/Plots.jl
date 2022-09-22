@@ -148,7 +148,7 @@ barr_to_color(barr::Bool) = ifelse(barr, :orange, :teal)
 ## Not plotting fs, but used in the plotting workflow
 
 function add_useful_cols!(df::DataFrame)
-    transform!(df, [:barriers] => ByRow(x -> ifelse(x == "(0, 0, 0, 0)", false, true)) => :usedbarriers)
+    transform!(df, [:barriers] => ByRow(x -> ifelse(x == "(0, 0)", false, true)) => :usedbarriers)
     transform!(df, [:shade_d, :usedbarriers] => ByRow((s,b) -> n_coffees(s,b)) => :n_coffees)
     transform!(df, [:totprod, :n_coffees] => ByRow((s,b) -> (s / b)) => :prod_cof)
     transform!(df, :shade_d =>

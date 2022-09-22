@@ -103,11 +103,10 @@ Base.@kwdef struct Parameters
     row_d::Int = 2                      # distance between rows (options: 1, 2, 3)
     plant_d::Int = 1                    # distance between plants (options: 1, 2)
     shade_d::Int = 6                    # distance between shades (only considered when :regular)
-    shade_pattern::Symbol = :regular  # :rand
-    # shade_barriers::Int = 0            # n of shade barriers
-    barrier_rows::Int = 2            # or 2 = double
-    barriers::NTuple{2, Int} = (1, 1, 0, 0)
-    # 1->internal,horizontal; 2->int,v; 3-> edge,h 4->e,v
+    shade_pattern::Symbol = :regular    # :rand
+    barrier_rows::Int = 2               # or 2 = double
+    barriers::NTuple{2, Int} = (1, 0)
+    # 1->internal, 2->edges
 
 
     # fragmentation::Bool = false

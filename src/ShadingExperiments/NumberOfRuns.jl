@@ -37,7 +37,7 @@ function cv_n_sims(run_ns::Vector{Int}, mtemp::Float64, rainp::Float64)::DataFra
         prune_period = 365,
         target_shade = 0.4,
         shade_d = 10,
-        barriers = (0,0,0,0),
+        barriers = (0,0),
         rain_prob = rainp,
         mean_temp = mtemp,
         # from ABC

@@ -25,106 +25,79 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
         end
     end
 
-    barriers = findall(x -> x > 0, pars.barriers)
+    arr = pars.barriers
+    if @inbounds arr[1] > 0
+        placements = @inbounds barr_places(side, arr[1], pars.barrier_rows)
 
-    if !isempty(barriers)
-        arr = pars.barriers
-        for type in barriers
-            if type == 1 # internal horizontal
-                placements = @inbounds barr_places(side, arr[type], pars.barrier_rows)
-
-                if pars.barrier_rows == 1 && pars.plant_d == 2 # try to avoid coffees
-                    @inbounds for pb in placements
-                        if isodd(pb)
-                            @inbounds farm_map[(pb+1), :] .= 2
-                        else
-                            @inbounds farm_map[pb, :] .= 2
-                        end
-                    end
+        # internal horizontal barriers
+        if pars.barrier_rows == 1 && pars.plant_d == 2 
+        # if suggested placement is odd, change it to even to place
+        # shades between coffee plants
+            @inbounds for pb in placements
+                if isodd(pb)
+                    @inbounds farm_map[(pb+1), :] .= 2
                 else
-                    @inbounds for pb in placements
-                        if iseven(pb)
-                            @inbounds farm_map[pb, 1:2:side] .= 0
-                            @inbounds farm_map[pb, 2:2:side] .= 2
-                        else
-                            @inbounds farm_map[pb, 1:2:side] .= 2
-                            @inbounds farm_map[pb, 2:2:side] .= 0
-                        end
-                    end
+                    @inbounds farm_map[pb, :] .= 2
                 end
-            elseif type == 2 # internal vertical
-                # spacing = fld(side, (@inbounds arr[type] + 1))
-                # placements = spacing .* collect(@inbounds 1:arr[type])
-                # if pars.barrier_rows == 2
-                #     placements = vcat(placements, (placements .+ 1))
-                # end
-                placements = @inbounds barr_places(side, arr[type], pars.barrier_rows)
+            end
+        else
+            @inbounds farm_map[pb, :] .= 2
+        end
 
-                if pars.row_d == 2 && pars.barrier_rows == 1
-                    @inbounds for pb in placements
-                        if isodd(pb)
-                            @inbounds farm_map[:, (pb+1)] .= 2
-                        else
-                            @inbounds farm_map[:, pb] .= 2
-                        end
-                    end
-                elseif pars.row_d == 3
-                    if pars.barrier_rows == 1
-                        @inbounds for pb in placements
-                            if pb % 3 == 1
-                                farm_map[:, (pb+1)] .= 2
-                            else
-                                @inbounds farm_map[:, pb] .= 2
-                            end
-                        end
+        # internal vertical barriers (along coffee rows)
+        if pars.row_d == 2 && pars.barrier_rows == 1
+            # if suggested placement is odd, change it to even to place
+            # shades between coffee rows
+            @inbounds for pb in placements
+                if isodd(pb)
+                    @inbounds farm_map[:, (pb+1)] .= 2
+                else
+                    @inbounds farm_map[:, pb] .= 2
+                end
+            end
+        elseif pars.row_d == 3
+            if pars.barrier_rows == 1
+                @inbounds for pb in placements
+                    if pb % 3 == 1
+                        farm_map[:, (pb+1)] .= 2
                     else
-                        conflicting = findall(x -> (x % 3 == 1), placements)
-                        for cn in conflicting
-                            @inbounds if cn <= length(placements) / 2
-                                # barr_places() vcats the extra barrier rows, so the second half of placements corresponds to the '+1's
-                                placements[[cn, (cn + arr[type])]] .+= 1
-                            else
-                                placements[[cn, (cn - arr[type])]] .-= 1
-                            end
-                        end
-                        @inbounds for pb in placements
-                            if iseven(pb)
-                                farm_map[1:2:side, pb] .= 0
-                                farm_map[2:2:side, pb] .= 2
-                            else
-                                farm_map[1:2:side, pb] .= 2
-                                farm_map[2:2:side, pb] .= 0
-                            end
-                        end
-                    end
-                else
-                    @inbounds for pb in placements
-                        if iseven(pb)
-                            farm_map[1:2:side, pb] .= 0
-                            farm_map[2:2:side, pb] .= 2
-                        else
-                            farm_map[1:2:side, pb] .= 2
-                            farm_map[2:2:side, pb] .= 0
-                        end
+                        @inbounds farm_map[:, pb] .= 2
                     end
                 end
-
-            elseif type == 3 # edge horizontal
-                if @inbounds arr[type] == 1
-                    @inbounds farm_map[1, :] .= 2
-                else
-                    @inbounds farm_map[[1, side], :] .= 2
+            else
+                conflicting = findall(x -> (x % 3 == 1), placements)
+                for cn in conflicting
+                    # determine if cn is in 1st or 2nd half of placements:
+                    # 1st half -> initial x's (equal to the result when pars.barrier_rows is 1) 
+                    # 2nd half -> extra x's because pars.barrier_rows is 2
+                    # eg, barr_places(100,2,1) = [33,66]; barr_places(100,2,2) = [33,66,34,67]
+                    @inbounds if cn <= length(placements) / 2
+                        placements[[cn, (cn + arr[1])]] .+= 1
+                    else
+                        placements[[cn, (cn - arr[1])]] .-= 1
+                    end
                 end
-            else # edge vertical
-                if @inbounds arr[type] == 1
-                    @inbounds farm_map[:, side] .= 2
-                    # coffee placement starts at 1, then a barrier at 1 would wipe away a whole cof row, always
-                else
-                    @inbounds farm_map[:, [1, side]] .= 2
+                @inbounds for pb in placements
+                    @inbounds farm_map[:, pb] .= 2
                 end
+            end
+        else
+            @inbounds for pb in placements
+                @inbounds farm_map[:, pb] .= 2
             end
         end
     end
+
+    if arr[2] == 1
+        if pars.barrier_rows == 1
+            @inbounds farm_map[[1, side], :] .= 2
+            @inbounds farm_map[:, [1, side]] .= 2
+        else
+            @inbounds farm_map[[1, 2, side - 1, side], :] .= 2
+            @inbounds farm_map[:, [1, 2, side - 1, side]] .= 2
+        end
+    end
+
     return farm_map
 end
 

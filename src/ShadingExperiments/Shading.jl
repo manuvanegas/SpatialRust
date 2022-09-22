@@ -2,8 +2,8 @@
 function run_par_combination(combination::Dict{Symbol, Any})
     pop!(combination, :reps)
     frags = pop!(combination, :fragments)
-    combination[:barriers] = ifelse(frags == 1, (0,0,0,0), ifelse(
-        frags == 4, (1,1,0,0), (2,2,0,0)))
+    combination[:barriers] = ifelse(frags == 1, (0,0), ifelse(
+        frags == 4, (1,0), (2,0)))
 
     pars = Parameters(; combination...)
     model = init_spatialrust(pars) # farm_map may change for each iteration

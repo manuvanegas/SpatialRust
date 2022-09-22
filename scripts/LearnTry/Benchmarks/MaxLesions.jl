@@ -52,7 +52,7 @@ tadf, tmdf = dummyrun_spatialrust(500, 100, 50)
 
 
 # Juno.@profiler dummyrun_spatialrust(10, 100) #doesnt run (too many things happenning?)
-ttpars = Parameters(steps = 1000, map_side = 100, max_lesions = 25, shade_d = 12, barriers = (0,0,0,0))
+ttpars = Parameters(steps = 1000, map_side = 100, max_lesions = 25, shade_d = 12, barriers = (0,0))
 ttmodel = init_spatialrust(ttpars, create_farm_map(ttpars))
 for i in 1:999
     SpatialRust.step_model!(ttmodel)
