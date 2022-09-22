@@ -28,7 +28,7 @@ function b_initialize()
     #emp_data = true
     steps = length(rain_data)
     initialize_sim(; steps = steps, map_dims = 100, shade_percent = 0.0,
-    harvest_cycle = 365, start_at = 132, n_rusts = 100,
+    harvest_day = 365, start_at = 132, n_rusts = 100,
     farm_map = b_map, rain_data = rain_data, temp_data = temp_data,
     #emp_data = emp_data,
     opt_g_temp = tparameters[4, :opt_g_temp],
@@ -66,7 +66,7 @@ function b_abc()
     tsteps = length(rain_data)
 
     tmod = initialize_sim(; steps = tsteps, map_dims = 100, shade_percent = 0.0,
-        harvest_cycle = 365, start_at = 132, n_rusts = 100,
+        harvest_day = 365, start_at = 132, n_rusts = 100,
         farm_map = tb_map, rain_data = rain_data, temp_data = temp_data,
         #emp_data = emp_data,
         opt_g_temp = tparameters[1, :opt_g_temp],

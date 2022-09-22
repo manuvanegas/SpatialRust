@@ -10,9 +10,9 @@ end
 function grow_f_rust!(model::ABM, rust::Rust, sunlight::Float64, production::Float64,
         fung_growth::Float64, fung_spor::Float64, fung_germ::Float64)
     let local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - sunlight)),
-        # growth_modif = growth_conds(model.pars.fruit_load, production, model.pars.harvest_cycle,
+        # growth_modif = growth_conds(model.pars.fruit_load, production, model.pars.harvest_day,
         #     model.pars.opt_g_temp, model.pars.rust_gr, local_temp, fung.growth)
-        growth_modif = (1 + model.pars.fruit_load * production * inv(model.pars.harvest_cycle)) *
+        growth_modif = (1 + model.pars.fruit_load * production * inv(model.pars.harvest_day)) *
             (-0.0178 * ((local_temp - model.pars.opt_g_temp) ^ 2.0) + 1.0) * model.pars.rust_gr *
             fung_growth
 
@@ -107,8 +107,8 @@ function parasitize!(model::ABM, rust::Rust, cof::Coffee)
         # if (sum(rust.state[2, :]) / model.pars.max_lesions) >= model.pars.exhaustion
             cof.area = 0.0
             cof.production = 0.0
-            # assumes coffee is immediately replaced, but it takes 2 1/2 years to start to produce again
-            cof.exh_countdown = 731
+            # assumes coffee is immediately replaced, but it takes years to start to produce again
+            cof.exh_countdown = model.pars.exh_countdown
             kill_rust!(model, rust)
         end
     # end
@@ -130,9 +130,9 @@ end
 
 kill_rust!(model, rust::Rust) = kill_rust!(model, rust, model[rust.hg_id])
 
-function growth_conds(fruit_load::Float64, production::Float64, harvest_cycle::Int,
+function growth_conds(fruit_load::Float64, production::Float64, harvest_day::Int,
     opt_g_temp::Float64, rust_gr::Float64, local_temp::Float64, fung::Float64)::Float64
     # fung = fungicide > 0 ? 0.98 : 1.0
-    return fung * (1 + fruit_load * production * inv(harvest_cycle)) *
+    return fung * (1 + fruit_load * production * inv(harvest_day)) *
         (-0.0178 * ((local_temp - opt_g_temp) ^ 2.0) + 1.0) * rust_gr
 end # not in use

@@ -104,7 +104,7 @@
 #     tick(model::ABM)::Int = model.current.ticks
 #
 #     function coffee_production(model::ABM)::Float64
-#         return median(map(cc -> (cc.production / model.pars.harvest_cycle) , Iterators.filter(c -> c isa Coffee && (maximum(model.current.cycle) + 1) ∈ c.sample_cycle, allagents(model))))
+#         return median(map(cc -> (cc.production / model.pars.harvest_day) , Iterators.filter(c -> c isa Coffee && (maximum(model.current.cycle) + 1) ∈ c.sample_cycle, allagents(model))))
 #     end
 #     return [tick, coffee_production]
 # end
@@ -115,7 +115,7 @@ function coffee_prod(model::ABM)::DataFrame
             tick = model.current.ticks,
             coffee_production = median(map(getprod,
                 Iterators.filter(c -> c isa Coffee && (maxc ∈ c.sample_cycle), allagents(model))
-                )) / model.pars.harvest_cycle
+                )) / model.pars.harvest_day
                 )
     end
 end
@@ -137,7 +137,7 @@ function collect_diff_cof(model::ABM)::DataFrame
     rustdf = DataFrame(tick = Int[], cycle = Int[], id = Int[], age = Int[], area = Float64[], spore = Float64[])
     cofdf = DataFrame(tick = Int[], cycle = Int[], exh = Bool[], prod = Float64[])
 
-    let harv = model.pars.harvest_cycle, cticks = model.current.ticks, sprpct = model.pars.spore_pct
+    let harv = model.pars.harvest_day, cticks = model.current.ticks, sprpct = model.pars.spore_pct
         for cycle in model.current.cycle
             for (cof, cof2) in zip(
                 Iterators.filter(c -> c isa Coffee && cycle in c.sample_cycle, allagents(model)),

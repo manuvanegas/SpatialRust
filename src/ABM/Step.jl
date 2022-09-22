@@ -40,10 +40,6 @@ function pre_step!(model)
     #     end
     # end
 
-    if model.current.fung_effect > 0
-        model.current.fung_effect -= 1
-    end
-
     areas = median(rusted_area.(model.current.rusts))
     if areas > model.current.max_rust
         model.current.max_rust = areas
@@ -51,17 +47,38 @@ function pre_step!(model)
 end
 
 function shade_step!(model::ABM)
-    if model.current.days % model.pars.prune_period == 0
-        prune_shades!(model)
-    else
-        grow_shades!(model)
-    end
+    grow_shades!(model)
 end
 
 function coffee_step!(model::ABM)
-    for cof in model.current.coffees
-        coffee_ind_step!(model, cof)
+    let prod_cycle_d = model.current.days % model.pars.harvest_day,
+    pars = model.pars.coffee_pars,
+    map = model.shade_map,
+    ind_shade = model.current.ind_shade
+
+        if pars.veg_d <= prod_cycle_d < pars.rep_d
+            for cof in model.current.coffees
+                vegetative_step!(cof, pars, map, ind_shade)
+            end
+        # elseif pars.rep_d < pars.veg_d <= prod_cycle_d
+        #     for cof in model.current.coffees
+        #         vegetative_step!(model, cof)
+        #     end
+        elseif prod_cycle_d == pars.rep_d
+            for cof in model.current.coffees
+                vegetative_step!(cof, pars, map, ind_shade)
+                repr_commitment(cof, pars, prod_cycle_d)
+            end
+        else
+            for cof in model.current.coffees
+                reproductive_step!(cof, pars, map, ind_shade)
+            end
+        end
     end
+
+    # for cof in model.current.coffees
+    #     coffee_ind_step!(model, cof)
+    # end
 end
 
 function rust_step!(model::ABM)
@@ -76,30 +93,51 @@ function rust_step!(model::ABM)
 
                 # grow_rust!(model, rust, sunlight, host.production, host.fungicide > 0)
                 grow_rust!(model, rust, sunlight, host.production, model.current.fung_effect > 0)
+                
+                parasitize!(model, rust, host)
+                
                 if model.current.rain
                     disperse_rain!(model, rust, sunlight)
                 end
                 if model.current.wind
                     disperse_wind!(model, rust, sunlight)
                 end
-                parasitize!(model, rust, host)
             end
     end
 end
 
 function farmer_step!(model)
-    if model.current.days % model.pars.harvest_cycle == 0
-        harvest!(model)
-    end
+    let doy = model.current.days % 365
 
-    if (model.current.days - fld(model.pars.harvest_cycle, 2)) % model.pars.fungicide_period == 0
-        fungicide!(model)
-    end
+        if doy in model.pars.harvest_day
+            harvest!(model)
+        end
 
-    # if model.current.days % model.pars.inspect_period == 0
-    #     inspect!(model)
-    # end
+        if doy in model.pars.prune_sch
+            prune_shades!(model)
+        end
+
+        incidence = 0
+
+        if model.current.days % model.pars.inspect_period == 0
+            incidence = inspect!(model)
+        end
+
+        if model.current.fung_effect > 0
+            model.current.fung_effect -= 1
+        elseif model.pars.incidence_as_thr
+            if incidence > model.pars.incidence_thresh
+                fungicide!(model)
+            end
+        elseif doy in model.pars.fungicide_sch
+            fungicide!(model)
+        end
+    end
 end
 
 
 ## Step contents for inds
+
+monomolecular(x) = (1 - exp(-0.3x))
+
+monod(x) = x / (x + 0.7)
