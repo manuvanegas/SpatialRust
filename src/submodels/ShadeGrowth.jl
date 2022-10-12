@@ -10,6 +10,6 @@ function growsh(days::Int, init::Float64, rate::Float64)
     return shades
 end
 
-tss = growsh(days, 0.5, 0.05)
+tss = growsh(days, 0.1, 0.06)
 tss[60] / 0.95
 lines(tss)

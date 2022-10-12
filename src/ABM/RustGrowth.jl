@@ -73,7 +73,7 @@ function germinate!(state::SubArray{Float64})
     # println(typeof(state))
     # println(state)
     @inbounds state[1] = 1.0
-    @inbounds state[2] = 0.0002
+    @inbounds state[2] = 0.00014
     @inbounds state[4] = 0.0
 end
 

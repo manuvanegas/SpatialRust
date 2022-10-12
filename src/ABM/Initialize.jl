@@ -69,11 +69,11 @@ Base.@kwdef struct Parameters
     uv_inact::Float64 = 0.1             # extent of effect of UV inactivation (0 to 1)
     rain_washoff::Float64 = 0.3         # " " " rain wash-off (0 to 1); Savary et al 2004
     # shade-related
-    temp_cooling::Float64 = 3.0         # temp reduction due to shade
-    diff_splash::Float64 = 2.0          # % extra rain distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high"+Gagliardi)
-    diff_wind::Float64 = 1.2            # % extra wind distance due to increased openness
+    temp_cooling::Float64 = 4.0         # temp reduction due to shade
+    diff_splash::Float64 = 2.0          # times rain distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high"+Gagliardi)
+    diff_wind::Float64 = 1.0            # additional wind distance due to increased openness (Pezzopane
     disp_block::Float64 = 0.8           # prob a tree will block rust dispersal
-    shade_g_rate::Float64 = 0.1         # shade growth rate
+    shade_g_rate::Float64 = 0.05        # shade growth rate
     shade_r::Int = 3                    # radius of influence of shades
 
     # coffee parameters
@@ -240,11 +240,11 @@ function CoffeePars(;
 end
 
 
-function Parameters(
+# function Parameters(
 
-)
- barriers
- prune_sch
- fungicide_sch (sort and SV)
+# )
+#  barriers
+#  prune_sch
+#  fungicide_sch (sort and SV)
 
-end
+# end
