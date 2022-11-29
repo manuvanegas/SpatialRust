@@ -5,16 +5,17 @@ using DataFrames
 using DrWatson: srcdir, datadir
 using StatsBase: sample, weights
 
-include(srcdir("ABM/Initialize.jl"))
-include(srcdir("ABM/Setup.jl"))
-include(srcdir("ABM/Step.jl"))
-
-include(srcdir("ABM/CGrowerSteps.jl"))
-include(srcdir("ABM/CoffeeSteps.jl"))
+include(srcdir("ABM/MainSetup.jl"))
+include(srcdir("ABM/CreateABM.jl"))
 include(srcdir("ABM/FarmMap.jl"))
-include(srcdir("ABM/RustDispersal.jl"))
-include(srcdir("ABM/RustGrowth.jl"))
+include(srcdir("ABM/ShadeMap.jl"))
+
+include(srcdir("ABM/MainStep.jl"))
 include(srcdir("ABM/ShadeSteps.jl"))
+include(srcdir("ABM/CoffeeSteps.jl"))
+include(srcdir("ABM/RustGrowth.jl"))
+include(srcdir("ABM/RustDispersal.jl"))
+include(srcdir("ABM/CGrowerSteps.jl"))
 
 include(srcdir("QuickRuns.jl"))
 include(srcdir("QuickMetrics.jl"))
