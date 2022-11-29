@@ -45,7 +45,7 @@ function cv_n_sims(run_ns::Vector{Int}, mtemp::Float64, rainp::Float64)::DataFra
         cof_gr = 0.393961,
         spore_pct = 0.821479,
         fruit_load = 0.597133,
-        uv_inact = 0.166768,
+        light_inh = 0.166768,
         rain_washoff = 0.23116,
         rain_distance = 0.80621,
         wind_distance = 3.29275,

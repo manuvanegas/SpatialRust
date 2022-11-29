@@ -34,7 +34,7 @@ function b_initialize()
     opt_g_temp = tparameters[4, :opt_g_temp],
     spore_pct = tparameters[4, :spore_pct],
     fruit_load = tparameters[4, :fruit_load],
-    uv_inact = tparameters[4, :uv_inact],
+    light_inh = tparameters[4, :light_inh],
     rain_washoff = tparameters[4, :rain_washoff],
     rain_distance = tparameters[4, :rain_distance],
     wind_distance = tparameters[4, :wind_distance])
@@ -72,7 +72,7 @@ function b_abc()
         opt_g_temp = tparameters[1, :opt_g_temp],
         spore_pct = tparameters[1, :spore_pct],
         fruit_load = tparameters[1, :fruit_load],
-        uv_inact = tparameters[1, :uv_inact],
+        light_inh = tparameters[1, :light_inh],
         rain_washoff = tparameters[1, :rain_washoff],
         rain_distance = tparameters[1, :rain_distance],
         wind_distance = tparameters[1, :wind_distance])

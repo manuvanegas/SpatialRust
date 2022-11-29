@@ -44,11 +44,11 @@ ad,md = paramscan(
     replicates = 2,
     parallel = true)
 
-# ii = initialize_sim(; fruit_load = 1.2, map_dims=50, shade_percent = 0.1, uv_inact = 0.1, rain_washoff = 0.1)
+# ii = initialize_sim(; fruit_load = 1.2, map_dims=50, shade_percent = 0.1, light_inh = 0.1, rain_washoff = 0.1)
 # aadd, mmdd = run!(ii, pre_step!, agent_step!, model_step!, 911; adata = adata, mdata=new_mdata)
 
 function init_and_run(dims, steps)
-    ii = initialize_sim(; map_dims=dims, shade_percent = 0.1, uv_inact = 0.1, rain_washoff = 0.1)
+    ii = initialize_sim(; map_dims=dims, shade_percent = 0.1, light_inh = 0.1, rain_washoff = 0.1)
     aadd, mmdd = run!(ii, pre_step!, agent_step!, model_step!, steps; adata = adata, mdata=mdata)
 end
 

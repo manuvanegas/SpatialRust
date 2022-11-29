@@ -110,7 +110,7 @@ end
 
 function whichgroup(var)
     return findfirst(x -> x == var, ("rust_gr", "cof_gr",
-    "spore_pct", "fruit_load", "uv_inact", "rain_washoff",
+    "spore_pct", "fruit_load", "light_inh", "rain_washoff",
     "rain_distance", "wind_distance", "exhaustion"))
 end
 

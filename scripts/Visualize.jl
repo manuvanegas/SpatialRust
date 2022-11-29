@@ -15,7 +15,7 @@ mdata = [count_rusts, rust_incid, mean_sev_tot, std_sev_tot,
         mean_production, std_production, :yield]
 
 function init_and_run(dims, steps)
-    ii = initialize_sim(; map_dims=dims, shade_percent = 0.1, uv_inact = 0.1, rain_washoff = 0.1)
+    ii = initialize_sim(; map_dims=dims, shade_percent = 0.1, light_inh = 0.1, rain_washoff = 0.1)
     aadd, mmdd = run!(ii, pre_step!, agent_step!, model_step!, steps; adata = adata, mdata=mdata)
 end
 
@@ -23,7 +23,7 @@ end
 plot(mmdd.step, mmdd.mean_rust_sev_tot, xlims=(100,200))
 
 function init_and_gif(dims, steps, filename)
-    model = initialize_sim(; map_dims=dims, shade_percent = 0.1, uv_inact = 0.1, rain_washoff = 0.1)
+    model = initialize_sim(; map_dims=dims, shade_percent = 0.1, light_inh = 0.1, rain_washoff = 0.1)
     l = @layout [a b]
     p1 = myplotabm(model;
             am = b_shape,
@@ -73,7 +73,7 @@ function init_and_gif(dims, steps, filename)
 end
 
 function init_and_gif_rust(dims, steps, filename, frag)
-    model = initialize_sim(; map_dims=dims, fragmentation = frag, shade_percent = 0.1, uv_inact = 0.1, rain_washoff = 0.1)
+    model = initialize_sim(; map_dims=dims, fragmentation = frag, shade_percent = 0.1, light_inh = 0.1, rain_washoff = 0.1)
     p1 = plotabm(model;
             am = a_shape,
             as = a_size,
@@ -99,7 +99,7 @@ function init_and_gif_rust(dims, steps, filename, frag)
     gif(anim, plotsdir("gifs", string(filename, "-rust.gif")), fps = 8)
 end
 
-model = initialize_sim(; map_dims=10, shade_percent = 0.1, uv_inact = 0.1, rain_washoff = 0.1)
+model = initialize_sim(; map_dims=10, shade_percent = 0.1, light_inh = 0.1, rain_washoff = 0.1)
 plotabm(model;
         am = a_shape,
         as = a_size,

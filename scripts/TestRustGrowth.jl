@@ -75,7 +75,7 @@ function r_grow!(rust::Rust, cof::Coffee, model::modelStruct)
 
     # else # try to germinate + penetrate tissue
     #     let r = rand()
-    #         if r < (cof.sunlight * model.uv_inact) || r <  (cof.sunlight * (model.rain ? model.rain_washoff : 0.0))
+    #         if r < (cof.sunlight * model.light_inh) || r <  (cof.sunlight * (model.rain ? model.rain_washoff : 0.0))
     #             # higher % sunlight means more chances of inactivation by UV or rain
     #             rm_id = rust.id
     #             kill_agent!(rust, model)
@@ -141,7 +141,7 @@ adata = [ind_area, ind_lesions, typeof]
 mdata = [count_rusts, mean_rust_sev, mean_rust_sev_tot, rust_incid, mean_production, std_production]
 
 function run_once_plot_severity(dims, steps)
-    ii = initialize_sim(; map_dims=dims, shade_percent = 0.1, uv_inact = 0.1, rain_washoff = 0.1)
+    ii = initialize_sim(; map_dims=dims, shade_percent = 0.1, light_inh = 0.1, rain_washoff = 0.1)
     aadd, mmdd = run!(ii, pre_step!, agent_step!, model_step!, steps; adata = adata, mdata=mdata)
     return aadd, mmdd
 end

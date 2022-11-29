@@ -19,7 +19,7 @@ max_dim = 200
 repls = nworkers()
 
 function init_and_time(dims, steps)
-    ii = initialize_sim(; map_dims=dims, shade_percent = 0.0, uv_inact = 0.1, rain_washoff = 0.1, inspect_period = 30, rain_prob = [0.9], wind_prob = [0.6])
+    ii = initialize_sim(; map_dims=dims, shade_percent = 0.0, light_inh = 0.1, rain_washoff = 0.1, inspect_period = 30, rain_prob = [0.9], wind_prob = [0.6])
     timed = @timed aadd, mmdd = run!(ii, pre_step!, agent_step!, model_step!, steps; adata = adata, mdata=mdata)
     rr = DataFrame(time = timed.time, bytes = timed.bytes)
     return rr
