@@ -1,36 +1,38 @@
 
-function create_farm_map(pars::Parameters)::Array{Int,2}
-    side = pars.map_side
+function create_farm_map(map_side::Int = 100, row_d::Int = 2, plant_d::Int = 1, shade_d::Int = 6,
+    shade_pattern::Symbol = :regular, barrier_rows::Int = 2, barriers::NTuple{2, Int} = (1, 0))::Array{Int,2}
+    
+    side = map_side
     # base
     farm_map = zeros(Int, side, side)
 
     # add coffees
-    for r in 1:pars.row_d:side # these are farm "rows", but in the array they are columns
-        for p in 1:pars.plant_d:side
+    for r in 1:row_d:side # these are farm "rows", but in the array they are columns
+        for p in 1:plant_d:side
             @inbounds farm_map[p, r] = 1
         end
     end
 
     # add shades
-    if pars.shade_d != 0 && pars.shade_d != side
-        if pars.shade_pattern == :regular
-            for si in 1:pars.shade_d:side
-                for sj in 1:pars.shade_d:side
+    if shade_d != 0 && shade_d != side
+        if shade_pattern == :regular
+            for si in 1:shade_d:side
+                for sj in 1:shade_d:side
                     @inbounds farm_map[sj, si] = 2
                 end
             end
         else
-            nshades = round(Int, (side / pars.shade_d)^2)
+            nshades = round(Int, (side / shade_d)^2)
             @inbounds farm_map[sample(1:side^2, nshades, replace=false)] .= 2
         end
     end
 
-    arr = pars.barriers
+    arr = barriers
     if @inbounds arr[1] > 0
-        placements = @inbounds barr_places(side, arr[1], pars.barrier_rows)
+        placements = @inbounds barr_places(side, arr[1], barrier_rows)
 
         # internal horizontal barriers
-        if pars.barrier_rows == 1 && pars.plant_d == 2 
+        if barrier_rows == 1 && plant_d == 2 
         # if suggested placement is odd, change it to even to place
         # shades between coffee plants
             @inbounds for pb in placements
@@ -45,7 +47,7 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
         end
 
         # internal vertical barriers (along coffee rows)
-        if pars.row_d == 2 && pars.barrier_rows == 1
+        if row_d == 2 && barrier_rows == 1
             # if suggested placement is odd, change it to even to place
             # shades between coffee rows
             @inbounds for pb in placements
@@ -55,8 +57,8 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
                     @inbounds farm_map[:, pb] .= 2
                 end
             end
-        elseif pars.row_d == 3
-            if pars.barrier_rows == 1
+        elseif row_d == 3
+            if barrier_rows == 1
                 @inbounds for pb in placements
                     if pb % 3 == 1
                         farm_map[:, (pb+1)] .= 2
@@ -68,8 +70,8 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
                 conflicting = findall(x -> (x % 3 == 1), placements)
                 for cn in conflicting
                     # determine if cn is in 1st or 2nd half of placements:
-                    # 1st half -> initial x's (equal to the result when pars.barrier_rows is 1) 
-                    # 2nd half -> extra x's because pars.barrier_rows is 2
+                    # 1st half -> initial x's (equal to the result when barrier_rows is 1) 
+                    # 2nd half -> extra x's because barrier_rows is 2
                     # eg, barr_places(100,2,1) = [33,66]; barr_places(100,2,2) = [33,66,34,67]
                     @inbounds if cn <= length(placements) / 2
                         placements[[cn, (cn + arr[1])]] .+= 1
@@ -89,7 +91,7 @@ function create_farm_map(pars::Parameters)::Array{Int,2}
     end
 
     if arr[2] == 1
-        if pars.barrier_rows == 1
+        if barrier_rows == 1
             @inbounds farm_map[[1, side], :] .= 2
             @inbounds farm_map[:, [1, side]] .= 2
         else

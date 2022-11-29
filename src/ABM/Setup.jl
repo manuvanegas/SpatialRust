@@ -1,23 +1,39 @@
-export Coffee, Rust
+export Coffee
 
 ## Agent types and constructor fcts
-mutable struct Coffee <: AbstractAgent
-    id::Int
-    pos::NTuple{2, Int}
-    area::Float64 # healthy foliar area (= 25 - rust.area * rust.n_lesions/25)
+# mutable struct Coffee <: AbstractAgent
+@agent Coffee GridAgent{2} begin
     sunlight::Float64 # let through by shade trees
-    shade_neighbors::Float64 #Float64 # remember which neighbors are shade trees
-    progression::Float64
+    veg::Float64
+    # shade_neighbors::Float64 # remember total neighboring shade trees
+    storage::Float64
     production::Float64
     exh_countdown::Int
-    # fungicide::Int
-    age::Int
-    hg_id::Int # "host-guest id": coffee is host, then this stores corresponding rust's id
     sample_cycle::Vector{Int} # vector with cycles where coffee should be sampled
-    #fung_countdown::Int
+    # fungicide::Int
+    # fung_countdown::Int
+
+    #Rust
+    # infected::Bool
+    deposited::Float64 
+    n_lesions::Int
+    ages::Vector{Int}
+    areas::Vector{Float64}
+    spores::Vector{Bool}
 end
 
-Coffee(id, pos; shades = [0.0], production = 0.0) = Coffee(id, pos, 1.0, 1.0, shades, 0.0, production, 0, 0, 0, []) # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+function Coffee(id, pos, max_lesions::Int, max_age::Int; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+    sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0, production::Float64 = 0.0,
+    deposited::Float64 = 0.0, ages::Vector{Int} = fill(max_age, max_lesions),
+    areas::Vector{Float64} = fill(0.0, max_lesions), spores::Vector{Bool} = fill(false, max_lesions),
+    n_lesions::Int = 0)
+
+    fill_n = max_lesions - length(ages)
+    
+    Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
+    append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
+    append!(spores, fill(false, fill_n))) 
+end
 # Coffee(id, pos; shades = Int[], production = 0.0) = Coffee(id, pos, 1.0, 1.0, shades, 0.0, production, 0, 0, 0, Int[])
 
 # mutable struct Shade <: AbstractAgent
@@ -31,20 +47,20 @@ Coffee(id, pos; shades = [0.0], production = 0.0) = Coffee(id, pos, 1.0, 1.0, sh
 #
 # Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
 
-mutable struct Rust <: AbstractAgent
-    id::Int
-    pos::NTuple{2, Int}
-    # germinated::Vector{Bool} # has it germinated and penetrated leaf tissue?
-    # area::Vector{Float64} # total, equal to latent + sporulating
-    # spores::Vector{Bool}
-    # age::Vector{Int}
-    state::Matrix{Float64}
-    n_lesions::Int
-    hg_id::Int # "host-guest id": rust is guest, then this stores corresponding host's id
-    sample_cycle::Vector{Int} # inherits days of sampling from host
-    #successful_landings::Int # maybe useful metric?
-    #parent::Int # id of rust it came from
-end
+# mutable struct Rust <: AbstractAgent
+#     id::Int
+#     pos::NTuple{2, Int}
+#     # germinated::Vector{Bool} # has it germinated and penetrated leaf tissue?
+#     # area::Vector{Float64} # total, equal to latent + sporulating
+#     # spores::Vector{Bool}
+#     # age::Vector{Int}
+#     state::Matrix{Float64}
+#     n_lesions::Int
+#     hg_id::Int # "host-guest id": rust is guest, then this stores corresponding host's id
+#     sample_cycle::Vector{Int} # inherits days of sampling from host
+#     #successful_landings::Int # maybe useful metric?
+#     #parent::Int # id of rust it came from
+# end
 
 # @agent Rust{N} GridAgent{2} begin
 #     germinated::MVector{N, Bool} # has it germinated and penetrated leaf tissue?
@@ -58,38 +74,38 @@ end
 #     #parent::Int # id of rust it came from
 # end
 
-function Rust(
-    id::Int, pos::NTuple{2,Int},
-    max_lesions::Int,
-    max_age::Int;
-    germinated::Vector{Float64} = fill(0.0, max_lesions),
-    area::Vector{Float64} = fill(0.0, max_lesions),
-    spores::Vector{Float64} = fill(0.0, max_lesions),
-    age::Vector{Float64} = fill((max_age + 1.0), max_lesions),
-    n_lesions = 1,
-    hg_id = 0,
-    sample_cycle = []
-    )
+# function Rust(
+#     id::Int, pos::NTuple{2,Int},
+#     max_lesions::Int,
+#     max_age::Int;
+#     germinated::Vector{Float64} = fill(0.0, max_lesions),
+#     area::Vector{Float64} = fill(0.0, max_lesions),
+#     spores::Vector{Float64} = fill(0.0, max_lesions),
+#     age::Vector{Float64} = fill((max_age + 1.0), max_lesions),
+#     n_lesions = 1,
+#     hg_id = 0,
+#     sample_cycle = []
+#     )
 
-    # vgerminated = vcat(germinated, fill(false, (max_lesions - length(germinated))))
-    # varea = vcat(area, fill(0.0, (max_lesions - length(area))))
-    # vspores = vcat(spores, fill(false, (max_lesions - length(spores))))
-    # vage = vcat(age, fill((max_age + 1), (max_lesions - length(age))))
+#     # vgerminated = vcat(germinated, fill(false, (max_lesions - length(germinated))))
+#     # varea = vcat(area, fill(0.0, (max_lesions - length(area))))
+#     # vspores = vcat(spores, fill(false, (max_lesions - length(spores))))
+#     # vage = vcat(age, fill((max_age + 1), (max_lesions - length(age))))
 
-    vgerminated = vcat(germinated, fill(0.0, (max_lesions - length(germinated))))
-    varea = vcat(area, fill(0.0, (max_lesions - length(area))))
-    vspores = vcat(spores, fill(0.0, (max_lesions - length(spores))))
-    vage = vcat(age, fill((max_age + 1.0), (max_lesions - length(age))))
+#     vgerminated = vcat(germinated, fill(0.0, (max_lesions - length(germinated))))
+#     varea = vcat(area, fill(0.0, (max_lesions - length(area))))
+#     vspores = vcat(spores, fill(0.0, (max_lesions - length(spores))))
+#     vage = vcat(age, fill((max_age + 1.0), (max_lesions - length(age))))
 
-    mstate = vcat(vgerminated', varea', vspores', vage')
+#     mstate = vcat(vgerminated', varea', vspores', vage')
 
-    # vgerminated = MVector{max_lesions}(vcat(germinated, fill(false, (max_lesions - length(germinated)))))
-    # varea = MVector{max_lesions}(vcat(area, fill(0.0, (max_lesions - length(area)))))
-    # vspores = MVector{max_lesions}(vcat(spores, fill(false, (max_lesions - length(spores)))))
-    # vage = MVector{max_lesions}(vcat(age, fill((max_age + 1), (max_lesions - length(age)))))
+#     # vgerminated = MVector{max_lesions}(vcat(germinated, fill(false, (max_lesions - length(germinated)))))
+#     # varea = MVector{max_lesions}(vcat(area, fill(0.0, (max_lesions - length(area)))))
+#     # vspores = MVector{max_lesions}(vcat(spores, fill(false, (max_lesions - length(spores)))))
+#     # vage = MVector{max_lesions}(vcat(age, fill((max_age + 1), (max_lesions - length(age)))))
 
-    Rust(id, pos, mstate, n_lesions, hg_id, sample_cycle)
-end
+#     Rust(id, pos, mstate, n_lesions, hg_id, sample_cycle)
+# end
 
 # function Rust(id, pos;
 #     onelesion::Bool = true,
@@ -108,87 +124,31 @@ end
 #     sample_cycle = sample_cycle)
 # end
 
-## Model properties and book-keeping
-
-Base.@kwdef mutable struct Books
-    days::Int = 0 # same as ticks unless start_days_at != 0
-    ticks::Int = 0
-    cycle::Vector{Int} = [0]
-    coffees::Vector{Coffee} = Coffee[]
-    # shade_ids::Vector{Int} = Int[]
-    rusts::Vector{Rust} = Rust[]
-    ind_shade::Float64 = 0.0
-    n_shades::Int = 0
-    outpour::Float64 = 0.0
-    #temp_var::Float64 = 0.0
-    temperature:: Float64 = 0.0
-    rain::Bool = true
-    wind::Bool = true
-    wind_h::Float64 = 0.0
-    fung_effect::Int = 0
-    costs::Float64 = 0.0
-    net_rev::Float64 = 0.0
-    prod::Float64 = 0.0
-    max_rust::Float64 = 0.0
-end
-
-struct Props
-    # input parameters
-    pars::Parameters
-    # record-keeping
-    current::Books
-    # weather time-series
-    weather::Weather
-    # farm map
-    farm_map::Array{Int,2}
-    # shade map
-    shade_map::Matrix{Float64}
-end
-
 ## Setup functions
 
-# Shade map
-
-function create_shade_map(farm_map::Matrix{Int}, shade_r::Int, side::Int)
-    possible_ns = CartesianIndices((-shade_r:shade_r, -shade_r:shade_r))
-    shades = findall(x -> x == 2, farm_map)
-    shade_map = zeros(size(farm_map))
-    for sh in shades
-        shade_map[sh] += 1.0
-        neighs = Iterators.filter(x -> in_farm(x, side), sh + n for n in possible_ns)
-        for n in neighs
-            shade_map[n] += 1.0 / shade_dist(sh, n)
-        end
-    end
-    clamp!(shade_map, 0.0, 1.0)
-    return shade_map
-end
-
-function shade_dist(pos1::CartesianIndex{2}, pos2::CartesianIndex{2})::Float64
-    caths = pos1 - pos2
-    @inbounds dist = sqrt(caths[1]^2 + caths[2]^2)
-    return dist + 0.05
-end
-
-function in_farm(coord::CartesianIndex, side::Int)::Bool
-    @inbounds for d in 1:2
-        1 <= coord[d] <= side || return false
-    end
-    return true
-end
-
 # Add coffee agents according to farm_map
-
 function add_trees!(model::ABM, farm_map::Matrix{Int}, shade_map::Matrix{Float64}, start_days_at::Int)
     cof_pos = findall(x -> x == 1, farm_map)
+    # storages = appr_storage(shade_map, model.pars.target_shade, model.pars.start_days_at, model.coffee_pars)
     for pos in cof_pos
-        # let shade = shade_map[pos]
-        push!(model.current.coffees, add_agent!(
-        Tuple(pos), Coffee, model; shades = shade_map[pos], production = start_days_at)
-        )
-        # end
+        let shades = shade_map[pos], sunlight = shades * ind_shade
+            push!(model.current.coffees, add_agent!(
+            Tuple(pos), Coffee, model; shades = shades, storage = init_storage(sunlight), production = 0)
+            )
+        end
     end
 end
+
+# function appr_storage(shade_map::Matrix{Float64}, target_shade::Float64, start_days::Int, coffee_pars::CoffeePars)
+#     prod_cycle_d = start_days % coffee_pars.harvest_day
+#     if coffee_pars.veg_d <= prod_cycle_d < coffee_pars.rep_d
+#         return new_veg_storage.(shade, target_shade)
+#     # elseif coffee_pars.rep_d < coffee_pars.veg_d <= prod_cycle_d
+#     #     return new_veg_storage.(shade)
+#     else
+#         return new_repr_storage.(shade, target_shade)
+#     end
+# end
 
 # function add_coffees!(model::ABM, start_days_at::Int, pos::CartesianIndex{2})
 #     # newcof = Coffee(nextid(model), Tuple(pos); shades = [round(Int, model.shade_map[pos])], production = float(start_days_at))
@@ -199,7 +159,7 @@ end
 
 # Add initial rust agents
 
-function init_rusted(model::ABM, r::Int) # Returns a "cluster" of initially rusted coffees
+function rusted_cluster(model::ABM, r::Int) # Returns a "cluster" of initially rusted coffees
     minp = r + 1
     maxp = model.pars.map_side - r
     main = sample(model.rng, collect(Iterators.filter( # sample 1 coffee not in the map margins
@@ -210,65 +170,81 @@ function init_rusted(model::ABM, r::Int) # Returns a "cluster" of initially rust
     return cluster
 end
 
-function init_rusts!(model::ABM, ini_rusts::Float64) # inoculate coffee plants
+function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
     if ini_rusts < 1.0
-        n_rusts = max(round(Int, ini_rusts * length(model.current.coffees)), 1)
-        rusted_cofs = sample(model.rng, model.current.coffees, n_rusts, replace = false)
+        n_rusts = max(round(Int, ini_rusts * nagents(model)), 1)
+        rusted_cofs = sample(model.rng, collect(allagents(model)), n_rusts, replace = false)
         # rusted_cofs = collect(model[i] for i in rusted_ids)
+    elseif ini_rusts < 2.0
+        rusted_cofs = rusted_cluster(model, 2)
     else
-        for i in 1:floor(Int, ini_rusts)
-            rusted_cofs = init_rusted(model, 2)
+        rusted_cofs = rusted_cluster(model, 2)
+        for i in 2.0:ini_rusts
+            rusted_cofs = Iterators.flatten((rusted_cofs, rusted_cluster(model, 2)))
         end
+
+        rusted_cofs = unique(rusted_cofs)
     end
 
     for rusted in rusted_cofs
-        nlesions = sample(model.rng, 1:model.pars.max_lesions)
-        germinates = zeros(model.pars.max_lesions)
+        deposited = 0.0
+        nl = n_lesions = sample(model.rng, 1:model.pars.max_lesions)
+        ages = fill((model.pars.steps + 1), model.pars.max_lesions)
         areas = zeros(model.pars.max_lesions)
-        spores = zeros(model.pars.max_lesions)
-        ages = fill((model.pars.steps + 1.0), model.pars.max_lesions)
+        spores = fill(false, model.pars.max_lesions)
 
-        for li in 1:nlesions
+        for li in 1:nl
             area = rand(model.rng)
+            # if area < 0.05 then the lesion is just in the "deposited" state,
+            # so no changes have to be made to any of its variables
             if 0.05 < area < 0.9
-                germinates[li] = 1.0
+                ages[li] = 0
                 areas[li] = area
-                ages[li] = 0.0
             elseif area > 0.9
-                germinates[li] = 1.0
+                ages[li] = 0
                 areas[li] = area
-                spores[li] = 1.0
-                ages[li] = 0.0
+                spores[li] = true
+            else
+                deposited += 1.0
+                n_lesions -= 1
             end
         end
 
-        new_rust = add_agent!(
-        rusted.pos, Rust, model,
-        model.pars.max_lesions,
-        model.pars.steps;
-        germinated = germinates,
-        area = areas,
-        spores = spores,
-        age = ages,
-        n_lesions = nlesions,
-        hg_id = rusted.id,
-        sample_cycle = rusted.sample_cycle
-        )
-        rusted.hg_id = new_rust.id
-        rusted.area -=  (sum(areas) / model.pars.max_lesions)
-        push!(model.current.rusts, new_rust)
+        sortidx = sortperm(areas; rev = true)
+
+        rusted.deposited = deposited
+        rusted.n_lesions = n_lesions
+        rusted.ages = ages[sortidx]
+        rusted.areas = areas[sortidx]
+        rusted.spores = spores[sortidx]
+        # push!(model.current.rusts, rusted)
+
+        # new_rust = add_agent!(
+        # rusted.pos, model,
+        # model.pars.max_lesions,
+        # model.pars.steps + 1;
+        # area = areas,
+        # spores = spores,
+        # ages = ages,
+        # n_lesions = n_lesions,
+        # hg_id = rusted.id,
+        # sample_cycle = rusted.sample_cycle
+        # )
+        # rusted.hg_id = new_rust.id
+        # rusted.area -=  (sum(areas) / model.pars.max_lesions)
+        # push!(model.current.rusts, new_rust)
     end
 end
 
-function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::Weather)::ABM
-    space = GridSpace((parameters.map_side, parameters.map_side), periodic = false, metric = :chebyshev)
+function init_abm_obj(props::Props)::ABM
+    space = GridSpaceSingle((props.rustpars.map_side, props.rustpars.map_side), periodic = false, metric = :chebyshev)
 
-    shade_map = create_shade_map(farm_map, parameters.shade_r, parameters.map_side)
+    # shade_map = create_shade_map(farm_map, parameters.shade_r, parameters.map_side)
 
     if parameters.start_days_at <= 132
         properties = Props(parameters, Books(
         days = parameters.start_days_at,
-        ind_shade = parameters.target_shade,
+        ind_shade = ind_shade_i(target_shade, shade_g_rate, start_days_at, prune_sch),
         ), weather,
         farm_map,
         shade_map
@@ -276,7 +252,7 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
     else
         properties = Props(parameters, Books(
         days = parameters.start_days_at,
-        ind_shade = parameters.target_shade,
+        ind_shade = ind_shade_i(target_shade, shade_g_rate, start_days_at, prune_sch),
         # ticks = ?,
         cycle = [4]), weather,
         farm_map,
@@ -284,7 +260,7 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
         )
     end
 
-    model = ABM(Union{Coffee, Rust}, space; properties = properties, warn = false)
+    model = ABM(Coffee, space; properties = props, warn = false)
 
         # model = ABM(Union{Shade, Coffee, Rust}, space;
         #     properties = Props(parameters, Books(days = parameters.start_days_at,
@@ -294,9 +270,14 @@ function init_abm_obj(parameters::Parameters, farm_map::Array{Int,2}, weather::W
 
     # update_shade_map!(model)
 
-    add_trees!(model, farm_map, shade_map, parameters.start_days_at)
+    add_trees!(model, farm_map, shade_map, props.current.start_days_at)
 
-    init_rusts!(model, parameters.ini_rusts)
+    return model
+end
+
+function init_abm_obj(props::Props, ini_rusts::Float64)::ABM
+    model = init_abm_obj(props)
+    init_rusts!(model, ini_rusts)
 
     return model
 end
