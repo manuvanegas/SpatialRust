@@ -1,6 +1,6 @@
 # Spore dispersal and deposition
 
-function disperse_rain!(model::ABM, rust::Rust)
+function disperse_rain!(model::ABM, rust::Coffee)
     d_mod = (4.0 - 4.0 * model.rustpars.diff_splash) * (rust.sunlight - 0.5)^2.0 + model.rustpars.diff_splash
     exp_dist = Exponential(model.rustpars.rain_distance)
     for area in @inbounds rust.areas[rust.spores]
@@ -31,7 +31,7 @@ function disperse_rain!(model::ABM, rust::Rust)
 end
 
 
-function disperse_wind!(model::ABM, rust::Rust)
+function disperse_wind!(model::ABM, rust::Coffee)
     shading = @inbounds model.shade_map[rust.pos...]
     w_distance = rand(model.rng, Exponential(model.rustpars.wind_distance)) * (1 + rust.sunlight * rust.rustpars.diff_wind)
     if w_distance < 1.0
@@ -182,7 +182,7 @@ function outside_spores!(model::ABM)
     side = model.rustpars.map_side
     expdist = Exponential(model.rustpars.wind_distance)
     outsp = model.outpour
-    deposited = sizehint!(NTuple{2,Int}[], sum(outsp))
+    deposited = sizehint!(NTuple{2,Int}[], sum(trunc.(Int,outsp)))
     if isapprox(heading, 360.0; atol = 2.0) || isapprox(heading, 0.0; atol = 2.0)
         # cosd(2) ≈ 0.99939, which is just horizontal for a 100x100 farm
         for i in 1.0:outsp[1]
@@ -454,58 +454,58 @@ end
 ## Rust initial inoculation (optional function, not in use currently)
 # This one assumes that rust epidemic has to come from an influx of wind-dispersed spores
 
-function inoculate_farm(model::ABM, nrusts::Int) #PROBLEM: increased variability because each sim starts with != #rusts
-    # byrain = rand(model.rng, 1:nrusts)
-    # bywind = nrusts - byrain
-    inoc_ids = Int[]
+# function inoculate_farm(model::ABM, nrusts::Int) #PROBLEM: increased variability because each sim starts with != #rusts
+#     # byrain = rand(model.rng, 1:nrusts)
+#     # bywind = nrusts - byrain
+#     inoc_ids = Int[]
 
-    from_side = rand(model.rng, 1:4) #N,E,S,W <-> 1,2,3,4
-    if from_side == 4 # following the same order as in outside_spores!()
-        from = Tuple.(vcat.(1, sample(model.rng, 1:model.pars.map_side, nrusts)))
-        headings = 360.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    elseif from_side == 1
-        from = Tuple.(vcat.(sample(model.rng, 1:model.pars.map_side, nrusts), 1))
-        headings = 270.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    elseif from_side == 2
-        from = Tuple.(vcat.(100, sample(model.rng, 1:model.pars.map_side, nrusts)))
-        headings = 180.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    else
-        from = Tuple.(vcat.(sample(model.rng, 1:model.pars.map_side, nrusts), 100))
-        headings = 90.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
-    end
+#     from_side = rand(model.rng, 1:4) #N,E,S,W <-> 1,2,3,4
+#     if from_side == 4 # following the same order as in outside_spores!()
+#         from = Tuple.(vcat.(1, sample(model.rng, 1:model.pars.map_side, nrusts)))
+#         headings = 360.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
+#     elseif from_side == 1
+#         from = Tuple.(vcat.(sample(model.rng, 1:model.pars.map_side, nrusts), 1))
+#         headings = 270.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
+#     elseif from_side == 2
+#         from = Tuple.(vcat.(100, sample(model.rng, 1:model.pars.map_side, nrusts)))
+#         headings = 180.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
+#     else
+#         from = Tuple.(vcat.(sample(model.rng, 1:model.pars.map_side, nrusts), 100))
+#         headings = 90.0 .+ rand(model.rng, nrusts) .* 2.0 .- 1.0
+#     end
 
-    wdistances = abs.(2 .* randn(model.rng, nrusts)) .* model.pars.wind_distance .* model.pars.diff_wind
+#     wdistances = abs.(2 .* randn(model.rng, nrusts)) .* model.pars.wind_distance .* model.pars.diff_wind
 
-    for (starting, heading, distance) in zip(from, headings, wdistances)
-        if length(travel_path(distance, heading)) <= 1
-            if !isempty(starting, model) && (c = first(agents_in_position(starting, model))) isa Coffee
-                push!(inoc_ids, c.id)
-            end
-        else
-            # wind_travel!(model, starting, travel_path(distance, heading))
-            let pos = starting, path = travel_path(distance, heading)
-                blockedwind = false
-                for s in path[2:end]
-                    if all(1 .<= (new_pos = s .+ pos) .<= model.pars.map_side)
-                        trees = agents_in_position(new_pos, model)
-                        if isempty(trees)
-                            if blockedwind
-                                break
-                            end
-                        elseif (c = first(trees)) isa Coffee &&
-                            (blockedwind || s == last(path) || rand(model.rng) < model.pars.tree_block * 0.1)
-                                push!(inoc_ids, c.id)
-                                break
-                        elseif rand(model.rng) < model.pars.tree_block # blocked by shade
-                            blockedwind = true
-                            continue
-                        end
-                    else
-                        # model.current.outpour += 1
-                        break
-                    end
-                end
-            end
-        end
-    end
-end
+#     for (starting, heading, distance) in zip(from, headings, wdistances)
+#         if length(travel_path(distance, heading)) <= 1
+#             if !isempty(starting, model) && (c = first(agents_in_position(starting, model))) isa Coffee
+#                 push!(inoc_ids, c.id)
+#             end
+#         else
+#             # wind_travel!(model, starting, travel_path(distance, heading))
+#             let pos = starting, path = travel_path(distance, heading)
+#                 blockedwind = false
+#                 for s in path[2:end]
+#                     if all(1 .<= (new_pos = s .+ pos) .<= model.pars.map_side)
+#                         trees = agents_in_position(new_pos, model)
+#                         if isempty(trees)
+#                             if blockedwind
+#                                 break
+#                             end
+#                         elseif (c = first(trees)) isa Coffee &&
+#                             (blockedwind || s == last(path) || rand(model.rng) < model.pars.tree_block * 0.1)
+#                                 push!(inoc_ids, c.id)
+#                                 break
+#                         elseif rand(model.rng) < model.pars.tree_block # blocked by shade
+#                             blockedwind = true
+#                             continue
+#                         end
+#                     else
+#                         # model.current.outpour += 1
+#                         break
+#                     end
+#                 end
+#             end
+#         end
+#     end
+# end

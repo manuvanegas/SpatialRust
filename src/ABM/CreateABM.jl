@@ -1,38 +1,18 @@
-export Coffee
 
-## Agent types and constructor fcts
-# mutable struct Coffee <: AbstractAgent
-@agent Coffee GridAgent{2} begin
-    sunlight::Float64 # let through by shade trees
-    veg::Float64
-    # shade_neighbors::Float64 # remember total neighboring shade trees
-    storage::Float64
-    production::Float64
-    exh_countdown::Int
-    sample_cycle::Vector{Int} # vector with cycles where coffee should be sampled
-    # fungicide::Int
-    # fung_countdown::Int
-
-    #Rust
-    # infected::Bool
-    deposited::Float64 
-    n_lesions::Int
-    ages::Vector{Int}
-    areas::Vector{Float64}
-    spores::Vector{Bool}
-end
-
+# Coffee constructor function
 function Coffee(id, pos, max_lesions::Int, max_age::Int; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
     sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0, production::Float64 = 0.0,
     deposited::Float64 = 0.0, ages::Vector{Int} = fill(max_age, max_lesions),
     areas::Vector{Float64} = fill(0.0, max_lesions), spores::Vector{Bool} = fill(false, max_lesions),
     n_lesions::Int = 0)
 
-    fill_n = max_lesions - length(ages)
+    # fill_n = max_lesions - length(ages)
     
-    Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
-    append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
-    append!(spores, fill(false, fill_n))) 
+    # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
+    # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
+    # append!(spores, fill(false, fill_n))) 
+    Coffee(id, pos, sunlight, veg, storage, production, 0, Int[], deposited,
+    n_lesions, ages, areas, spores) 
 end
 # Coffee(id, pos; shades = Int[], production = 0.0) = Coffee(id, pos, 1.0, 1.0, shades, 0.0, production, 0, 0, 0, Int[])
 
@@ -127,14 +107,21 @@ end
 ## Setup functions
 
 # Add coffee agents according to farm_map
-function add_trees!(model::ABM, farm_map::Matrix{Int}, shade_map::Matrix{Float64}, start_days_at::Int)
+function add_trees!(model::ABM)
+    farm_map::Matrix{Int} = model.farm_map
+    shade_map::Matrix{Float64} = model.shade_map
+    startday::Int = model.current.days
+    ind_shade::Float64 = model.current.ind_shade
+    max_lesions::Int = model.rustpars.max_lesions
+    max_age::Int = model.rustpars.steps + 1
+
     cof_pos = findall(x -> x == 1, farm_map)
     # storages = appr_storage(shade_map, model.pars.target_shade, model.pars.start_days_at, model.coffee_pars)
     for pos in cof_pos
         let shades = shade_map[pos], sunlight = shades * ind_shade
-            push!(model.current.coffees, add_agent!(
-            Tuple(pos), Coffee, model; shades = shades, storage = init_storage(sunlight), production = 0)
-            )
+            add_agent!(
+                Tuple(pos), Coffee, model, max_lesions, max_age;
+                sunlight = sunlight, storage = init_storage(sunlight))
         end
     end
 end
@@ -161,7 +148,7 @@ end
 
 function rusted_cluster(model::ABM, r::Int) # Returns a "cluster" of initially rusted coffees
     minp = r + 1
-    maxp = model.pars.map_side - r
+    maxp = model.rustpars.map_side - r
     main = sample(model.rng, collect(Iterators.filter( # sample 1 coffee not in the map margins
         c -> all(minp .<= c.pos .<= maxp), allagents(model)
     )))
@@ -188,10 +175,10 @@ function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
 
     for rusted in rusted_cofs
         deposited = 0.0
-        nl = n_lesions = sample(model.rng, 1:model.pars.max_lesions)
-        ages = fill((model.pars.steps + 1), model.pars.max_lesions)
-        areas = zeros(model.pars.max_lesions)
-        spores = fill(false, model.pars.max_lesions)
+        nl = n_lesions = sample(model.rng, 1:model.rustpars.max_lesions)
+        ages = fill((model.rustpars.steps + 1), model.rustpars.max_lesions)
+        areas = zeros(model.rustpars.max_lesions)
+        spores = fill(false, model.rustpars.max_lesions)
 
         for li in 1:nl
             area = rand(model.rng)
@@ -241,24 +228,24 @@ function init_abm_obj(props::Props)::ABM
 
     # shade_map = create_shade_map(farm_map, parameters.shade_r, parameters.map_side)
 
-    if parameters.start_days_at <= 132
-        properties = Props(parameters, Books(
-        days = parameters.start_days_at,
-        ind_shade = ind_shade_i(target_shade, shade_g_rate, start_days_at, prune_sch),
-        ), weather,
-        farm_map,
-        shade_map
-        )
-    else
-        properties = Props(parameters, Books(
-        days = parameters.start_days_at,
-        ind_shade = ind_shade_i(target_shade, shade_g_rate, start_days_at, prune_sch),
-        # ticks = ?,
-        cycle = [4]), weather,
-        farm_map,
-        shade_map
-        )
-    end
+    # if parameters.start_days_at <= 132
+    #     properties = Props(parameters, Books(
+    #     days = parameters.start_days_at,
+    #     ind_shade = ind_shade_i(target_shade, shade_g_rate, start_days_at, prune_sch),
+    #     ), weather,
+    #     farm_map,
+    #     shade_map
+    #     )
+    # else
+    #     properties = Props(parameters, Books(
+    #     days = parameters.start_days_at,
+    #     ind_shade = ind_shade_i(target_shade, shade_g_rate, start_days_at, prune_sch),
+    #     # ticks = ?,
+    #     cycle = [4]), weather,
+    #     farm_map,
+    #     shade_map
+    #     )
+    # end
 
     model = ABM(Coffee, space; properties = props, warn = false)
 
@@ -270,7 +257,7 @@ function init_abm_obj(props::Props)::ABM
 
     # update_shade_map!(model)
 
-    add_trees!(model, farm_map, shade_map, props.current.start_days_at)
+    add_trees!(model)
 
     return model
 end

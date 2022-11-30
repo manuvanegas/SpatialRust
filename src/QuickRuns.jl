@@ -1,32 +1,29 @@
 export dummyrun_spatialrust, dummyrun_fullsun_spatialrust, justtwosteps
 
-function dummyrun_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int = 25)
-    pars = Parameters(steps = steps, map_side = side, max_lesions = maxlesions)
-    model = init_spatialrust(pars)
+function dummyrun_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int = 25; kwargs...)
+    model = init_spatialrust(steps = steps, map_side = side, max_lesions = maxlesions; kwargs...)
 
     a_df, m_df = run!(model, dummystep, step_model!, steps;
         # adata = [(:n_lesions, median, justrusts), (:state, medsum_s, justrusts), (:production, mean, justcofs)],
-        adata = [(:n_lesions, emedian, justrusts), (:production, mean, justcofs)],
+        adata = [(:n_lesions, emedian, rusted), (:production, mean)],
         mdata = [incidence])
 
     return a_df, m_df, model
 end
 
-function dummyrun_fullsun_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int = 25)
-    pars = Parameters(steps = steps, map_side = side, max_lesions = maxlesions)
-    model = init_spatialrust(pars, create_fullsun_farm_map(side), create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
+function dummyrun_fullsun_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int = 25; kwargs...)
+    model = init_spatialrust(steps = steps, map_side = side, max_lesions = maxlesions, common_map = :fullsun; kwargs...)
 
     a_df, m_df = run!(model, dummystep, step_model!, steps;
         # adata = [(:n_lesions, median, justrusts), (:state, medsum_s, justrusts), (:production, mean, justcofs)],
-        adata = [(:n_lesions, emedian, justrusts), (:production, mean, justcofs)],
+        adata = [(:n_lesions, emedian, rusted), (:production, mean)],
         mdata = [incidence])
 
     # return a_df, m_df, model
 end
 
 function justtwosteps(side::Int = 60)
-    pars = Parameters(steps = 5, map_side = side, max_lesions = 25)
-    model = init_spatialrust(pars, create_fullsun_farm_map(side))
+    model = init_spatialrust(steps = steps, map_side = side, max_lesions = maxlesions, common_map = :fullsun)
     step!(model, dummystep, step_model!, 2)
     return model
 end

@@ -43,7 +43,9 @@ function create_farm_map(map_side::Int = 100, row_d::Int = 2, plant_d::Int = 1, 
                 end
             end
         else
-            @inbounds farm_map[pb, :] .= 2
+            @inbounds for pb in placements
+                @inbounds farm_map[pb, :] .= 2
+            end
         end
 
         # internal vertical barriers (along coffee rows)
@@ -103,7 +105,7 @@ function create_farm_map(map_side::Int = 100, row_d::Int = 2, plant_d::Int = 1, 
     return farm_map
 end
 
-function create_fullsun_farm_map(side)::Array{Int,2}
+function create_fullsun_farm_map(side::Int)::Array{Int,2}
     farm_map = zeros(Int, side, side)
     for c in 1:2:side
         @inbounds farm_map[:, c] .= 1
@@ -111,10 +113,10 @@ function create_fullsun_farm_map(side)::Array{Int,2}
     return farm_map
 end
 
-function create_midshade_farm_map()::Array{Int,2}
+function create_regshaded_farm_map(side::Int, shade_d::Int)::Array{Int,2}
     farm_map = create_fullsun_farm_map(side)
-    for si in 1:6:side
-        for sj in 1:6:side
+    for si in 1:shade_d:side
+        for sj in 1:shade_d:side
             @inbounds farm_map[sj, si] = 2
         end
     end

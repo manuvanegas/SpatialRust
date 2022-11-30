@@ -54,7 +54,7 @@ end
 # end
 
 function inspect!(model::ABM)
-    n_inspected = trunc(Int,(model.pars.inspect_effort * count(model.farm_map .== 1)))
+    n_inspected = trunc(Int,(model.mngpars.inspect_effort * count(model.farm_map .== 1)))
     # only non-exhausted coffees can be counted, so the constant n_cofs cannot be used here
     inspectable = filter!(notexhausted, collect(allagents(model)))
     if n_inspected < length(inspectable)
@@ -108,6 +108,6 @@ visible(a::Float64) = a > 0.1 ? a : 0.0
 
 function fungicide!(model::ABM)
     model.current.costs += model.mngpars.tot_fung_cost
-    model.current.fung_effect = model.pars.fung_effect
+    model.current.fung_effect = model.mngpars.fung_effect
     model.current.fung_count += 1
 end

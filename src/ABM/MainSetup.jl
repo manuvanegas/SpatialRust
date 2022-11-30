@@ -1,23 +1,41 @@
-#=
-Input-handling structs and functions. If necessary, call create farm_map or Weather,
-then call init_abm_obj. Returns model object ready to be run
-=#
+export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, create_regshaded_farm_map
 
-export init_spatialrust, create_farm_map, create_fullsun_farm_map, create_midshade_farm_map
+# Coffee agent type
+# mutable struct Coffee <: AbstractAgent
+@agent Coffee GridAgent{2} begin
+    sunlight::Float64 # let through by shade trees
+    veg::Float64
+    # shade_neighbors::Float64 # remember total neighboring shade trees
+    storage::Float64
+    production::Float64
+    exh_countdown::Int
+    sample_cycle::Vector{Int} # vector with cycles where coffee should be sampled
+    # fungicide::Int
+    # fung_countdown::Int
 
+    #Rust
+    # infected::Bool
+    deposited::Float64 
+    n_lesions::Int
+    ages::Vector{Int}
+    areas::Vector{Float64}
+    spores::Vector{Bool}
+end
+
+# Main abm initialization function
 function init_spatialrust(;
     start_days_at::Int = 0,
     ini_rusts::Float64 = 0.01,              # % of initial rusts (# of initial clusters, if > 1)
     #par_row::Int = 0,                      # parameter combination number (for ABC)
-    switch_cycles::Tuple{Int} = (),
+    switch_cycles::Tuple = (),
 
     # weather parameters
     rain_prob::Float64 = 0.5,
     wind_prob::Float64 = 0.4,
     mean_temp::Float64 = 22.5,
-    rain_data::Tuple{Bool} = (),            # if provided, rain_prob is ignored
-    wind_data::Tuple{Bool} = (),            # if provided, wind_prob is ignored
-    temp_data::Tuple{Float64} = (),         # if provided, mean_temp is ignored
+    rain_data::Tuple = (),            # if provided, rain_prob is ignored
+    wind_data::Tuple = (),            # if provided, wind_prob is ignored
+    temp_data::Tuple = (),         # if provided, mean_temp is ignored
 
     # coffee parameters
     veg_d::Int = 1,                         # photosynthesis efficiency constant
@@ -89,7 +107,8 @@ function init_spatialrust(;
     shade_r::Int = 3,                       # radius of influence of shades
 
     # farm map
-    farm_map::Array{Int} = [],              # if provided, parameters below are ignored
+    farm_map::Array{Int} = Int[],              # if provided, parameters below are ignored
+    common_map::Symbol = :none,             # :fullsun or :regshade
     row_d::Int = 2,                         # distance between rows (options: 1, 2, 3)
     plant_d::Int = 1,                       # distance between plants (options: 1, 2)
     shade_d::Int = 6,                       # distance between shades (only considered when :regular)
@@ -97,20 +116,25 @@ function init_spatialrust(;
     barrier_rows::Int = 2,                  # or 2 = double
     barriers::NTuple{2, Int} = (1, 0),      # barrier arrangement: 1->internal(0, 1, or 2),2->edges(0 or 1)
 
-
     # fragmentation::Bool = false
     # random::Bool = true
     # p_density::Float64 = 1.0
     )
 
-    w = Weather(
-        isempty(rain_data) ? rand(steps) .< rain_prob : rain_data,
-        isempty(wind_data) ? rand(steps) .< wind_prob : wind_data,
-        isempty(temp_data) ? fill(mean_temp, steps) .+ randn() .* 2 : temp_data
+    w = Weather{steps}(
+        Tuple(isempty(rain_data) ? rand(steps) .< rain_prob : rain_data),
+        Tuple(isempty(wind_data) ? rand(steps) .< wind_prob : wind_data),
+        Tuple(isempty(temp_data) ? fill(mean_temp, steps) .+ randn() .* 2 : temp_data)
     )
 
     if isempty(farm_map)
-        farm_map = create_farm_map(map_side, row_d, plant_d, shade_d, shade_pattern, barrier_rows, barriers)
+        if common_map == :none
+            farm_map = create_farm_map(map_side, row_d, plant_d, shade_d, shade_pattern, barrier_rows, barriers)
+        elseif common_map == :fullsun
+            farm_map = create_fullsun_farm_map(map_side)
+        elseif common_map == :regshaded
+            farm_map = create_regshaded_farm_map(map_side, side)
+        end
     else
         map_side = size(farm_map)[1]
     end
@@ -134,10 +158,12 @@ function init_spatialrust(;
 
     n_shades = count(farm_map .== 2)
     n_coffees = count(farm_map .== 1)
+    prune_sch = Tuple(sort!(filter!(>(0), prune_sch)))
+    fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
 
-    mp = MngPars(
-        harvest_day, Tuple(sort!(filter!(>(0), prune_sch))),
-        inspect_period, Tuple(sort!(filter!(>(0), fungicide_sch))),
+    mp = MngPars{length(prune_sch),length(fungicide_sch)}(
+        harvest_day, prune_sch,
+        inspect_period, fungicide_sch,
         incidence_as_thr, incidence_thresh, max_fung_sprayings,
         #
         n_shades, prune_cost * n_shades,
@@ -163,10 +189,12 @@ function init_spatialrust(;
     end
 end
 
-struct Weather
-    rain_data::Tuple{Bool}
-    wind_data::Tuple{Bool}
-    temp_data::Tuple{Float64}
+# Definitions of the different parameter structs
+
+struct Weather{N}
+    rain_data::NTuple{N, Bool}
+    wind_data::NTuple{N, Bool}
+    temp_data::NTuple{N, Float64}
 end
 
 struct CoffeePars
@@ -218,21 +246,21 @@ struct RustPars
     shade_block::Float64
 end
 
-struct MngPars
+struct MngPars{N,M}
     # action scheduling
     harvest_day::Int
-    prune_sch::Tuple{Int}
+    prune_sch::NTuple{N,Int}
     inspect_period::Int
-    fungicide_sch::Tuple{Int}
+    fungicide_sch::NTuple{M,Int}
     incidence_as_thr::Bool
     incidence_thresh::Float64
     max_fung_sprayings::Int
     # financials
-    n_shades::Int = count(farm_map .== 2) # makes easier some later analysis
-    tot_prune_cost::Float64 = prune_cost * n_shades
-    n_cofs::Int = count(farm_map .== 1)
-    inspect_cost::FLoat64
-    tot_fung_cost::Float64 = fung_cost * n_cofs
+    n_shades::Int
+    tot_prune_cost::Float64
+    n_cofs::Int
+    inspect_cost::Float64
+    tot_fung_cost::Float64
     coffee_price::Float64
     # others
     lesion_survive::Float64
@@ -242,6 +270,10 @@ struct MngPars
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
     shade_g_rate::Float64
     shade_r::Int
+end
+
+struct ABCsampling{N}
+    switch_cycles::NTuple{N,Int}
 end
 
 mutable struct Books
@@ -264,7 +296,7 @@ end
 
 struct Props
     weather::Weather
-    coffepars::CoffeePars
+    coffeepars::CoffeePars
     rustpars::RustPars
     mngpars::MngPars
     current::Books

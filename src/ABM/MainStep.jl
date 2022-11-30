@@ -22,13 +22,13 @@ function pre_step!(model)
     model.current.temperature = model.weather.temp_data[model.current.ticks]
 
     # spore outpour decay, then outpour can return spores to the farm if windy
-    model.current.outpour .*= 0.9
+    model.outpour .*= 0.9
     if model.current.wind
         model.current.wind_h = rand(model.rng) * 360.0
     end
 
     # update sampling cycle (for ABC)
-    # if (model.current.ticks - 1) in model.pars.switch_cycles #TODO
+    # if (model.current.ticks - 1) in model.mngpars.switch_cycles #TODO
     #     if model.current.cycle[1] == 5 && !isassigned(model.current.cycle, 2)
     #         push!(model.current.cycle, 6)
     #     else
@@ -38,8 +38,8 @@ function pre_step!(model)
 end
 
 function coffee_step!(model::ABM)
-    let prod_cycle_d = model.current.days % model.pars.harvest_day,
-    pars = model.pars.coffee_pars
+    let prod_cycle_d = model.current.days % model.mngpars.harvest_day,
+    pars = model.coffeepars
 
     if pars.veg_d < pars.rep_d
         vegd = pars.veg_d
@@ -53,7 +53,7 @@ function coffee_step!(model::ABM)
 
     if vegd <= cycled < repd
         for cof in values(model.agents)
-            vegetative_step!(cof, pars, model.map, model.current.ind_shade)
+            vegetative_step!(cof, pars, model.shade_map, model.current.ind_shade)
         end
     # elseif pars.rep_d < pars.veg_d <= prod_cycle_d
     #     for cof in values(model.agents)
@@ -61,13 +61,13 @@ function coffee_step!(model::ABM)
     #     end
     elseif cycled == repd
         for cof in values(model.agents)
-            vegetative_step!(cof, pars, model.map, model.current.ind_shade)
+            vegetative_step!(cof, pars, model.shade_map, model.current.ind_shade)
             cof.production = pars.res_commit * estimate_resources(cof)
             # repr_commitment!(cof, pars)
         end
     else
         for cof in values(model.agents)
-            reproductive_step!(cof, pars, model.map, model.current.ind_shade)
+            reproductive_step!(cof, pars, model.shade_map, model.current.ind_shade)
         end
     end
     end
@@ -133,14 +133,14 @@ end
 function rust_step_schedule(model::ABM, f_inf::Float64, f_day::Int, germinate_f::Function, grow_f::Function,
     # rust::Rust, rng::AbstractRNG, local_temp::Float64,
     # # fung_mods::NTuple{5, Float64}, #put fung_mods within rustpars. reason to keep out was if using same fnc and ones(), but not anymore
-    fs::Function...
-    )
+    fs::Vararg{Function, N}
+    ) where {N}
     # for rust in shuffle!(model.rng, collect(values(model.agents))) # shuffle may not be necessary 
     # for rust in shuffle!(filter!(isinfected, collect(allagents(model)))) # or
     # for rust in shuffle!([model.current.rusts...]) # dispersal pushes, parasitize rm
     # for rust in values(model.agents) #BENCH 
     for rust in model.current.rusts
-        let local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - rust.sunlight))
+        let local_temp = model.current.temperature - (model.rustpars.temp_cooling * (1.0 - rust.sunlight))
             germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
             grow_f(rust, model.rng, model.rustpars, local_temp, f_day)
         end

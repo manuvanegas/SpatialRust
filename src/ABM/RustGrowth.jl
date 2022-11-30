@@ -29,10 +29,10 @@ function r_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_
                 # end
                 for sp in 1.0:rust.deposited
                     if rand(rng) < inhib || rand(rng) < washed
-                        @inbounds rust.deposited -= 1.0
+                        rust.deposited -= 1.0
                     elseif rust.n_lesions == max_nl && rand(rng) < infection_p
                         nl = rust.n_lesions += 1
-                        @inbounds rust.deposited -= 1.0
+                        rust.deposited -= 1.0
                         @inbounds rust.ages[nl] = 0
                         @inbounds rust.areas[nl] = 0.00014
                     end
@@ -40,7 +40,7 @@ function r_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_
             else
                 for sp in 1.0:rust.deposited
                     if rand(rng) < inhib || rand(rng) < washed
-                        @inbounds rust.deposited -= 1.0
+                        rust.deposited -= 1.0
                     end
                 end
             end
@@ -53,31 +53,39 @@ function nr_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local
     # See nf_r_germinate!() for more details/explanations
     if rust.deposited >= 1.0
         let inhib = rust.sunlight * rustpars.light_inh,
-            max_nl = rustpars.max_lesions,
-            temp_inf_p = 0.015625 * (local_temp - 22.0)^2.0 + 1.0,
-            wet_inf_p = 0.05 * (12.0 + 2.0 * rust.sunlight) - 0.2,
-            infection_p = rustpars.max_inf * temp_inf_p * wet_inf_p * fung
+            max_nl = rustpars.max_lesions
+            if rust.n_lesions < rustpars.max_lesions 
+                temp_inf_p = 0.015625 * (local_temp - 22.0)^2.0 + 1.0
+                wet_inf_p = 0.05 * (12.0 + 2.0 * rust.sunlight) - 0.2
+                infection_p = rustpars.max_inf * temp_inf_p * wet_inf_p * fung
 
-            # for (d, sp) in enumerate(rust.deposited), s in 1:sp
-            #     if rand(rng) < inhib
-            #         @inbounds rust.deposited[d] -= 1
-            #     elseif rand(rng) < infection_p
-            #         nl = rust.n_lesions += 1
-            #         @inbounds rust.ages[nl] = 0
-            #         @inbounds rust.areas[nl] = 0.00014
-            #         if rust.n_lesions == rustpars.max_lesions
-            #             break
-            #         end
-            #     end
-            # end
-            for sp in 1.0:rust.deposited
-                if rand(rng) < inhib
-                    @inbounds rust.deposited -= 1.0
-                elseif rust.n_lesions == max_nl && rand(rng) < infection_p
-                    nl = rust.n_lesions += 1
-                    @inbounds rust.deposited -= 1.0
-                    @inbounds rust.ages[nl] = 0
-                    @inbounds rust.areas[nl] = 0.00014
+                # for (d, sp) in enumerate(rust.deposited), s in 1:sp
+                #     if rand(rng) < inhib
+                #         @inbounds rust.deposited[d] -= 1
+                #     elseif rand(rng) < infection_p
+                #         nl = rust.n_lesions += 1
+                #         @inbounds rust.ages[nl] = 0
+                #         @inbounds rust.areas[nl] = 0.00014
+                #         if rust.n_lesions == rustpars.max_lesions
+                #             break
+                #         end
+                #     end
+                # end
+                for sp in 1.0:rust.deposited
+                    if rand(rng) < inhib
+                        rust.deposited -= 1.0
+                    elseif rust.n_lesions == max_nl && rand(rng) < infection_p
+                        nl = rust.n_lesions += 1
+                        rust.deposited -= 1.0
+                        @inbounds rust.ages[nl] = 0
+                        @inbounds rust.areas[nl] = 0.00014
+                    end
+                end
+            else
+                for sp in 1.0:rust.deposited
+                    if rand(rng) < inhib
+                        rust.deposited -= 1.0
+                    end
                 end
             end
         end
@@ -140,12 +148,13 @@ function grow_f_rust!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_
             # @views(@inbounds(rust.areas[1:nl] .+= rust.areas[1:nl] .* (1 .- rust.areas[1:nl]) .* gro_mods)) # BENCH 
             # update sporulated area
             rust.spareas .= rust.spores .* rust.areas .* rustpars.spore_pct
+        end
     end
 end
 
 ## Parasitism
 
-function parasitize!(rust::Rust, rustpars::RustPars)
+function parasitize!(rust::Coffee, rustpars::RustPars)
     rust.storage -= rustpars.rust_paras * sum(rust.areas)
 
     if rust.storage < 0 && rust.veg < rustpars.exh_threshold
