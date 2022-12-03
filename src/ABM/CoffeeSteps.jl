@@ -114,7 +114,7 @@ init_storage(sl::Float64) = 100.0 * exp(-6.2 * sl) + 2.5
 
 # isinfected(c::Coffee)::Bool = c.infected
 # isinfected(c::Coffee)::Bool = c.deposited > 0.0 || c.n_lesions > 0
-notexhausted(c::Coffee)::Bool = c.exhausted == 0
+notexhausted(c::Coffee)::Bool = c.exh_countdown == 0
 
 # function coffee_ind_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, ind_shade::Float64)
 #     if coffee.exh_countdown > 1

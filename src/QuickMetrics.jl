@@ -6,11 +6,13 @@ totprod(model::ABM) = model.current.prod
 
 incidence(model::ABM) = length(model.current.rusts) / nagents(model)
 
+n_rusts(model::ABM) = length(model.current.rusts)
+
 n_coffees(model::ABM) = nagents(model)
 
 ## Not exported
 
-rusted_area(rust::Coffee) = sum(rust.areas)
+tot_area(rust::Coffee) = sum(rust.areas)
 
 medsum(x) = (median(sum.(x)))
 

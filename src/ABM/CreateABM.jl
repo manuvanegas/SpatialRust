@@ -173,15 +173,20 @@ function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
         rusted_cofs = unique(rusted_cofs)
     end
 
+    # nl_dist = LogUniform(1,25.999)
+    # a_dist = truncated(Exponential(0.2), 0, 1)
+
     for rusted in rusted_cofs
         deposited = 0.0
         nl = n_lesions = sample(model.rng, 1:model.rustpars.max_lesions)
+        # nl = n_lesions = trunc(Int, rand(model.rng, nl_dist))
         ages = fill((model.rustpars.steps + 1), model.rustpars.max_lesions)
         areas = zeros(model.rustpars.max_lesions)
         spores = fill(false, model.rustpars.max_lesions)
 
         for li in 1:nl
             area = rand(model.rng)
+            # area = rand(model.rng, a_dist)
             # if area < 0.05 then the lesion is just in the "deposited" state,
             # so no changes have to be made to any of its variables
             if 0.05 < area < 0.9
@@ -204,7 +209,7 @@ function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
         rusted.ages = ages[sortidx]
         rusted.areas = areas[sortidx]
         rusted.spores = spores[sortidx]
-        # push!(model.current.rusts, rusted)
+        push!(model.current.rusts, rusted)
 
         # new_rust = add_agent!(
         # rusted.pos, model,

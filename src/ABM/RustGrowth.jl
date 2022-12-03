@@ -1,5 +1,5 @@
 ##Growth
-function r_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_temp::Float64, fung::Float64)
+function r_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, fung::Float64)
     # No fungicide - Rain version of germinate!
     # There is substantial code duplication, but it was put in place to minimize innecessary
     # checks of global conditions (eg, rain will be true for all rusts on a given day)
@@ -8,7 +8,7 @@ function r_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_
         let inhib = rust.sunlight * rustpars.light_inh,
             washed = rust.sunlight * rustpars.rain_washoff,
             max_nl = rustpars.max_lesions
-            if rust.n_lesions < rustpars.max_lesions 
+            if rust.n_lesions < max_nl
                 temp_inf_p = 0.015625 * (local_temp - 22.0)^2.0 + 1.0
                 wet_inf_p = 0.05 * (18.0 + 2.0 * rust.sunlight) - 0.2
                 infection_p = rustpars.max_inf * temp_inf_p * wet_inf_p * fung
@@ -30,9 +30,9 @@ function r_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_
                 for sp in 1.0:rust.deposited
                     if rand(rng) < inhib || rand(rng) < washed
                         rust.deposited -= 1.0
-                    elseif rust.n_lesions == max_nl && rand(rng) < infection_p
-                        nl = rust.n_lesions += 1
+                    elseif rust.n_lesions < max_nl && rand(rng) < infection_p
                         rust.deposited -= 1.0
+                        nl = rust.n_lesions += 1
                         @inbounds rust.ages[nl] = 0
                         @inbounds rust.areas[nl] = 0.00014
                     end
@@ -48,7 +48,7 @@ function r_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_
     end
 end
 
-function nr_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_temp::Float64, fung::Float64)
+function nr_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, fung::Float64)
     # No fungicide - No rain version of germinate!()
     # See nf_r_germinate!() for more details/explanations
     if rust.deposited >= 1.0
@@ -74,9 +74,9 @@ function nr_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local
                 for sp in 1.0:rust.deposited
                     if rand(rng) < inhib
                         rust.deposited -= 1.0
-                    elseif rust.n_lesions == max_nl && rand(rng) < infection_p
-                        nl = rust.n_lesions += 1
+                    elseif rust.n_lesions < max_nl && rand(rng) < infection_p
                         rust.deposited -= 1.0
+                        nl = rust.n_lesions += 1
                         @inbounds rust.ages[nl] = 0
                         @inbounds rust.areas[nl] = 0.00014
                     end
@@ -92,7 +92,7 @@ function nr_germinate!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local
     end
 end
 
-function grow_rust!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_temp::Float64)
+function grow_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, fday::Int)
     # No fungicide version of rust growth
     # All rusts age 1 day
     rust.ages .+= 1
@@ -107,7 +107,7 @@ function grow_rust!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_te
             
             for (nl, spo) in enumerate(@views(@inbounds(rust.spores[1:nls])))
             # for nl in 1:nls
-                if !spo && rand(rng) < @inbounds rust.area[nl] * spor_mod
+                if !spo && rand(rng) < @inbounds rust.areas[nl] * spor_mod
                     @inbounds rust.spores[nl] = true
                 end
             end
@@ -116,12 +116,12 @@ function grow_rust!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_te
             rust.areas .+= rust.areas .* (1 .- rust.areas) .* growth_mod
             # @views(@inbounds(rust.areas[1:nls] .+= rust.areas[1:nls] .* (1 .- rust.areas[1:nls]) .* growth_mod)) #BENCH 
             # update sporulated area
-            rust.spareas .= rust.spores .* rust.areas .* rustpars.spore_pct
+            # rust.spores .= rust.spores .* rust.areas .* rustpars.spore_pct
         end
     end
 end
 
-function grow_f_rust!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_temp::Float64)
+function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, fday::Int)
     # Fungicide version of rust growth. See grow_rust for more details
     # This version has vectors for growth and sporulation modifiers because preventative vs curative 
     # fungicide effects are different (some lesions can be older, some younger, than last fung spraying)
@@ -133,7 +133,7 @@ function grow_f_rust!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_
             host_gro = rustpars.veg_gro + rustpars.rep_gro * rust.production / (rust.production + rust.veg),
             growth_mod = rustpars.rust_gr * temp_mod * host_gro,
             prev_cur = rust.ages .< fday,
-            spor_probs = rust.area .* spor_mod .* ifelse.(prev_cur, rustpars.fung_spor_prev, rustpars.fung_spor_cur),
+            spor_probs = rust.areas .* spor_mod .* ifelse.(prev_cur, rustpars.fung_spor_prev, rustpars.fung_spor_cur),
             gro_mods = growth_mod .* ifelse.(prev_cur, rustpars.fung_gro_prev, rustpars.fung_gro_cur)
             # @views(prev_cur = @inbounds rust.ages[1:nls] .< fday),
             # @views(spor_probs = @inbounds rust.area[1:nls] .* spor_mod .* ifelse.(prev_cur, rustpars.fung_spor_prev, rustpars.fung_spor_cur)),
@@ -147,14 +147,14 @@ function grow_f_rust!(rust::Coffee, rng::AbstractRNG, rustpars::RustPars, local_
             rust.areas .=+ rust.areas .* (1 .- rust.areas) .* gro_mods
             # @views(@inbounds(rust.areas[1:nl] .+= rust.areas[1:nl] .* (1 .- rust.areas[1:nl]) .* gro_mods)) # BENCH 
             # update sporulated area
-            rust.spareas .= rust.spores .* rust.areas .* rustpars.spore_pct
+            # rust.spores .= rust.spores .* rust.areas .* rustpars.spore_pct
         end
     end
 end
 
 ## Parasitism
 
-function parasitize!(rust::Coffee, rustpars::RustPars)
+function parasitize!(rust::Coffee, rustpars::RustPars, rusts::Set{Coffee})
     rust.storage -= rustpars.rust_paras * sum(rust.areas)
 
     if rust.storage < 0 && rust.veg < rustpars.exh_threshold
@@ -173,7 +173,7 @@ function parasitize!(rust::Coffee, rustpars::RustPars)
     if rust.deposited < 0.1 
         rust.deposited == 0.0
         if rust.n_lesions == 0
-            setdiff!(rust.current.rusts, rust)
+            delete!(rusts, rust)
         end
     end
 end

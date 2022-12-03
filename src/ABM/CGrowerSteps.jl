@@ -18,7 +18,7 @@ function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int)
         c.spores = fill(false, max_nl)
         if c.deposited < 0.1 
             c.deposited == 0.0
-            setdiff!(rust.current.rusts, c)
+            delete!(rust.current.rusts, c)
         end
     else
         fill_n = max_nl - surv_n
@@ -54,21 +54,23 @@ end
 # end
 
 function inspect!(model::ABM)
-    n_inspected = trunc(Int,(model.mngpars.inspect_effort * count(model.farm_map .== 1)))
     # only non-exhausted coffees can be counted, so the constant n_cofs cannot be used here
-    inspectable = filter!(notexhausted, collect(allagents(model)))
-    if n_inspected < length(inspectable)
-        inspected = sample(model.rng, inspectable, n_inspected, replace = false)
-    else
-        inspected = inspectable
-    end
+    # inspectable = filter!(notexhausted, collect(allagents(model)))
+    # n_inspected = trunc(Int,(model.mngpars.inspect_effort * length(inspectable)))
+    # if model.mngpars.n_inspected < length(inspectable)
+    inspected = sample(model.rng, collect(allagents(model)), model.mngpars.n_inspected, replace = false)
+    # else
+    #     inspected = inspectable
+    # end
     n_infected = 0
 
     for c in inspected
-        # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
-        if any(c.areas > 0.1) && rand(model.rng) < maximum(c.areas) 
+        if !notexhausted(c)
             n_infected += 1
-            spotted = unique!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), 5))
+        # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
+        elseif any(c.areas .> 0.1) && rand(model.rng) < maximum(c.areas) 
+            n_infected += 1
+            spotted = unique!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas[1:c.n_lesions])), 5))
             fill_n = length(spotted)
             c.n_lesions -= fill_n
             c.ages = append!(c.ages[Not(spotted)], zeros(Int, fill_n))
@@ -76,7 +78,7 @@ function inspect!(model::ABM)
             c.spores = append!(c.spores[Not(spotted)], fill(false, fill_n))
             if c.n_lesions == 0 && c.deposited < 0.1 
                 c.deposited == 0.0
-                setdiff!(rust.current.rusts, c)
+                delete!(model.current.rusts, c)
             end
         end
  
@@ -99,9 +101,10 @@ function inspect!(model::ABM)
         # end
     end
 
-    model.current.costs += n_inspected * inspect_cost
+    model.current.costs += model.mngpars.tot_inspect_cost
 
-    return n_infected / length(inspected)
+    # return n_infected / length(inspected)
+    model.current.obs_incidence = n_infected / model.mngpars.n_inspected
 end
 
 visible(a::Float64) = a > 0.1 ? a : 0.0

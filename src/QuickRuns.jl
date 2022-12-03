@@ -5,8 +5,9 @@ function dummyrun_spatialrust(steps::Int = 200, side::Int = 60, maxlesions::Int 
 
     a_df, m_df = run!(model, dummystep, step_model!, steps;
         # adata = [(:n_lesions, median, justrusts), (:state, medsum_s, justrusts), (:production, mean, justcofs)],
-        adata = [(:n_lesions, emedian, rusted), (:production, mean)],
-        mdata = [incidence])
+        adata = [(:n_lesions, emedian, rusted), (tot_area, emedian, rusted), (:production, mean)],
+        mdata = [incidence, n_rusts])
+    rename!(a_df, [:step, :n_lesion_med, :tot_area_med, :production_mean])
 
     return a_df, m_df, model
 end
@@ -16,10 +17,11 @@ function dummyrun_fullsun_spatialrust(steps::Int = 200, side::Int = 60, maxlesio
 
     a_df, m_df = run!(model, dummystep, step_model!, steps;
         # adata = [(:n_lesions, median, justrusts), (:state, medsum_s, justrusts), (:production, mean, justcofs)],
-        adata = [(:n_lesions, emedian, rusted), (:production, mean)],
-        mdata = [incidence])
+        adata = [(:n_lesions, emedian, rusted), (tot_area, emedian, rusted), (:production, mean)],
+        mdata = [incidence, n_rusts])
+    rename!(a_df, [:step, :n_lesion_med, :tot_area_med, :production_mean])
 
-    # return a_df, m_df, model
+    return a_df, m_df, model
 end
 
 function justtwosteps(side::Int = 60)

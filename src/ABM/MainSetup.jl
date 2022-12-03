@@ -30,12 +30,12 @@ function init_spatialrust(;
     switch_cycles::Tuple = (),
 
     # weather parameters
-    rain_prob::Float64 = 0.5,
-    wind_prob::Float64 = 0.4,
+    rain_prob::Float64 = 0.6,
+    wind_prob::Float64 = 0.5,
     mean_temp::Float64 = 22.5,
-    rain_data::Tuple = (),            # if provided, rain_prob is ignored
-    wind_data::Tuple = (),            # if provided, wind_prob is ignored
-    temp_data::Tuple = (),         # if provided, mean_temp is ignored
+    rain_data::Tuple = (),                  # if provided, rain_prob is ignored
+    wind_data::Tuple = (),                  # if provided, wind_prob is ignored
+    temp_data::Tuple = (),                  # if provided, mean_temp is ignored
 
     # coffee parameters
     veg_d::Int = 1,                         # photosynthesis efficiency constant
@@ -60,7 +60,7 @@ function init_spatialrust(;
     rust_gr::Float64 = 0.16,                # rust area growth rate
     opt_g_temp::Float64 = 22.5,             # optimal rust growth temp
     host_spo_inh::Float64 = 1.0,            # Coeff for inhibition of storage on sporul
-    max_g_temp::Float64 = 22.5,             # maximum rust growth temp
+    max_g_temp::Float64 = 30.0,             # maximum rust growth temp
     rep_gro::Float64 = 0.7,                 # resource sink effect on area growth
     veg_gro::Float64 = 0.3,                 # growth during vegetative phase
     spore_pct::Float64 = 0.6,               # % of area that sporulates
@@ -160,6 +160,7 @@ function init_spatialrust(;
     n_coffees = count(farm_map .== 1)
     prune_sch = Tuple(sort!(filter!(>(0), prune_sch)))
     fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
+    n_inspect = trunc(Int, inspect_effort * n_coffees)
 
     mp = MngPars{length(prune_sch),length(fungicide_sch)}(
         harvest_day, prune_sch,
@@ -167,11 +168,10 @@ function init_spatialrust(;
         incidence_as_thr, incidence_thresh, max_fung_sprayings,
         #
         n_shades, prune_cost * n_shades,
-        inspect_cost,
-        n_coffees, fung_cost * n_coffees,
+        n_coffees, inspect_cost * n_inspect, fung_cost * n_coffees,
         coffee_price,
         #
-        lesion_survive, target_shade, inspect_effort, fung_effect,
+        lesion_survive, target_shade, n_inspect, fung_effect,
         shade_g_rate, shade_r
     )
 
@@ -179,7 +179,7 @@ function init_spatialrust(;
 
     b = Books(
         doy, 0, [0], Set{Coffee}(), ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
-        0.0, false, false, 0.0, 0, 0, 0.0, 0.0
+        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0
     )
 
     if ini_rusts > 0.0
@@ -259,13 +259,13 @@ struct MngPars{N,M}
     n_shades::Int
     tot_prune_cost::Float64
     n_cofs::Int
-    inspect_cost::Float64
+    tot_inspect_cost::Float64
     tot_fung_cost::Float64
     coffee_price::Float64
     # others
     lesion_survive::Float64
     target_shade::Float64
-    inspect_effort::Float64
+    n_inspected::Int
     fung_effect::Int
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
     shade_g_rate::Float64
@@ -288,6 +288,7 @@ mutable struct Books
     wind_h::Float64
     fung_effect::Int
     fung_count::Int
+    obs_incidence::Float64
     costs::Float64
     prod::Float64
     # net_rev::Float64

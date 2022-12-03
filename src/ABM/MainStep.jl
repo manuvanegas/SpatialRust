@@ -107,21 +107,21 @@ function rust_step!(model::ABM)
         let f_day = model.current.fung_effect
             if model.current.rain
                 if model.current.wind
-                    rust_step_schedule(model, model.fun_inf, f_day, r_germinate!, grow_f_rust!, disperse_rain!, disperse_wind!)
+                    rust_step_schedule(model, model.rustpars.fung_inf, f_day, r_germinate!, grow_f_rust!, disperse_rain!, disperse_wind!)
                     outside_spores!(model)
                     # rust_step_schedule(rust, model.rng, local_temp, grow_f_rust!, parasitize!, disperse_rain!, disperse_wind!)
                     # f_r_w_step(model::ABM)
                 else
-                    rust_step_schedule(model, model.fun_inf, f_day, r_germinate!, grow_f_rust!, disperse_rain!)
+                    rust_step_schedule(model, model.rustpars.fung_inf, f_day, r_germinate!, grow_f_rust!, disperse_rain!)
                     # f_r_step(model)
                 end
             else
                 if model.current.wind
-                    rust_step_schedule(model, model.fun_inf, f_day, nr_germinate!, grow_f_rust!, disperse_wind!)
+                    rust_step_schedule(model, model.rustpars.fung_inf, f_day, nr_germinate!, grow_f_rust!, disperse_wind!)
                     outside_spores!(model)
                     # f_w_step(model)
                 else
-                    rust_step_schedule(model, model.fun_inf, f_day, nr_germinate!, grow_f_rust!)
+                    rust_step_schedule(model, model.rustpars.fung_inf, f_day, nr_germinate!, grow_f_rust!)
                     # f_step(model)
                 end
             end
@@ -133,7 +133,7 @@ end
 function rust_step_schedule(model::ABM, f_inf::Float64, f_day::Int, germinate_f::Function, grow_f::Function,
     # rust::Rust, rng::AbstractRNG, local_temp::Float64,
     # # fung_mods::NTuple{5, Float64}, #put fung_mods within rustpars. reason to keep out was if using same fnc and ones(), but not anymore
-    fs::Vararg{Function, N}
+    dispersal_fs::Vararg{Function, N}
     ) where {N}
     # for rust in shuffle!(model.rng, collect(values(model.agents))) # shuffle may not be necessary 
     # for rust in shuffle!(filter!(isinfected, collect(allagents(model)))) # or
@@ -144,8 +144,8 @@ function rust_step_schedule(model::ABM, f_inf::Float64, f_day::Int, germinate_f:
             germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
             grow_f(rust, model.rng, model.rustpars, local_temp, f_day)
         end
-        parasitize!(rust, model.rustpars)
-        for f in fs
+        parasitize!(rust, model.rustpars, model.current.rusts)
+        for f in dispersal_fs
             f(model, rust)
         end
     end
@@ -239,18 +239,18 @@ function farmer_step!(model)
         # the following is commented out for ABC. TODO: uncomment it when calibration is done
         # incidence = 0
 
-        # if model.current.days % model.mngpars.inspect_period == 0
-        #     incidence = inspect!(model)
-        # end
+        if model.current.days % model.mngpars.inspect_period == 0
+            inspect!(model)
+        end
 
-        # if model.current.fung_effect > 0
-        #     model.current.fung_effect -= 1
-        # elseif model.mngpars.incidence_as_thr
-        #     if model.current.fung_count < 4 && incidence > model.mngpars.incidence_thresh
-        #         fungicide!(model)
-        #     end
-        # elseif doy in model.mngpars.fungicide_sch
-        #     fungicide!(model)
-        # end
+        if model.current.fung_effect > 0
+            model.current.fung_effect -= 1
+        elseif model.mngpars.incidence_as_thr
+            if model.current.fung_count < 4 && model.current.obs_incidence > model.mngpars.incidence_thresh
+                fungicide!(model)
+            end
+        elseif doy in model.mngpars.fungicide_sch
+            fungicide!(model)
+        end
     end
 end
