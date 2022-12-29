@@ -15,6 +15,7 @@ export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, creat
 
     #Rust
     # infected::Bool
+    newdeps::Float64
     deposited::Float64 
     n_lesions::Int
     ages::Vector{Int}
@@ -141,6 +142,17 @@ function init_spatialrust(;
 
     smap = create_shade_map(farm_map, shade_r, map_side)
 
+    if veg_d < rep_d
+        vd = rep_d - veg_d # days of veg growth go from veg_d to 1 day before rep_d
+        rp = 364 - vd # =365-(vd+1) where "+1" is for the day of commitment growth on rep_d
+    else
+        rp = veg_d - (rep_d+1) # "+1" because 1st day of rep growth is actually commitmt
+        vd = 364 - rp # same as above, otherwise vd would be 1 day longer than needed
+    end
+
+    # cg = GrowthPhase(3, 1, (vd, 1, rp), (veg_growth!, commit_growth!, rep_growth!))
+    cg = GrowthPhase(3, 1, (vd, 1, rp), (vegetative_step!, commit_step!, reproductive_step!))
+
     cp = CoffeePars(
         veg_d, rep_d, f_avail * phs_max * photo_frac, k_sl, k_v, photo_frac,
         phs_veg, μ_veg, phs_sto, res_commit, μ_prod, exh_countdown
@@ -175,7 +187,7 @@ function init_spatialrust(;
         shade_g_rate, shade_r
     )
 
-    doy = start_days_at == 0 ? veg_d : start_days_at
+    doy = start_days_at == 0 ? veg_d - 1 : start_days_at
 
     b = Books(
         doy, 0, [0], Set{Coffee}(), ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
@@ -183,9 +195,9 @@ function init_spatialrust(;
     )
 
     if ini_rusts > 0.0
-        return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8)), ini_rusts)
+        return init_abm_obj(Props(w, cg, cp, rp, mp, b, farm_map, smap, zeros(8)), ini_rusts)
     else
-        return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8)))
+        return init_abm_obj(Props(w, cg, cp, rp, mp, b, farm_map, smap, zeros(8)))
     end
 end
 
@@ -276,6 +288,21 @@ struct ABCsampling{N}
     switch_cycles::NTuple{N,Int}
 end
 
+mutable struct GrowthPhase
+    ix::Int
+    next_in::Int
+    phase_ds::NTuple{3, Int}
+    phase_fs::NTuple{3, Function}
+end
+
+mutable struct FunSched
+    phase_ix::Int
+    next_ph_in::Int
+    phase_ds::NTuple{3, Int}
+    phase_fs::NTuple{3, Function}
+    # 
+end
+
 mutable struct Books
     days::Int                               # same as ticks unless start_days_at != 0
     ticks::Int                              # initialized as 0 but the 1st thing that happens is +=1, so it effectvly starts at 1
@@ -297,6 +324,8 @@ end
 
 struct Props
     weather::Weather
+    coffeegrowth::GrowthPhase
+    # schedfuns::FunSched
     coffeepars::CoffeePars
     rustpars::RustPars
     mngpars::MngPars

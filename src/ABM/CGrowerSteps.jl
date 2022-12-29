@@ -16,10 +16,10 @@ function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int)
         c.ages = zeros(Int, max_nl)
         c.areas = zeros(max_nl)
         c.spores = fill(false, max_nl)
-        if c.deposited < 0.1 
-            c.deposited == 0.0
-            delete!(rust.current.rusts, c)
-        end
+        # if c.deposited < 0.1 
+        #     c.deposited = 0.0
+        #     delete!(rust.current.rusts, c)
+        # end
     else
         fill_n = max_nl - surv_n
         surv_sites = sortperm(ifzerothentwo.(c.areas))[1:surv_n]

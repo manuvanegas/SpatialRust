@@ -11,8 +11,8 @@ function Coffee(id, pos, max_lesions::Int, max_age::Int; # https://juliadynamics
     # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
     # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
     # append!(spores, fill(false, fill_n))) 
-    Coffee(id, pos, sunlight, veg, storage, production, 0, Int[], deposited,
-    n_lesions, ages, areas, spores) 
+    Coffee(id, pos, sunlight, veg, storage, production, 0, Int[], 0.0,
+    deposited, n_lesions, ages, areas, spores) 
 end
 # Coffee(id, pos; shades = Int[], production = 0.0) = Coffee(id, pos, 1.0, 1.0, shades, 0.0, production, 0, 0, 0, Int[])
 
@@ -113,7 +113,7 @@ function add_trees!(model::ABM)
     startday::Int = model.current.days
     ind_shade::Float64 = model.current.ind_shade
     max_lesions::Int = model.rustpars.max_lesions
-    max_age::Int = model.rustpars.steps + 1
+    max_age::Int = model.rustpars.steps * 2 + 1
 
     cof_pos = findall(x -> x == 1, farm_map)
     # storages = appr_storage(shade_map, model.pars.target_shade, model.pars.start_days_at, model.coffee_pars)
@@ -175,12 +175,13 @@ function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
 
     # nl_dist = LogUniform(1,25.999)
     # a_dist = truncated(Exponential(0.2), 0, 1)
+    rids = collect(getproperty.(rusted_cofs, (:id)))
 
     for rusted in rusted_cofs
         deposited = 0.0
         nl = n_lesions = sample(model.rng, 1:model.rustpars.max_lesions)
         # nl = n_lesions = trunc(Int, rand(model.rng, nl_dist))
-        ages = fill((model.rustpars.steps + 1), model.rustpars.max_lesions)
+        ages = fill((model.rustpars.steps * 2 + 1), model.rustpars.max_lesions)
         areas = zeros(model.rustpars.max_lesions)
         spores = fill(false, model.rustpars.max_lesions)
 

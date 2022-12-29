@@ -7,13 +7,14 @@ function disperse_rain!(model::ABM, rust::Coffee)
         if rand(model.rng) < area * model.rustpars.spore_pct
             distance = rand(model.rng, exp_dist) * d_mod
             if distance < 1.0 #self-infected
-                @inbounds rust.deposited += 1.0
+                rust.newdeps += 1.0
             else
                 # follow splash and return: Tuple > 0 -> Coffee pos, < 0 -> outpour direction (see setup for mappings), 0 -> nothing
                 fin_pos = splash(model.rng, rust.pos, distance,rand(model.rng) * 360.0, model.farm_map, model.rustpars)
                 if any(fin_pos .> 0) && 
                     (c = (@inbounds model[id_in_position(fin_pos,model)])).exh_countdown == 0
-                    c.deposited += 1.0
+                    c.newdeps += 1.0
+                    # existing = c in model.current.rusts
                     push!(model.current.rusts, c)
                 elseif any(fin_pos .< 0) 
                     model.outpour[sum(fin_pos .* (-3,-1))] += 1.0
@@ -38,7 +39,7 @@ function disperse_wind!(model::ABM, rust::Coffee)
     if w_distance < 1.0
         for area in @inbounds rust.areas[rust.spores]
             if rand(model.rng) < area * model.rustpars.spore_pct * shading
-                @inbounds rust.deposited += 1.0
+                rust.newdeps += 1.0
             end
         end
     else
@@ -49,7 +50,8 @@ function disperse_wind!(model::ABM, rust::Coffee)
                     model.farm_map, model.shade_map, model.rustpars)
                 if any(fin_pos .> 0) && 
                     (c = (@inbounds model[id_in_position(fin_pos,model)])).exh_countdown == 0
-                    c.deposited += 1.0
+                    c.newdeps += 1.0
+                    # existing = c in model.current.rusts
                     push!(model.current.rusts, c)
                 elseif any(fin_pos .< 0) 
                     model.outpour[sum(fin_pos .* (-3,-1))] += 1.0
@@ -228,9 +230,10 @@ function outside_spores!(model::ABM)
     end
 
     for dep in filter!(t -> any(t .> 0), deposited)
-        c = (@inbounds model[id_in_position(dep, model)])
+        c = (model[id_in_position(dep, model)])
         if c.exh_countdown == 0
-            c.deposited += 1.0
+            # existing = c.id in model.current.rusts
+            c.newdeps += 1.0
             push!(model.current.rusts, c)
         end
     end

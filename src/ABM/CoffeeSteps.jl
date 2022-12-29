@@ -14,6 +14,22 @@ function vegetative_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}
     end
 end
 
+function commit_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, ind_shade::Float64)
+    if coffee.exh_countdown == 0
+        update_sunlight!(coffee, map, ind_shade)
+        veg_growth!(coffee, pars)
+        coffee.production += pars.res_commit * coffee.sunlight * coffee.veg * coffee.storage
+    elseif coffee.exh_countdown > 1
+        coffee.exh_countdown -= 1
+    else
+        update_sunlight!(coffee, map, ind_shade)
+        coffee.veg = 1.0
+        coffee.storage = init_storage(coffee.sunlight)
+        coffee.exh_countdown = 0
+        farm_map[coffee.pos...] = 1
+    end
+end
+
 function reproductive_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, ind_shade::Float64)
     if coffee.exh_countdown == 0
         update_sunlight!(coffee, map, ind_shade)
@@ -41,7 +57,7 @@ function update_sunlight!(cof::Coffee, map::Matrix{Float64}, ind_shade::Float64)
     # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
 
     # cof.sunlight = 1.0 - cof.shade_neighbors * ind_shade
-    cof.sunlight = 1.0 - map[cof.pos...] * ind_shade
+    cof.sunlight = 1.0 - @inbounds map[cof.pos...] * ind_shade
 
     # # Shift contents of the deposited vector (older spores are lost) 1 space to the "right"
     # @inbounds rust.deposited[2:end] .= rust.deposited[1:end-1]
@@ -49,7 +65,7 @@ function update_sunlight!(cof::Coffee, map::Matrix{Float64}, ind_shade::Float64)
     # @inbounds rust.deposited[1] = 0
     # this would actually be better, if I came back to this:
     # rust.deposited = [0; rust.deposited[1:end-1]]
-    cof.deposited *= 0.65 # Nutman et al, 1963
+    # cof.deposited *= 0.65 # Nutman et al, 1963 # Moved to update_deposited
 end
 
 function veg_growth!(coffee::Coffee, pars::CoffeePars)
@@ -61,9 +77,19 @@ function veg_growth!(coffee::Coffee, pars::CoffeePars)
     coffee.storage += pars.phs_sto * PhS 
 end
 
-function repr_commitment!(coffee::Coffee, pars::CoffeePars)
+function commit_growth!(coffee::Coffee, pars::CoffeePars)
+    veg = coffee.veg
+    PhS = pars.photo_const * (coffee.sunlight / (pars.k_sl + coffee.sunlight)) *
+    (veg / (pars.k_v + veg * pars.photo_frac))
+    
+    coffee.veg += pars.phs_veg * PhS - pars.μ_veg * veg
+    coffee.storage += pars.phs_sto * PhS 
     coffee.production += pars.res_commit * coffee.sunlight * coffee.veg * coffee.storage
 end
+
+# function repr_commitment!(coffee::Coffee, pars::CoffeePars)
+#     coffee.production += pars.res_commit * coffee.sunlight * coffee.veg * coffee.storage
+# end
 
 estimate_resources(coffee::Coffee) = coffee.sunlight * coffee.veg * coffee.storage
 
