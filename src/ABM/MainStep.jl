@@ -168,80 +168,6 @@ function rust_step_schedule(model::ABM, f_inf::Float64, f_day::Int, germinate_f:
     end
 end
 
-# function f_r_w_step(model::ABM)
-#     for rust in shuffle(model.rng, values(model.agents))
-#         host = model[rust.hg_id]
-#         let local_temp = model.current.temperature - (model.pars.temp_cooling * (1.0 - host.sunlight))
-#             grow_f_rust!(rust, host, model.rng, model.rustpars, model.fung_mods)
-#             parasitize!(model, rust, host)
-#             disperse_rain!(model, rust, sunlight)
-#             disperse_wind!(model, rust, sunlight)
-#         end
-#     end
-# end
-
-# function f_r_step(model::ABM)
-#     for rust in shuffle(model.rng, values(model.agents))
-#         host = model[rust.hg_id]
-#         grow_f_rust!(rust, host, model.rng, model.rustpars, model.fung_mods)
-#         parasitize!(model, rust, host)
-#         disperse_rain!(model, rust, sunlight)
-#     end
-# end
-
-# function f_w_step(model::ABM)
-#     for rust in shuffle(model.rng, values(model.agents))
-#         host = model[rust.hg_id]
-#         grow_f_rust!(rust, host, model.rng, model.rustpars, model.fung_mods)
-#         parasitize!(model, rust, host)
-#         disperse_wind!(model, rust, sunlight)
-#     end
-# end
-
-# function f_step(model::ABM)
-#     for rust in shuffle(model.rng, values(model.agents))
-#         host = model[rust.hg_id]
-#         grow_f_rust!(rust, host, model.rng, model.rustpars, model.fung_mods)
-#         parasitize!(model, rust, host)
-#     end
-# end
-
-# function r_w_step(model::ABM)
-#     for rust in shuffle(model.rng, values(model.agents))
-#         host = model[rust.hg_id]
-#         grow_rust!(rust, host, model.rng, model.rustpars)
-#         parasitize!(model, rust, host)
-#         disperse_rain!(model, rust, sunlight)
-#         disperse_wind!(model, rust, sunlight)
-#     end
-# end
-
-# function r_step(model::ABM)
-#     for rust in shuffle(model.rng, values(model.agents))
-#         host = model[rust.hg_id]
-#         grow_rust!(rust, host, model.rng, model.rustpars)
-#         parasitize!(model, rust, host)
-#         disperse_rain!(model, rust, sunlight)
-#     end
-# end
-
-# function w_step(model::ABM)
-#     for rust in shuffle(model.rng, values(model.agents))
-#         host = model[rust.hg_id]
-#         grow_rust!(rust, host, model.rng, model.rustpars)
-#         parasitize!(model, rust, host)
-#         disperse_wind!(model, rust, sunlight)
-#     end
-# end
-
-# function n_step(model::ABM)
-#     for rust in shuffle(model.rng, values(model.agents))
-#         host = model[rust.hg_id]
-#         grow_rust!(rust, host, model.rng, model.rustpars)
-#         parasitize!(model, rust, host)
-#     end
-# end
-
 function farmer_step!(model)
     let doy = mod1(model.current.days, 365)
 
@@ -259,14 +185,14 @@ function farmer_step!(model)
             inspect!(model)
         end
 
-        if model.current.fung_effect > 0
-            model.current.fung_effect -= 1
-        elseif model.mngpars.incidence_as_thr
-            if model.current.fung_count < 4 && model.current.obs_incidence > model.mngpars.incidence_thresh
-                fungicide!(model)
-            end
-        elseif doy in model.mngpars.fungicide_sch
-            fungicide!(model)
-        end
+        # if model.current.fung_effect > 0
+        #     model.current.fung_effect -= 1
+        # elseif model.mngpars.incidence_as_thr
+        #     if model.current.fung_count < 4 && model.current.obs_incidence > model.mngpars.incidence_thresh
+        #         fungicide!(model)
+        #     end
+        # elseif doy in model.mngpars.fungicide_sch
+        #     fungicide!(model)
+        # end
     end
 end

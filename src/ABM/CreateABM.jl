@@ -1,108 +1,32 @@
 
 # Coffee constructor function
+# function Coffee(id, pos, max_lesions::Int, max_age::Int; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+#     sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0, production::Float64 = 0.0,
+#     deposited::Float64 = 0.0, ages::Vector{Int} = fill(max_age, max_lesions),
+#     areas::Vector{Float64} = fill(0.0, max_lesions), spores::Vector{Bool} = fill(false, max_lesions),
+#     n_lesions::Int = 0)
+
+#     # fill_n = max_lesions - length(ages)
+    
+#     # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
+#     # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
+#     # append!(spores, fill(false, fill_n))) 
+#     Coffee(id, pos, sunlight, veg, storage, production, 0, 0, 0.0,
+#     deposited, n_lesions, ages, areas, spores) 
+# end
+
 function Coffee(id, pos, max_lesions::Int, max_age::Int; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
-    sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0, production::Float64 = 0.0,
-    deposited::Float64 = 0.0, ages::Vector{Int} = fill(max_age, max_lesions),
-    areas::Vector{Float64} = fill(0.0, max_lesions), spores::Vector{Bool} = fill(false, max_lesions),
-    n_lesions::Int = 0)
+    sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0)
 
     # fill_n = max_lesions - length(ages)
     
     # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
     # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
     # append!(spores, fill(false, fill_n))) 
-    Coffee(id, pos, sunlight, veg, storage, production, 0, Int[], 0.0,
-    deposited, n_lesions, ages, areas, spores) 
+    Coffee(id, pos, sunlight, veg, storage, 0.0, 0, 0,
+    0.0, 0.0, 0, fill(max_age, max_lesions), fill(0.0, max_lesions), fill(false, max_lesions)) 
 end
 # Coffee(id, pos; shades = Int[], production = 0.0) = Coffee(id, pos, 1.0, 1.0, shades, 0.0, production, 0, 0, 0, Int[])
-
-# mutable struct Shade <: AbstractAgent
-#     id::Int
-#     pos::NTuple{2, Int}
-#     shade::Float64 # between 20 and 90 %
-#     production::Float64
-#     age::Int
-#     hg_id::Int
-# end
-#
-# Shade(id, pos; shade = 0.3) = Shade(id, pos, shade, 0.0, 0, 0)
-
-# mutable struct Rust <: AbstractAgent
-#     id::Int
-#     pos::NTuple{2, Int}
-#     # germinated::Vector{Bool} # has it germinated and penetrated leaf tissue?
-#     # area::Vector{Float64} # total, equal to latent + sporulating
-#     # spores::Vector{Bool}
-#     # age::Vector{Int}
-#     state::Matrix{Float64}
-#     n_lesions::Int
-#     hg_id::Int # "host-guest id": rust is guest, then this stores corresponding host's id
-#     sample_cycle::Vector{Int} # inherits days of sampling from host
-#     #successful_landings::Int # maybe useful metric?
-#     #parent::Int # id of rust it came from
-# end
-
-# @agent Rust{N} GridAgent{2} begin
-#     germinated::MVector{N, Bool} # has it germinated and penetrated leaf tissue?
-#     area::MVector{N, Float64} # total, equal to latent + sporulating
-#     spores::MVector{N, Bool}
-#     age::MVector{N, Int}
-#     n_lesions::Int
-#     hg_id::Int # "host-guest id": rust is guest, then this stores corresponding host's id
-#     sample_cycle::Vector{Int} # inherits days of sampling from host
-#     #successful_landings::Int # maybe useful metric?
-#     #parent::Int # id of rust it came from
-# end
-
-# function Rust(
-#     id::Int, pos::NTuple{2,Int},
-#     max_lesions::Int,
-#     max_age::Int;
-#     germinated::Vector{Float64} = fill(0.0, max_lesions),
-#     area::Vector{Float64} = fill(0.0, max_lesions),
-#     spores::Vector{Float64} = fill(0.0, max_lesions),
-#     age::Vector{Float64} = fill((max_age + 1.0), max_lesions),
-#     n_lesions = 1,
-#     hg_id = 0,
-#     sample_cycle = []
-#     )
-
-#     # vgerminated = vcat(germinated, fill(false, (max_lesions - length(germinated))))
-#     # varea = vcat(area, fill(0.0, (max_lesions - length(area))))
-#     # vspores = vcat(spores, fill(false, (max_lesions - length(spores))))
-#     # vage = vcat(age, fill((max_age + 1), (max_lesions - length(age))))
-
-#     vgerminated = vcat(germinated, fill(0.0, (max_lesions - length(germinated))))
-#     varea = vcat(area, fill(0.0, (max_lesions - length(area))))
-#     vspores = vcat(spores, fill(0.0, (max_lesions - length(spores))))
-#     vage = vcat(age, fill((max_age + 1.0), (max_lesions - length(age))))
-
-#     mstate = vcat(vgerminated', varea', vspores', vage')
-
-#     # vgerminated = MVector{max_lesions}(vcat(germinated, fill(false, (max_lesions - length(germinated)))))
-#     # varea = MVector{max_lesions}(vcat(area, fill(0.0, (max_lesions - length(area)))))
-#     # vspores = MVector{max_lesions}(vcat(spores, fill(false, (max_lesions - length(spores)))))
-#     # vage = MVector{max_lesions}(vcat(age, fill((max_age + 1), (max_lesions - length(age)))))
-
-#     Rust(id, pos, mstate, n_lesions, hg_id, sample_cycle)
-# end
-
-# function Rust(id, pos;
-#     onelesion::Bool = true,
-#     fgerminated::Bool = false,
-#     farea::Float64 = 0.0,
-#     fspores::Float64 = 0.0,
-#     fage::Int = 0,
-#     hg_id = 0,
-#     sample_cycle = [])
-#     Rust(id, pos;
-#     germinated = vcat(germinated, fill(false, model.pars.max_lesions - 1)),
-#     area = vcat(area, fill(0.0, model.pars.max_lesions - 1)),
-#     spores = vcat(spores, fill(0.0, model.pars.max_lesions - 1)),
-#     age = vcat(age, fill((model.pars.steps + 1), model.pars.max_lesions - 1)),
-#     hg_id = hg_id,
-#     sample_cycle = sample_cycle)
-# end
 
 ## Setup functions
 
@@ -110,18 +34,18 @@ end
 function add_trees!(model::ABM)
     farm_map::Matrix{Int} = model.farm_map
     shade_map::Matrix{Float64} = model.shade_map
-    startday::Int = model.current.days
+    # startday::Int = model.current.days
     ind_shade::Float64 = model.current.ind_shade
     max_lesions::Int = model.rustpars.max_lesions
-    max_age::Int = model.rustpars.steps * 2 + 1
+    max_age::Int = model.rustpars.reset_age
 
     cof_pos = findall(x -> x == 1, farm_map)
-    # storages = appr_storage(shade_map, model.pars.target_shade, model.pars.start_days_at, model.coffee_pars)
     for pos in cof_pos
-        let shades = shade_map[pos], sunlight = shades * ind_shade
+        let sunlight = 1.0 - shade_map[pos] * ind_shade
             add_agent!(
-                Tuple(pos), Coffee, model, max_lesions, max_age;
-                sunlight = sunlight, storage = init_storage(sunlight))
+                Tuple(pos), model, max_lesions, max_age;
+                sunlight = sunlight, storage = init_storage(sunlight)
+            )
         end
     end
 end
@@ -211,21 +135,6 @@ function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
         rusted.areas = areas[sortidx]
         rusted.spores = spores[sortidx]
         push!(model.current.rusts, rusted)
-
-        # new_rust = add_agent!(
-        # rusted.pos, model,
-        # model.pars.max_lesions,
-        # model.pars.steps + 1;
-        # area = areas,
-        # spores = spores,
-        # ages = ages,
-        # n_lesions = n_lesions,
-        # hg_id = rusted.id,
-        # sample_cycle = rusted.sample_cycle
-        # )
-        # rusted.hg_id = new_rust.id
-        # rusted.area -=  (sum(areas) / model.pars.max_lesions)
-        # push!(model.current.rusts, new_rust)
     end
 end
 
@@ -263,7 +172,8 @@ function init_abm_obj(props::Props)::ABM
 
     # update_shade_map!(model)
 
-    add_trees!(model)
+    # add_trees!(model)
+    add_abc_trees!(model)
 
     return model
 end

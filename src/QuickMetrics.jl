@@ -5,8 +5,10 @@ totprod(model::ABM) = model.current.prod
 # maxA(model::ABM) = model.current.max_rust
 
 incidence(model::ABM) = length(model.current.rusts) / nagents(model)
+# incidence(model::ABM) = count(r.n_lesions > 0 for r in allagents(model)) / nagents(model)
 
 n_rusts(model::ABM) = length(model.current.rusts)
+# n_rusts(model::ABM) = count(r.n_lesions > 0 for r in allagents(model))
 
 n_coffees(model::ABM) = nagents(model)
 

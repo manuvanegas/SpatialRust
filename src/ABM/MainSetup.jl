@@ -9,7 +9,7 @@ export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, creat
     storage::Float64
     production::Float64
     exh_countdown::Int
-    sample_cycle::Vector{Int} # vector with cycles where coffee should be sampled
+    sample_cycle::Int # vector with cycles where coffee should be sampled
     # fungicide::Int
     # fung_countdown::Int
 
@@ -39,18 +39,18 @@ function init_spatialrust(;
     temp_data::Tuple = (),                  # if provided, mean_temp is ignored
 
     # coffee parameters
-    veg_d::Int = 1,                         # photosynthesis efficiency constant
-    rep_d::Int = 135,                       # light half-rate constant
-    f_avail::Float64 = 0.5,                 # fraction of photosynthetate to area
-    phs_max::Float64 = 0.2,                 # fraction of photosynthetate to storage
-    k_sl::Float64 = 0.05,                   # constant for resource commitment to production
-    k_v::Float64 = 0.2,                     # storage threshold for deficit state
-    photo_frac::Float64 = 0.2,              # production resource demand rate 
-    phs_veg::Float64 = 0.8,                 # area resource demand rate
-    μ_veg::Float64 = 0.01,                  # 365 or 182, depending on the region
-    phs_sto::Float64 = 0.6,                 # start of vegetative growth
-    res_commit::Float64 = 0.25,             # start of reproductive growth
-    μ_prod::Float64 = 0.01,                 # days to count after plant has been exhausted (2-3 y to resume production)            
+    veg_d::Int = 1,                         # start of vegetative growth   
+    rep_d::Int = 135,                       # start of reproductive growth
+    f_avail::Float64 = 0.5,                 # fraction of daily assimilates available for allocation
+    phs_max::Float64 = 0.2,                 # maximum assimilation rate
+    k_sl::Float64 = 0.05,                   # half-rate constant for sunlight-dependent photosynthesic rate  
+    k_v::Float64 = 0.2,                     # half-rate constant for veg-dependent photosynthesic rate 
+    photo_frac::Float64 = 0.2,              # fraction of veg tissue that is photosynthetic
+    phs_veg::Float64 = 0.8,                 # fraction of photosynthetate allocated and converted to veg 
+    μ_veg::Float64 = 0.01,                  # rate of veg biomass loss
+    phs_sto::Float64 = 0.6,                 # fraction of photosynthetate allocated and converted to storage
+    res_commit::Float64 = 0.25,             # scaling par to determine resources commited to production
+    μ_prod::Float64 = 0.01,                 # rate of production biomass loss
 
     # rust parameters
     max_lesions::Int64 = 25,                # maximum number of rust lesions
@@ -74,7 +74,7 @@ function init_spatialrust(;
     steps::Int = 500,                       # simulation steps. Included in RustPars to reset Rust ages values on exhaustion
     rust_paras::Float64 = 0.1,              # resources taken per unit of total area
     exh_threshold::Float64 = 0.5,           # veg threshold for exhaustion (0 to 2)
-    exh_countdown::Int = 731,               # days of exhausted state
+    exh_countdown::Int = 731,               # days to count after plant has been exhausted (2-3 y to resume production) 
 
     map_side::Int = 100,                    # side size
     rain_distance::Float64 = 1.0,           # mean distance of spores dispersed by rain
@@ -85,7 +85,7 @@ function init_spatialrust(;
     shade_block::Float64 = 0.5,             # prob of Shades blocking a wind dispersal event
 
     # farm management
-    harvest_day::Int = 365,
+    harvest_day::Int = 365,                 # 365 or 182, depending on the region
     prune_sch::Vector{Int} = [182,-1,-1],
     inspect_period::Int = 7,                # days
     fungicide_sch::Vector{Int} = [91,273,-1],
@@ -123,9 +123,9 @@ function init_spatialrust(;
     )
 
     w = Weather{steps}(
-        Tuple(isempty(rain_data) ? rand(steps) .< rain_prob : rain_data),
-        Tuple(isempty(wind_data) ? rand(steps) .< wind_prob : wind_data),
-        Tuple(isempty(temp_data) ? fill(mean_temp, steps) .+ randn() .* 2 : temp_data)
+        isempty(rain_data) ? Tuple(rand(steps) .< rain_prob) : rain_data[1:steps],
+        isempty(wind_data) ? Tuple(rand(steps) .< wind_prob) : wind_data[1:steps],
+        isempty(temp_data) ? Tuple(fill(mean_temp, steps) .+ randn() .* 2) : temp_data[1:steps]
     )
 
     if isempty(farm_map)
@@ -134,7 +134,7 @@ function init_spatialrust(;
         elseif common_map == :fullsun
             farm_map = create_fullsun_farm_map(map_side)
         elseif common_map == :regshaded
-            farm_map = create_regshaded_farm_map(map_side, side)
+            farm_map = create_regshaded_farm_map(map_side, shade_d)
         end
     else
         map_side = size(farm_map)[1]
@@ -160,7 +160,7 @@ function init_spatialrust(;
         host_spo_inh, max_g_temp, rep_gro, veg_gro, spore_pct, fung_inf, fung_gro_prev,
         fung_gro_cur, fung_spor_prev, fung_spor_cur, 
         #
-        steps, rust_paras, exh_threshold, exh_countdown,
+        steps, (steps * 2 + 1), rust_paras, exh_threshold, exh_countdown,
         #
         map_side, rain_distance, diff_splash, tree_block, wind_distance, diff_wind, shade_block
     )
@@ -187,7 +187,7 @@ function init_spatialrust(;
     doy = start_days_at == 0 ? veg_d - 1 : start_days_at
 
     b = Books(
-        doy, 0, [0], Set{Coffee}(), ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
+        doy, 0, Set{Coffee}(), ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0
     )
 
@@ -242,6 +242,7 @@ struct RustPars
     fung_spor_cur::Float64 
     # parasitism
     steps::Int
+    reset_age::Int
     rust_paras::Float64
     exh_threshold::Float64
     exh_countdown::Int
@@ -288,7 +289,7 @@ end
 mutable struct Books
     days::Int                               # same as ticks unless start_days_at != 0
     ticks::Int                              # initialized as 0 but the 1st thing that happens is +=1, so it effectvly starts at 1
-    cycle::Vector{Int}
+    # cycle::Vector{Int}
     rusts::Set{Coffee}
     ind_shade::Float64
     temperature:: Float64
