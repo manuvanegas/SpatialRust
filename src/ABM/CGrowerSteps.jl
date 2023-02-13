@@ -4,18 +4,17 @@ function harvest!(model::ABM)
     # model.current.prod += harvest
     model.current.prod += sum(getproperty.(allagents(model), :production))
     model.current.fung_count = 0
-    new_harvest_cycle!.(allagents(model), model.mngpars.lesion_survive, model.rustpars.max_lesions)
-    # possible error, use Ref()
+    new_harvest_cycle!.(allagents(model), model.mngpars.lesion_survive, model.rustpars.max_lesions, model.rustpars.reset_age)
 end
 
-function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int)
+function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::Int)
     c.production = 0.0
     c.deposited *= surv_p
     surv_n = c.n_lesions = trunc(Int, c.n_lesions * surv_p)
     if surv_n == 0
-        c.ages = zeros(Int, max_nl)
-        c.areas = zeros(max_nl)
-        c.spores = fill(false, max_nl)
+        fill!(c.ages, reset_age)
+        fill!(c.areas, 0.0)
+        fill!(c.spores, false)
         # if c.deposited < 0.1 
         #     c.deposited = 0.0
         #     delete!(rust.current.rusts, c)
@@ -23,7 +22,7 @@ function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int)
     else
         fill_n = max_nl - surv_n
         surv_sites = sortperm(ifzerothentwo.(c.areas))[1:surv_n]
-        c.ages = append!(c.ages[surv_sites], zeros(Int, fill_n))
+        c.ages = append!(c.ages[surv_sites], fill(reset_age, fill_n))
         c.areas = append!(c.areas[surv_sites], zeros(fill_n))
         c.spores = append!(c.spores[surv_sites], fill(false, fill_n))
     end
@@ -32,12 +31,6 @@ end
 ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
 
 function prune_shades!(model::ABM)
-    # for shade_i in model.current.shade_ids
-    #     @inbounds model[shade_i].shade = model.pars.target_shade
-    # end
-    # model.current.costs += length(model.current.shade_ids) * model.pars.prune_cost
-
-
     model.current.ind_shade = model.mngpars.target_shade
     model.current.costs += model.mngpars.tot_prune_cost
 end
@@ -54,18 +47,12 @@ end
 # end
 
 function inspect!(model::ABM)
-    # only non-exhausted coffees can be counted, so the constant n_cofs cannot be used here
-    # inspectable = filter!(notexhausted, collect(allagents(model)))
-    # n_inspected = trunc(Int,(model.mngpars.inspect_effort * length(inspectable)))
-    # if model.mngpars.n_inspected < length(inspectable)
+    # exhausted coffees can be inspected in this version. They have a 100% chance of being regarded as infected.
     inspected = sample(model.rng, collect(allagents(model)), model.mngpars.n_inspected, replace = false)
-    # else
-    #     inspected = inspectable
-    # end
     n_infected = 0
 
     for c in inspected
-        if !notexhausted(c)
+        if c.exh_countdown > 0
             n_infected += 1
         # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
         elseif any(c.areas .> 0.1) && rand(model.rng) < maximum(c.areas) 
@@ -73,7 +60,7 @@ function inspect!(model::ABM)
             spotted = unique!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas[1:c.n_lesions])), 5))
             fill_n = length(spotted)
             c.n_lesions -= fill_n
-            c.ages = append!(c.ages[Not(spotted)], zeros(Int, fill_n))
+            c.ages = append!(c.ages[Not(spotted)], fill(model.rustpars.reset_age, fill_n))
             c.areas = append!(c.areas[Not(spotted)], zeros(fill_n))
             c.spores = append!(c.spores[Not(spotted)], fill(false, fill_n))
             if c.n_lesions == 0 && c.deposited < 0.1 
@@ -102,10 +89,10 @@ function inspect!(model::ABM)
     end
 
     model.current.costs += model.mngpars.tot_inspect_cost
-
-    # return n_infected / length(inspected)
     model.current.obs_incidence = n_infected / model.mngpars.n_inspected
 end
+
+# exhausted(c::Coffee)::Bool = c.exh_countdown > 0
 
 visible(a::Float64) = a > 0.1 ? a : 0.0
 
