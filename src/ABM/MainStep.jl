@@ -155,7 +155,7 @@ function rust_step_schedule(model::ABM, f_inf::Float64, f_day::Int, germinate_f:
         #     @error "t $(model.current.ticks), r $(rust.id), $(rust.n_lesions), $(rust.ages), $(rust.deposited)"
         # end
         # parasitize!(rust, model.rustpars, model.current.rusts)
-        parasitize!(rust, model.rustpars)
+        parasitize!(rust, model.rustpars, model.farm_map)
         for f in dispersal_fs
             f(model, rust)
         end

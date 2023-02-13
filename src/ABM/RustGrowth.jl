@@ -114,7 +114,7 @@ function grow_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, 
                 end
                 # update total lesion areas
                 # @simd @fastmath
-                rust.areas .+= rust.areas .* (1 .- rust.areas) .* growth_mod
+                rust.areas .+= rust.areas .* (1.0 .- rust.areas) .* growth_mod
                 # @views(@inbounds(rust.areas[1:nls] .+= rust.areas[1:nls] .* (1 .- rust.areas[1:nls]) .* growth_mod)) #BENCH 
                 # update sporulated area
                 # rust.spores .= rust.spores .* rust.areas .* rustpars.spore_pct
@@ -147,7 +147,7 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                         @inbounds rust.spores[nl] = true
                     end
                 end
-                rust.areas .=+ rust.areas .* (1 .- rust.areas) .* gro_mods
+                rust.areas .+= rust.areas .* (1 .- rust.areas) .* gro_mods
                 # @views(@inbounds(rust.areas[1:nl] .+= rust.areas[1:nl] .* (1 .- rust.areas[1:nl]) .* gro_mods)) # BENCH 
                 # update sporulated area
                 # rust.spores .= rust.spores .* rust.areas .* rustpars.spore_pct
@@ -159,19 +159,20 @@ end
 ## Parasitism
 
 # function parasitize!(rust::Coffee, rustpars::RustPars, rusts::Set{Coffee})
-function parasitize!(rust::Coffee, rustpars::RustPars)
-    rust.storage -= rustpars.rust_paras * sum(rust.areas)
+function parasitize!(rust::Coffee, rustpars::RustPars, farm_map::Array{Int, 2})
+    rust.storage -= (rustpars.rust_paras * sum(rust.areas))
 
     if rust.storage < 0 && rust.veg < rustpars.exh_threshold
-        rust.veg = 0
-        rust.production = 0
+        # print("Exh: $(rust.id), $(sum(rust.areas)), $(rust.veg), $(rust.storage), $(rust.production), $(extrema(rust.ages)). ")
+        # print("Exh: $(sum(rust.areas)), $(rust.veg). ")
+        rust.production = 0.0
         rust.exh_countdown = rustpars.exh_countdown
         # fill!(rust.deposited, 0)
         rust.newdeps = 0.0
         rust.deposited = 0.0
         rust.n_lesions = 0
-        fill!(rust.ages, rustpars.steps * 2 + 1)
-        fill!(rust.areas, 0.0)
+        fill!(rust.ages, rustpars.reset_age)
+        # fill!(rust.areas, 0.0)
         fill!(rust.spores, false)
         @inbounds farm_map[rust.pos...] = 0
     end
@@ -185,7 +186,9 @@ function update_deposited!(rust::Coffee, rusts::Set{Coffee})
     # if rust.deposited >= 0.1
     #     # push!(rusts, rust)
     # else
-    if rust.deposited < 0.1
+    if rust.exh_countdown > 0
+        delete!(rusts, rust)
+    elseif rust.deposited < 0.05
         rust.deposited = 0.0
         if rust.n_lesions == 0
             delete!(rusts, rust)
