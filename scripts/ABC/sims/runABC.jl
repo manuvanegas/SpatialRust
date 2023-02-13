@@ -21,20 +21,23 @@ load_time = @elapsed begin
     const n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
     const startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
 
-    const when_rust = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_rust.arrow")[1])
-    const when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
+    when_rust = Vector(Arrow.Table("data/exp_pro/input/whentocollect.arrow")[1])
+    const when_2017 = filter(d -> d < 200, when_rust)
+    const when_2018 = filter(d -> d > 200, when_rust)
+    # const when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
 
     # const when_rust = sort!(union(when_plant, when_rust))
 
     # read climate data
-    const rain_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[1])
-    const temp_data = Vector(Arrow.Table("data/exp_pro/inputs/sun_weather.arrow")[2])
+    w_table = Arrow.Table("data/exp_pro/input/weather.arrow")
+    const temp_data = Vector(w_table[2])
+    const rain_data = Vector(w_table[3])
+    const wind_data = Vector(w_table[4])
 
     const parameters = DataFrame(Arrow.Table(string("data/ABC/", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
 
-    mkpath("/scratch/mvanega1/ABC/sims/ages")
-    mkpath("/scratch/mvanega1/ABC/sims/cycles")
-    mkpath("/scratch/mvanega1/ABC/sims/prod")
+    mkpath("/scratch/mvanega1/ABC/sims/quants")
+    mkpath("/scratch/mvanega1/ABC/sims/quals")
 end
 
 println("Loads: $load_time")
@@ -50,7 +53,7 @@ flush(stdout)
 # flush(stdout)
 
 run_time = @elapsed begin
-    outputs = pmap(p -> sim_abc(p, rain_data, temp_data, when_rust, when_plant, 0.5),
+    outputs = pmap(p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018),
                     eachrow(parameters); retry_delays = fill(0.1, 3))
     println("total: ", length(outputs))
 end
@@ -59,17 +62,14 @@ println("Run: $run_time")
 flush(stdout)
 
 cat_time = @elapsed begin
-    cat_outs = reduce(struct_cat, outputs)
-    filenum = ifelse(parse(Int, ARGS[2]) < 10,
-    string("00", ARGS[2]),
-    ifelse(parse(Int, ARGS[2]) < 100,
-        string("0", ARGS[2]),
-        ARGS[2]
-        )
+    quant_df, qual_df = reduce(cat_dfs, outputs)
+    num = parse(Int, ARGS[2])
+    add0s = ifelse(num < 10, "00",
+        ifelse(num < 100, "0", "")
     )
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/ages/m_", filenum, ".arrow"), cat_outs.per_age)
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/cycles/m_", filenum, ".arrow"), cat_outs.per_cycle)
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/prod/m_", filenum, ".arrow"), cat_outs.prod_df)
+    filenum = string(add0s, ARGS[2])
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/quants/m_", filenum, ".arrow"), quant_df)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/quals/m_", filenum, ".arrow"), qual_df)
 end
 
 # println("Write: $cat_time")
