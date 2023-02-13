@@ -104,9 +104,9 @@ function plot_sun_shade(lastdays::Bool = true, wrust::Bool = true;
     Label(fig[1,3, Top()], "Shade (0.5)")
     Label(fig[1,4, Top()], "Shade (0.3)")
     Label(fig[1,0], "V", rotation = pi/2, tellheight = false)
-    Label(fig[2,1], "B", rotation = pi/2, tellheight = false)
-    Label(fig[3,1], "S", rotation = pi/2, tellheight = false)
-    Label(fig[4,1], "R", rotation = pi/2, tellheight = false)
+    Label(fig[2,0], "B", rotation = pi/2, tellheight = false)
+    Label(fig[3,0], "S", rotation = pi/2, tellheight = false)
+    Label(fig[4,0], "R", rotation = pi/2, tellheight = false)
     Label(fig[5,:], "a=$a, b=$b, d=$d, e=$e, f=$f, μ_B=$μ_B, bd=$bd, Vi=$Vi, Si=$Si", tellwidth = false)
     # ylims!.(axs, low = -0.05)
 
@@ -273,7 +273,7 @@ function gen_3stages(params, bd)
         dB = PhS * tob - µ_B * B
         # if B > 6.0; println(B,dB);end
         if dB > 0.0
-            ΔV += dB
+            ΔV += dB * b
             ΔB = 0.0
             ΔS = 0.0 - γ * R
         else
@@ -327,7 +327,7 @@ function gen_3stages(params, bd)
             # ΔB = PhS - μ_B * B
             # ΔV = μ_V * V
             if ΔB > 0.0
-                ΔV = ΔB - µ_V * V #- (γ * R)
+                ΔV = ΔB * b - µ_V * V #- (γ * R)
                 ΔB = 0.0
                 if ΔV > 0.0
                     ΔS = ΔV - (γ * R)
