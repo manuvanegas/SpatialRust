@@ -163,8 +163,6 @@ function parasitize!(rust::Coffee, rustpars::RustPars, farm_map::Array{Int, 2})
     rust.storage -= (rustpars.rust_paras * sum(rust.areas))
 
     if rust.storage < 0 && rust.veg < rustpars.exh_threshold
-        # print("Exh: $(rust.id), $(sum(rust.areas)), $(rust.veg), $(rust.storage), $(rust.production), $(extrema(rust.ages)). ")
-        # print("Exh: $(sum(rust.areas)), $(rust.veg). ")
         rust.production = 0.0
         rust.exh_countdown = rustpars.exh_countdown
         # fill!(rust.deposited, 0)
