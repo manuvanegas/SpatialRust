@@ -2,10 +2,13 @@ function harvest!(model::ABM)
     # model.current.net_rev += (model.pars.coffee_price * harvest) - model.current.costs
     # model.current.gains += model.coffee_price * harvest * model.pars.p_density
     # model.current.prod += harvest
-    model.current.prod += sum(getproperty.(allagents(model), :production))
+    model.current.prod += sum(map(get_production, allagents(model)))
+        # getproperty.(allagents(model), :production))
     model.current.fung_count = 0
     new_harvest_cycle!.(allagents(model), model.mngpars.lesion_survive, model.rustpars.max_lesions, model.rustpars.reset_age)
 end
+
+get_production(c::Coffee) = c.production
 
 function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::Int)
     c.production = 0.0

@@ -249,35 +249,35 @@ end
 
 function starting_pos(rng, side::Int, q::Int)
     if q == 1 # quadrant to the left
-        return (sample(rng, 1:side), 1)
+        return (rand(rng, 1:side), 1)
     elseif q == 7 # quadrant in the down-left diagonal
         quarter = fld(side, 4)
-        randcoor = sample(rng, [1,2])
+        randcoor = rand(rng, [1,2])
         if randcoor == 1
-            return (sample(rng, (3*quarter+1):side), side)
+            return (rand(rng, (3*quarter+1):side), side)
         else
-            return (1, sample(rng, 1:quarter))
+            return (1, rand(rng, 1:quarter))
         end
     elseif q == 6 # quadrant below
-        return (side, sample(rng, 1:side))
+        return (side, rand(rng, 1:side))
     elseif q == 8 # quadrant in the down-right diagonal
         quarter = fld(side, 4)
-        return (sample(rng, (3*quarter+1):side), side)[shuffle!(rng, [1,2])]
+        return (rand(rng, (3*quarter+1):side), side)[shuffle!(rng, [1,2])]
     elseif q == 2 # quadrant to the right
-        return (sample(rng, 1:side), side)
+        return (rand(rng, 1:side), side)
     elseif q == 5 # quadrant in the up-right diagonal
         quarter = fld(side, 4)
-        randcoor = sample(rng, [1,2])
+        randcoor = rand(rng, [1,2])
         if randcoor == 1
-            return (sample(rng, 1:quarter), side)
+            return (rand(rng, 1:quarter), side)
         else
-            return (1, sample(rng, (3*quarter+1):side))
+            return (1, rand(rng, (3*quarter+1):side))
         end
     elseif q == 3 # quadrant above
-        return (1, sample(rng, 1:side))
+        return (1, rand(rng, 1:side))
     else # q = 4, quadrant in the up-left diagonal
         quarter = fld(side, 4)
-        return (sample(rng, 1:quarter), 1)[shuffle!(rng, [1,2])]
+        return (rand(rng, 1:quarter), 1)[shuffle!(rng, [1,2])]
     end
 end
 

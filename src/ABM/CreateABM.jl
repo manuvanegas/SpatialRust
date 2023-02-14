@@ -99,11 +99,11 @@ function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
 
     # nl_dist = LogUniform(1,25.999)
     # a_dist = truncated(Exponential(0.2), 0, 1)
-    rids = collect(getproperty.(rusted_cofs, (:id)))
+    # rids = collect(getproperty.(rusted_cofs, (:id)))
 
     for rusted in rusted_cofs
         deposited = 0.0
-        nl = n_lesions = sample(model.rng, 1:model.rustpars.max_lesions)
+        nl = n_lesions = rand(model.rng, 1:model.rustpars.max_lesions)
         # nl = n_lesions = trunc(Int, rand(model.rng, nl_dist))
         ages = fill((model.rustpars.steps * 2 + 1), model.rustpars.max_lesions)
         areas = zeros(model.rustpars.max_lesions)

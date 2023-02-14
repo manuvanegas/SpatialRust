@@ -242,8 +242,6 @@ function abc_run_2017!(model::ABM,
         prod_clr_cor = cor(prod_clr_df[!, :production], prod_clr_df[!, :clr_area])
     end
 
-    println(first(prod_clr_df, 20))
-
     return per_age, exh_perc, prod_clr_cor
 end
 
@@ -282,8 +280,6 @@ function abc_run_2018!(model::ABM,
             append!(per_age, df)
         end
     end
-
-    println("Tot: $(sum(map(c -> c.exh_countdown > 0, values(model.agents))))")
 
     return per_age
 end
