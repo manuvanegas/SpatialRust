@@ -70,13 +70,11 @@ end
 
 # Add initial rust agents
 
-function rusted_cluster(model::ABM, r::Int) # Returns a "cluster" of initially rusted coffees
-    minp = r + 1
-    maxp = model.rustpars.map_side - r
-    main = sample(model.rng, collect(Iterators.filter( # sample 1 coffee not in the map margins
-        c -> all(minp .<= c.pos .<= maxp), allagents(model)
+function rusted_cluster(model::ABM, r::Int, avail_cofs) # Returns a "cluster" of initially rusted coffees
+    main_c = sample(model.rng, collect(Iterators.filter( 
+        c -> all(minp .<= c.pos .<= maxp), avail_cofs
     )))
-    cluster = nearby_agents(main, model, r)
+    cluster = nearby_agents(main_c, model, r)
 
     return cluster
 end
@@ -87,13 +85,22 @@ function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
         rusted_cofs = sample(model.rng, collect(allagents(model)), n_rusts, replace = false)
         # rusted_cofs = collect(model[i] for i in rusted_ids)
     elseif ini_rusts < 2.0
-        rusted_cofs = rusted_cluster(model, 2)
+        r = 1
+        minp = r + 1
+        maxp = model.rustpars.map_side - r
+        avail_cofs = Iterators.filter(c -> all(minp .<= c.pos .<= maxp), allagents(model)) # rm coffees in the map margins
+        rusted_cofs = rusted_cluster(model, r, avail_cofs)
     else
-        rusted_cofs = rusted_cluster(model, 2)
+        r = 1
+        minp = r + 1
+        maxp = model.rustpars.map_side - r
+        avail_cofs = Iterators.filter(c -> all(minp .<= c.pos .<= maxp), allagents(model))
+        rusted_cofs = rusted_cluster(model, 1, avail_cofs)
+        avail_cofs = Iterators.filter(c -> c ∉ rusted_cofs, avail_cofs)
         for i in 2.0:ini_rusts
-            rusted_cofs = Iterators.flatten((rusted_cofs, rusted_cluster(model, 2)))
+            rusted_cofs = Iterators.flatten((rusted_cofs, rusted_cluster(model, 1, avail_cofs)))
+            avail_cofs = Iterators.filter(c -> c ∉ rusted_cofs, avail_cofs)
         end
-
         rusted_cofs = unique(rusted_cofs)
     end
 
