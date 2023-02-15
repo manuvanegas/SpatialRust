@@ -78,8 +78,7 @@ function simulate_plots(p_row::DataFrameRow,
         rain_data = rain_data,
         wind_data = wind_data,
         temp_data = temp_data,
-        # TODO
-        ini_rusts = 0.1,
+        ini_rusts = 0.02,
         fungicide_sch = Int[],
 
         # switch_cycles = when_prod,
@@ -123,8 +122,7 @@ function simulate_plots(p_row::DataFrameRow,
         rain_data = rain_data,
         wind_data = wind_data,
         temp_data = temp_data,
-        # TODO
-        ini_rusts = 0.1,
+        ini_rusts = 0.02,
         fungicide_sch = Int[],
 
         # switch_cycles = when_prod2,

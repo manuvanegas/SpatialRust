@@ -1,14 +1,14 @@
 usings_time = @elapsed begin
-    @everywhere using DrWatson
-    @everywhere @quickactivate "SpatialRust"
+    # @everywhere using DrWatson
+    @everywhere begin
+        using Pkg
+        Pkg.activate(".")
+    end
     @everywhere begin
         using DataFrames
         using Arrow
         using Distributed: pmap
-        include(srcdir("SpatialRust.jl"))
-    end
-    @everywhere begin
-        using .SpatialRust
+        using SpatialRust
     end
 end
 
@@ -30,9 +30,9 @@ load_time = @elapsed begin
 
     # read climate data
     w_table = Arrow.Table("data/exp_pro/input/weather.arrow")
-    const temp_data = Vector(w_table[2])
-    const rain_data = Vector(w_table[3])
-    const wind_data = Vector(w_table[4])
+    const temp_data = Tuple(w_table[2])
+    const rain_data = Tuple(w_table[3])
+    const wind_data = Tuple(w_table[4])
 
     const parameters = DataFrame(Arrow.Table(string("data/ABC/", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
 
@@ -55,6 +55,8 @@ flush(stdout)
 run_time = @elapsed begin
     outputs = pmap(p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018),
                     eachrow(parameters); retry_delays = fill(0.1, 3))
+    # outputs = pmap(p -> sim_abc(p),
+    #                 eachrow(parameters); retry_delays = fill(0.1, 3), batch_size = 20)
     println("total: ", length(outputs))
 end
 
