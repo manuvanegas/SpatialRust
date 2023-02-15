@@ -14,6 +14,7 @@ _research
 ExpDataProcessing
 scripts/Old
 src/Older
+src/PkgCompile/*.so
 
 ################################################################################
 #                                    Julia                                     #
