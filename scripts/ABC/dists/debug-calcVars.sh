@@ -1,16 +1,17 @@
 #!/bin/bash
-#SBATCH --ntasks=10
-#SBATCH -p debug
-#SBATCH -q wildfire
-#SBATCH -J ABCv
-#SBATCH -o logs/ABC/vars/o.%x-%A.o
-#SBATCH -e logs/ABC/vars/o.%x-%A.e
+#SBATCH --ntasks=5
+#SBATCH --ntasks-per-core=1
+#SBATCH -p htc
+#SBATCH -q debug
+#SBATCH -J ABCvar
+#SBATCH -o logs/ABC/vars/do-%A.o
+#SBATCH -e logs/ABC/vars/do-%A.e
 #SBATCH -t 0-00:15:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mvanega1@asu.edu
 
 module purge
-module load julia/1.7.2
+module load julia/1.8.2
 
-export SLURM_NODEFILE=`generate_pbs_nodefile`
+export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/dists/calcVars.jl
