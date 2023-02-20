@@ -181,9 +181,9 @@ function farmer_step!(model)
 
         # the following is commented out for ABC. TODO: uncomment it when calibration is done
 
-        if model.current.days % model.mngpars.inspect_period == 0
-            inspect!(model)
-        end
+        # if model.current.days % model.mngpars.inspect_period == 0
+        #     inspect!(model)
+        # end
 
         # if model.current.fung_effect > 0
         #     model.current.fung_effect -= 1
