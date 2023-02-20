@@ -19,7 +19,7 @@ function commit_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, in
     if coffee.exh_countdown == 0
         update_sunlight!(coffee, map, ind_shade)
         veg_growth!(coffee, pars)
-        coffee.production += pars.res_commit * coffee.sunlight * coffee.veg * coffee.storage
+        coffee.production = max(0.0, pars.res_commit * coffee.sunlight * coffee.veg * coffee.storage)
     elseif coffee.exh_countdown > 1
         coffee.exh_countdown -= 1
     else
@@ -77,18 +77,21 @@ function veg_growth!(coffee::Coffee, pars::CoffeePars)
     (photo_veg / (pars.k_v + photo_veg))
     
     coffee.veg += pars.phs_veg * PhS - pars.μ_veg * coffee.veg
+    if coffee.veg < 0.0
+        coffee.veg = 0.0001
+    end
     coffee.storage += pars.phs_sto * PhS 
 end
 
-function commit_growth!(coffee::Coffee, pars::CoffeePars)
-    photo_veg = coffee.veg * pars.photo_frac
-    PhS = pars.photo_const * (coffee.sunlight / (pars.k_sl + coffee.sunlight)) *
-    (photo_veg / (pars.k_v + photo_veg))
+# function commit_growth!(coffee::Coffee, pars::CoffeePars)
+#     photo_veg = coffee.veg * pars.photo_frac
+#     PhS = pars.photo_const * (coffee.sunlight / (pars.k_sl + coffee.sunlight)) *
+#     (photo_veg / (pars.k_v + photo_veg))
     
-    coffee.veg += pars.phs_veg * PhS - pars.μ_veg * coffee.veg
-    coffee.storage += pars.phs_sto * PhS 
-    coffee.production += pars.res_commit * coffee.sunlight * coffee.veg * coffee.storage
-end
+#     coffee.veg += pars.phs_veg * PhS - pars.μ_veg * coffee.veg
+#     coffee.storage += pars.phs_sto * PhS 
+#     coffee.production += pars.res_commit * coffee.sunlight * coffee.veg * coffee.storage
+# end
 
 # function repr_commitment!(coffee::Coffee, pars::CoffeePars)
 #     coffee.production += pars.res_commit * coffee.sunlight * coffee.veg * coffee.storage
@@ -129,7 +132,7 @@ function rep_growth!(coffee::Coffee, pars::CoffeePars)
     end
 
     if coffee.veg < 0.0
-        coffee.veg = 0.0
+        coffee.veg = 0.0001
     end
     if coffee.production < 0.0
         coffee.production = 0.0
