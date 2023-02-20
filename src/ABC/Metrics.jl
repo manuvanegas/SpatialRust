@@ -49,6 +49,7 @@ surveyed_today(c::Coffee, cycle::Vector{Int})::Bool = c.sample_cycle ∈ cycle &
 
 function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_last::Bool)
     survey_cofs = Iterators.filter(c -> surveyed_today(c, cycle_n), values(model.agents))
+    spore_pct = model.rustpars.spore_pct
 
     let df_i = DataFrame(age = Int[], area = Float64[], spore = Float64[], nl = Int[], id = Int[])
         for cof in survey_cofs
@@ -59,7 +60,7 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
             df_c = DataFrame()
             df_c[!, :age] = cof.ages
             df_c[!, :area] = cof.areas
-            df_c[!, :spore] = cof.spores
+            df_c[!, :spore] = cof.spores .* cof.areas .* spore_pct
             df_c[!, :nl] .= cof.n_lesions
             df_c[!, :id] .= cof.id
             append!(df_i, df_c)
