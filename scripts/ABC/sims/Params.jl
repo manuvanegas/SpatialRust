@@ -16,6 +16,7 @@ parameters = DataFrame(
     RowN = collect(1:Ns),
     max_inf = rand(Uniform(), Ns),
     host_spo_inh = rand(Uniform(0.0, 20.0), Ns),
+    rust_gr = rand(Uniform(0.1, 0.3), Ns),
     opt_g_temp = rand(opt_temp_dist, Ns),
     max_g_temp = rand(max_temp_dist, Ns),
     spore_pct = rand(Uniform(), Ns),
@@ -26,7 +27,6 @@ parameters = DataFrame(
     wind_distance = rand(Uniform(0.0, 20.0), Ns),
     shade_block = rand(Uniform(), Ns),
     lesion_survive = rand(Uniform(), Ns),
-
     # temp_cooling = 
     # light_inh = 
     # rain_washoff = 
