@@ -296,7 +296,7 @@ mutable struct Books
     rain::Bool
     wind::Bool
     wind_h::Float64
-    fung_effect::Int
+    fungicide::Int
     fung_count::Int
     obs_incidence::Float64
     costs::Float64

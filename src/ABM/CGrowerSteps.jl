@@ -101,6 +101,6 @@ visible(a::Float64) = a > 0.1 ? a : 0.0
 
 function fungicide!(model::ABM)
     model.current.costs += model.mngpars.tot_fung_cost
-    model.current.fung_effect = model.mngpars.fung_effect
+    model.current.fungicide = model.mngpars.fung_effect
     model.current.fung_count += 1
 end

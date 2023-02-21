@@ -95,23 +95,24 @@ Pkg.activate(".")
 using CairoMakie
 
 g_r = 0.15
-g_r = 3.1
+g_r = 0.4
+snl = 24.0
 
 days = collect(1:100)
-size = zeros(length(days))
-size[1] = 0.0002
+sizes = zeros(length(days))
+sizes[1] = 0.00014
 
 for day in 2:length(days)
-    size[day] = size[day - 1] + (g_r * size[day - 1] * (1.0 - size[day - 1])) #* temp_modif#* prod[day - 1]
-    if size[day] < 0.0 #> 1.0
-        size[day] = 0.0
+    sizes[day] = sizes[day - 1] + (g_r * sizes[day - 1] * (1.0 - sizes[day - 1]) * (1.0 - (snl + sizes[day - 1])/25.0)) #* temp_modif#* prod[day - 1]
+    if sizes[day] < 0.0 #> 1.0
+        sizes[day] = 0.0
     end
 
 end
 
-size[49]
+sizes[49]
 
-lines(days, size)
+lines(days, sizes)
 
 local_temp = 20.0
 temp_modif = (-0.0178 * ((local_temp - 22.5) ^ 2.0) + 1.0)

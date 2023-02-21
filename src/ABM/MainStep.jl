@@ -81,12 +81,12 @@ function coffee_step!(model::ABM)
 end
 
 function rust_step!(model::ABM)
-    # fung = ifelse(model.current.fung_effect > 0, (growth = 0.95, spor = 0.8, germ = 0.9),
+    # fung = ifelse(model.current.fungicide > 0, (growth = 0.95, spor = 0.8, germ = 0.9),
     #     (growth = 1.0, spor = 1.0, germ = 1.0))
     # three independent conditions: fungicide in effect? rainy? windy? -> 8 options
     # not the most clean/maintainable implementation, but I was prioritizing min sim time
-    if model.current.fung_effect == 0
-    # let fung_mods = model.current.fung_effect > 0 ? model.fung_mods : (1.0,1.0,1.0,1.0,1.0)
+    if model.current.fungicide == 0
+    # let fung_mods = model.current.fungicide > 0 ? model.fung_mods : (1.0,1.0,1.0,1.0,1.0)
         if model.current.rain
             if model.current.wind
                 rust_step_schedule(model, 1.0, 0, r_germinate!, grow_rust!, disperse_rain!, disperse_wind!)
@@ -107,7 +107,7 @@ function rust_step!(model::ABM)
             end
         end
     else
-        let f_day = model.current.fung_effect,
+        let f_day = model.current.fungicide,
             fung_inf = model.rustpars.fung_inf
             if model.current.rain
                 if model.current.wind
@@ -185,8 +185,8 @@ function farmer_step!(model)
         #     inspect!(model)
         # end
 
-        # if model.current.fung_effect > 0
-        #     model.current.fung_effect -= 1
+        # if model.current.fungicide > 0
+        #     model.current.fungicide -= 1
         # elseif model.mngpars.incidence_as_thr
         #     if model.current.fung_count < 4 && model.current.obs_incidence > model.mngpars.incidence_thresh
         #         fungicide!(model)
