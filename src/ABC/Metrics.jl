@@ -59,8 +59,8 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
             # end
             df_c = DataFrame()
             df_c[!, :age] = cof.ages
-            df_c[!, :area] = cof.areas
-            df_c[!, :spore] = cof.spores .* cof.areas .* spore_pct
+            df_c[!, :area] = cof.areas .* 7.0 # areas were normalized assuming a max of 7 cm2
+            df_c[!, :spore] = cof.spores .* cof.areas .* spore_pct .* 7.0
             df_c[!, :nl] .= cof.n_lesions
             df_c[!, :id] .= cof.id
             append!(df_i, df_c)

@@ -43,6 +43,9 @@ function sim_abc(p_row::DataFrameRow,
     # append!(sun_per_age_df, shade_per_age_df)
     # append!(sun_qual_patterns_df, shade_qual_patterns_df)
     per_age_df = outerjoin(sun_per_age_df, shade_per_age_df, on = [:dayn, :age], renamecols = "_sun" => "_shade")
+    if isempty(per_age_df)
+        push!(per_age_df, fill(missing, size(per_age_df)[2]))
+    end
     per_age_df[!, :p_row] .= p_row[:RowN]
     qual_patterns_df = DataFrame(
         p_row = p_row[:RowN],
@@ -50,12 +53,28 @@ function sim_abc(p_row::DataFrameRow,
         prod_clr_sun = sun_prod_clr_cor,
         exh_shade = shade_exh_perc,
         prod_clr_shade = shade_prod_clr_cor,
-        exh_spct = (sun_exh_perc + shade_exh_perc) / 2.0,
-        prod_clr_cor = (sun_prod_clr_cor + shade_prod_clr_cor) / 2.0
+        exh_spct = meannan(sun_exh_perc, shade_exh_perc),
+        prod_clr_cor = meannan(sun_prod_clr_cor, shade_prod_clr_cor)
         )
 
     # return ABCOuts(per_age_df, per_cycle_df, plant_df)
     return per_age_df, qual_patterns_df
+end
+
+function meannan(x::Float64,y::Float64)
+    if isnan(x)
+        if isnan(y)
+            return NaN
+        else
+            return y
+        end
+    else
+        if isnan(y)
+            return x
+        else
+            return (x + y) / 2.0
+        end
+    end
 end
 
 function simulate_plots(p_row::DataFrameRow,

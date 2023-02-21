@@ -31,11 +31,11 @@ end
 
 function σ2_ls(files::Vector{String})
     vars = @distributed merge for f in files
-        df = DataFrame(Arrow.Table(f))
-        select!(df, Not(:prod_clr_cor), [:prod_clr_sun, :prod_clr_shade] => ByRow(meannan) => :prod_clr_cor)
+        # df = DataFrame(Arrow.Table(f))
+        # select!(df, Not(:prod_clr_cor), [:prod_clr_sun, :prod_clr_shade] => ByRow(meannan) => :prod_clr_cor)
         qualseries = Series(6 * FilterTransform(Variance(), Union{Float64, Missing}, filter = !isnan),
         6 * FilterTransform(Counter(), Union{Float64, Missing}, filter = !isnan))
-        fit!(qualseries, qual_itr(df) )
+        fit!(qualseries, qual_itr(DataFrame(Arrow.Table(f))) )
     end
     
     return dfize(vars)
