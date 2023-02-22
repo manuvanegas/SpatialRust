@@ -5,8 +5,8 @@
 #SBATCH -p htc
 #SBATCH -q public
 #SBATCH -J reABC
-#SBATCH -o logs/ABC/ro-%A-%a.o
-#SBATCH -e logs/ABC/ro-%A.e
+#SBATCH -o logs/ABC/sims/ro-%A-%a.o
+#SBATCH -e logs/ABC/sims/ro-%A.e
 #SBATCH -t 0-02:30:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mvanega1@asu.edu

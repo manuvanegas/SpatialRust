@@ -6,8 +6,8 @@
 #SBATCH -p htc
 #SBATCH -q debug
 #SBATCH -J debug-ABC
-#SBATCH -o logs/ABC/do-%A-%a.o
-#SBATCH -e logs/ABC/do-%A.e
+#SBATCH -o logs/ABC/sims/do-%A-%a.o
+#SBATCH -e logs/ABC/sims/do-%A.e
 #SBATCH -t 0-00:15:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mvanega1@asu.edu
