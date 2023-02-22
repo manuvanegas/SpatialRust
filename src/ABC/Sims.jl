@@ -43,9 +43,9 @@ function sim_abc(p_row::DataFrameRow,
     # append!(sun_per_age_df, shade_per_age_df)
     # append!(sun_qual_patterns_df, shade_qual_patterns_df)
     per_age_df = outerjoin(sun_per_age_df, shade_per_age_df, on = [:dayn, :age], renamecols = "_sun" => "_shade")
-    if isempty(per_age_df)
-        push!(per_age_df, fill(missing, size(per_age_df)[2]))
-    end
+    # if isempty(per_age_df)
+    #     push!(per_age_df, [-1, -1, fill(missing, (size(per_age_df)[2] - 2))])
+    # end
     per_age_df[!, :p_row] .= p_row[:RowN]
     qual_patterns_df = DataFrame(
         p_row = p_row[:RowN],
