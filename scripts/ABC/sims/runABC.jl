@@ -18,6 +18,11 @@ println("Init: $usings_time")
 flush(stdout)
 
 load_time = @elapsed begin
+    quantdirname = "quants2"
+    qualdirname = "quals2"
+    mkpath(string("/scratch/mvanega1/ABC/sims/", quantdirname))
+    mkpath(string("/scratch/mvanega1/ABC/sims/", qualdirname))
+    
     const n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
     const startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
 
@@ -35,9 +40,6 @@ load_time = @elapsed begin
     const wind_data = Tuple(w_table[4])
 
     const parameters = DataFrame(Arrow.Table(string("data/ABC/", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
-
-    mkpath("/scratch/mvanega1/ABC/sims/quants")
-    mkpath("/scratch/mvanega1/ABC/sims/quals")
 end
 
 println("Loads: $load_time")
@@ -70,8 +72,8 @@ cat_time = @elapsed begin
         ifelse(num < 100, "0", "")
     )
     filenum = string(add0s, ARGS[2])
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/quants/m_", filenum, ".arrow"), quant_df)
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/quals/m_", filenum, ".arrow"), qual_df)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/", quantdirname, "/m_", filenum, ".arrow"), quant_df)
+    Arrow.write(string("/scratch/mvanega1/ABC/sims/", qualdirname,"/m_", filenum, ".arrow"), qual_df)
 end
 
 # println("Write: $cat_time")

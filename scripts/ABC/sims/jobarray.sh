@@ -15,6 +15,14 @@
 module purge
 module load julia/1.8.2
 
+# checklist
+# [] Pkg.precompiled 
+# [] Sysimage is current
+# [] output dirnames updated at runABC.jl
+# [] correct # arrays/runs per job
+# [] every file has been saved!
+
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
-julia --machine-file $SLURM_NODEFILE --sysimage src/PkgCompile/ABCSysimage.so ~/SpatialRust/scripts/ABC/sims/runABC.jl parameters_1000000 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 2000 # 250 #500
+cp $SLURM_NODEFILE logs/ABC/nodefiles/nodes_${SLURM_ARRAY_TASK_ID}
+julia --machine-file $SLURM_NODEFILE --sysimage src/PkgCompile/ABCPrecompiledSysimage.so ~/SpatialRust/scripts/ABC/sims/runABC.jl parameters_1000000 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 2000 # 250 #500
 # ARGS: params file, slurm job array id, # cores, # sims per core
