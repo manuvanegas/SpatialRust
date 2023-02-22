@@ -1,10 +1,10 @@
-@everywhere begin
-    using Pkg
-    Pkg.activate(".")
-end
 time_load = @elapsed begin
     @everywhere begin
-        using Arrow, CSV, DataFrames, Distributed, OnlineStats, OnlineStatsBase
+        using Pkg
+        Pkg.activate(".")
+    end
+    @everywhere begin
+        using Arrow, CSV, DataFrames, OnlineStats, OnlineStatsBase
         include("../../../src/ABC/Variances.jl")
     end
 end
@@ -12,22 +12,29 @@ println("Load: $time_load")
 
 mkpath("results/ABC/variances")
 
-# calculate variance from sim outputs
+# read relevant files
 time_read = @elapsed begin
     quantdata = CSV.read("data/exp_pro/compare/perdateage_age.csv", DataFrame, missingstring = "NA")
+    firstn = parse(Int, ARGS[3])
+    if firstn == 0
+        quantfiles = readdir(string("/scratch/mvanega1/ABC/sims/", ARGS[1]), join = true, sort = false)
+        qualfiles = readdir(string("/scratch/mvanega1/ABC/sims/", ARGS[2]), join = true, sort = false)
+    else
+        quantfiles = readdir(string("/scratch/mvanega1/ABC/sims/", ARGS[1]), join = true, sort = false)[1:firstn]
+        qualfiles = readdir(string("/scratch/mvanega1/ABC/sims/", ARGS[2]), join = true, sort = false)[1:firstn]
+    end
 end
 println("Read: $time_read")
 flush(stdout)
 
-if length(ARGS) == 1
-    time_vars = @elapsed σ2_quants, σ2_quals, n_quants, n_quals = σ2("/scratch/mvanega1/ABC/sims/", parse(Int, ARGS[1]))
-else
-    time_vars = @elapsed σ2_quants, σ2_quals, n_quants, n_quals = σ2("/scratch/mvanega1/ABC/sims/")
+# calculate variance from sim outputs
+time_vars = @elapsed begin
+    σ2_quants, n_quants = σ2_nts(quantfiles)
+    σ2_quals, n_quals = σ2_ls(qualfiles)
+    # dropmissing!.([σ2_quants, n_quants, σ2_quals, n_quals], Ref([:dayn, :age]))
 end
 
 time_join = @elapsed begin
-    n_quants = leftjoin(σ2_quants[:, [1,2]], n_quants, on = [:dayn, :age])
-    sort!(n_quants, [:dayn, :age])
     σ2_quants = leftjoin(quantdata, σ2_quants, on = [:dayn, :age])
     select!(σ2_quants,
         [1,2,4,11,8,15,5,12,9,16,3,13,7,17,6,14,10,18] .=> 
@@ -40,6 +47,8 @@ time_join = @elapsed begin
         ]
     )
     sort!(σ2_quants, [:dayn, :age])
+    n_quants = leftjoin(σ2_quants[:, [1,2]], n_quants, on = [:dayn, :age])
+    sort!(n_quants, [:dayn, :age])
     # newer DataFrames versions have an order keyword for joins, so only one sort! would be needed
     # but I don't want to rebuild the sysimage with the new pkg version now 
 end

@@ -1,23 +1,29 @@
-## Get variances
-function σ2(folder::String, firstn::Int)
-    # v_a = σ2_a(folder)
-    quantfiles = readdir(string(folder,"quants"), join = true, sort = false)[1:firstn]
-    qualfiles = readdir(string(folder,"quals"), join = true, sort = false)[1:firstn]
-    v_quant, n_quant = σ2_nts(quantfiles)
-    v_qual, n_qual = σ2_ls(qualfiles)
+# ## Get variances
+# function σ2(folder::String, firstn::Int)
+#     # v_a = σ2_a(folder)
+#     quantfiles = readdir(string(folder,"quants"), join = true, sort = false)[1:firstn]
+#     qualfiles = readdir(string(folder,"quals"), join = true, sort = false)[1:firstn]
+#     v_quant, n_quant = σ2_nts(quantfiles)
+#     v_qual, n_qual = σ2_ls(qualfiles)
+    
+#     # dropmissing!(v_quant, [:dayn, :age])
+#     # dropmissing!(n_quant, [:dayn, :age])
 
-    return v_quant, v_qual, n_quant, n_qual
-end
+#     return v_quant, v_qual, n_quant, n_qual
+# end
 
-function σ2(folder::String)
-    # v_a = σ2_a(folder)
-    quantfiles = readdir(string(folder,"quants"), join = true, sort = false)
-    qualfiles = readdir(string(folder,"quals"), join = true, sort = false)
-    v_quant, n_quant = σ2_nts(quantfiles)
-    v_qual, n_qual = σ2_ls(qualfiles)
+# function σ2(folder::String)
+#     # v_a = σ2_a(folder)
+#     quantfiles = readdir(string(folder,"quants"), join = true, sort = false)
+#     qualfiles = readdir(string(folder,"quals"), join = true, sort = false)
+#     v_quant, n_quant = σ2_nts(quantfiles)
+#     v_qual, n_qual = σ2_ls(qualfiles)
+    
+#     # dropmissing!(v_quant, [:dayn, :age])
+#     # dropmissing!(n_quant, [:dayn, :age])
 
-    return v_quant, v_qual, n_quant, n_qual
-end
+#     return v_quant, v_qual, n_quant, n_qual
+# end
 
 function σ2_nts(files::Vector{String})
     vars = @distributed merge for f in files
@@ -51,21 +57,21 @@ end
 
 @inline qual_itr(df) = (Tuple(r) for r in eachrow(df[!,2:end]))
 
-function meannan(x::Float64,y::Float64)
-    if isnan(x)
-        if isnan(y)
-            return NaN
-        else
-            return y
-        end
-    else
-        if isnan(y)
-            return x
-        else
-            return (x + y) / 2.0
-        end
-    end
-end
+# function meannan(x::Float64,y::Float64)
+#     if isnan(x)
+#         if isnan(y)
+#             return NaN
+#         else
+#             return y
+#         end
+#     else
+#         if isnan(y)
+#             return x
+#         else
+#             return (x + y) / 2.0
+#         end
+#     end
+# end
 
 function dfize(ostats::GroupBy) # "dataframe-ize" quants
         var_df = DataFrame(dayn = Int[],
@@ -88,10 +94,14 @@ function dfize(ostats::GroupBy) # "dataframe-ize" quants
                         n_spore_shade = Int[],
                         n_nl_shade = Int[],
                         n_occup_shade = Int[])
+        # allowmissing!(var_df, [:dayn, :age])
+        # allowmissing!(n_df, [:dayn, :age])
     
         for k in keys(value(ostats))
             rowv::Vector{Union{Int, Float64}} = collect(k)
             rown::Vector{Int} = collect(k)
+            # rowv::Vector{Union{Int, Float64, Missing}} = collect(k)
+            # rown::Vector{Union{Int, Missing}} = collect(k)
             append!(rowv, collect(value.(value(ostats[k].stats[1]))))
             append!(rown, collect(value.(value(ostats[k].stats[2]))))
             push!(var_df, rowv)

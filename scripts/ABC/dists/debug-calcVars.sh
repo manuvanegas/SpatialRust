@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --ntasks=5
+#SBATCH --ntasks=4
 #SBATCH --ntasks-per-core=1
 #SBATCH -p htc
 #SBATCH -q debug
@@ -14,4 +14,5 @@ module purge
 module load julia/1.8.2
 
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
-julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/dists/calcVars.jl
+cp $SLURM_NODEFILE logs/ABC/nodefiles/varnodes_${SLURM_JOB_ID}
+julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/dists/calcVars.jl quants2 quals2 0
