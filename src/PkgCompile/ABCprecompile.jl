@@ -1,4 +1,4 @@
-using DrWatson, DataFrames, Arrow, Distributed
+using DataFrames, Arrow
 using SpatialRust
 
 tdf = DataFrame(
