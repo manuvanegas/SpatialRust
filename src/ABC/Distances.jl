@@ -20,7 +20,7 @@ function calc_nt_dists(df_nt::DataFrame)::Tuple{DataFrame, DataFrame}
     end
     lazy_dists = mapvalues(x -> sq_diff_var_quants(x, df_nt), nt_file_tree)
     dists_nt = exec(reducevalues(vcat, lazy_dists))
-    return select(dists_nt, Not(r"_n")), select(dists_nt, r"_n")
+    return select(dists_nt, Not(r"_n")), select(dists_nt, :p_row, r"_n")
 end
 
 function sq_diff_var_quals(sims::DataFrame, vars::DataFrame, comp::Vector{Float64})::DataFrame
@@ -45,10 +45,10 @@ function sq_diff_var_quants(sims::DataFrame, compare::DataFrame)::DataFrame
             [:med_spore_sun, :spore_sun_dat, :spore_sun_var] => ByRow(sq_diff_var) => [:spore_sun, :spore_sun_n],
             [:med_nl_sun, :nl_sun_dat, :nl_sun_var] => ByRow(sq_diff_var) => [:nl_sun, :nl_sun_n],
             [:occup_sun, :occup_sun_dat, :occup_sun_var] => ByRow(sq_diff_var) => [:occup_sun, :occup_sun_n],
-            [:med_area_sun, :area_sh_dat, :area_sh_var] => ByRow(sq_diff_var) => [:area_sh, :area_sh_n],
-            [:med_spore_sun, :spore_sh_dat, :spore_sh_var] => ByRow(sq_diff_var) => [:spore_sh, :spore_sh_n],
-            [:med_nl_sun, :nl_sh_dat, :nl_sh_var] => ByRow(sq_diff_var) => [:nl_sh, :nl_sh_n],
-            [:occup_sun, :occup_sh_dat, :occup_sh_var] => ByRow(sq_diff_var) => [:occup_sh, :occup_sh_n]
+            [:med_area_sh, :area_sh_dat, :area_sh_var] => ByRow(sq_diff_var) => [:area_sh, :area_sh_n],
+            [:med_spore_sh, :spore_sh_dat, :spore_sh_var] => ByRow(sq_diff_var) => [:spore_sh, :spore_sh_n],
+            [:med_nl_sh, :nl_sh_dat, :nl_sh_var] => ByRow(sq_diff_var) => [:nl_sh, :nl_sh_n],
+            [:occup_sh, :occup_sh_dat, :occup_sh_var] => ByRow(sq_diff_var) => [:occup_sh, :occup_sh_n]
     )
     dists = combine(groupby(compare, :p_row), Not(:p_row) .=> sum, renamecols = false)
     # [
@@ -62,25 +62,30 @@ function sq_diff_var_quants(sims::DataFrame, compare::DataFrame)::DataFrame
     #     :occup_sh
     # ] .=> sqrt ∘ sum, renamecols = false)
     transform!(dists, 
-        [:area_sun, :area_sh] => ByRow(+) => :area,
-        [:spore_sun, :spore_sh] => ByRow(+) => :spore,
-        [:nl_sun, :nl_sh] => ByRow(+) => :nl,
-        [:occup_sun, :occup_sh] => ByRow(+) => :occup,
-        [:area_sun_n, :area_sh_n] => ByRow(+) => :area_n,
-        [:spore_sun_n, :spore_sh_n] => ByRow(+) => :spore_n,
-        [:nl_sun_n, :nl_sh_n] => ByRow(+) => :nl_n,
-        [:occup_sun_n, :occup_sh_n] => ByRow(+) => :occup_n,
+        [:area_sun, :area_sh] => ByRow(naninfplus) => :area,
+        [:spore_sun, :spore_sh] => ByRow(naninfplus) => :spore,
+        [:nl_sun, :nl_sh] => ByRow(naninfplus) => :nl,
+        [:occup_sun, :occup_sh] => ByRow(naninfplus) => :occup,
+        [:area_sun_n, :area_sh_n] => ByRow(naninfplus) => :area_n,
+        [:spore_sun_n, :spore_sh_n] => ByRow(naninfplus) => :spore_n,
+        [:nl_sun_n, :nl_sh_n] => ByRow(naninfplus) => :nl_n,
+        [:occup_sun_n, :occup_sh_n] => ByRow(naninfplus) => :occup_n,
     )
     # transform!(dists, Not(:p_row) .=> ByRow(sqrt), renamecols = false)
     return dists
 end
 
 # sq_diff_var(sim::Float64, emp::Float64, norm::Float64)::Float64 = norm == 0 ? 0.0 : ((sim - emp)^2) / norm
-sq_diff_var(sim::Float64, emp::Float64, norm::Float64)::Tuple{Float64, Int} = ((sim - emp)^2) / norm, 0
+sq_diff_var(sim::Float64, emp::Float64, norm::Float64)::Tuple{Float64, Int} = ((filtereach(sim, emp) - emp)^2) / norm, 0
 sq_diff_var(sim::Float64, emp::Missing, norm::Float64)::Tuple{Float64, Int} = 0.0, 0
 sq_diff_var(sim::Missing, emp::Missing, norm::Float64)::Tuple{Float64, Int} = 0.0, 0
 # sq_diff_var(sim::Float64, emp::Missing, norm::Missing)::Float64 = 0.0
 sq_diff_var(sim::Missing, emp::Float64, norm::Float64)::Tuple{Float64, Int} = 2.0 * norm, 1
+
+naninfplus(x::Float64, y::Float64) = +(filtereach.(x,y))
+
+filtereach(x::Float64, emp::Float64) = ifelse(isnan(x), 6.0 * emp, ifelse(x == Inf, 10e9, x))
+filtereach(x::Float64) = ifelse(isnan(x), 100.0, ifelse(x == Inf, 10e10, x))
 
 ## make sure that cycles correspond to ticks
 # function correct_cycles!(df::DataFrame)
