@@ -50,6 +50,7 @@ surveyed_today(c::Coffee, cycle::Vector{Int})::Bool = c.sample_cycle ∈ cycle &
 function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_last::Bool)
     survey_cofs = Iterators.filter(c -> surveyed_today(c, cycle_n), values(model.agents))
     spore_pct = model.rustpars.spore_pct
+    avail_sites_wpct = length(collect(survey_cofs)) * model.rustpars.max_lesions * inv(100.0)
 
     let df_i = DataFrame(age = Int[], area = Float64[], spore = Float64[], nl = Int[], id = Int[])
         for cof in survey_cofs
@@ -76,17 +77,17 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
         else
             nlesions_age = combine(groupby(df_i, :id), :age => maximum => :age, :nl => first => :nl)
             df_nlesions = combine(groupby(nlesions_age, :age), :nl => median => :med_nl)
-            # dfbyage = groupby(df_i, :age)
-            df_areas = combine(groupby(df_i, :age),
-            :area => median => :med_area,
-            :spore => median => :med_spore,
-            :nl => first => :nl
+
+            df_areas = combine(
+                groupby(df_i, :age),
+                :area => median => :med_area,
+                :spore => median => :med_spore,
+                :nl => sum => :totnl
             )
             if cycle_last
-                ncofs = length(collect(survey_cofs))
-                select!(df_areas, Not(:nl), :nl => (n -> n / ncofs) => :occup)
+                select!(df_areas, Not(:totnl), :totnl => (n -> n / avail_sites_wpct) => :occup)
             else
-                select!(df_areas, Not(:nl))
+                select!(df_areas, Not(:totnl))
                 df_areas[!, :occup] .= 0.0
             end
             df = outerjoin(df_areas, df_nlesions, on = :age)
