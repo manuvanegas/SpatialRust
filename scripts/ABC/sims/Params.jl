@@ -5,20 +5,22 @@ using Arrow, CSV, DataFrames, Distributions, Random
 
 Ns = 10^6 # number of parameter combinations to test
 
-file_name = string("parameters_", Ns, ".csv")
-arr_file_name = string("parameters_", Ns, ".arrow")
+newid = 3
+file_name = string("parameters_", newid, ".csv")
+arr_file_name = string("parameters_", newid, ".arrow")
 par_path = datadir("ABC", file_name)
 
 opt_temp_dist = truncated(Normal(22.0, 1.0), 14.0, 30.0)
-max_temp_dist = truncated(Normal(30.0, 1.0), 12.0, 38.0)
+max_temp_dist = truncated(Normal(30.0, 1.0), 22.0, 38.0)
 
 parameters = DataFrame(
     RowN = collect(1:Ns),
     max_inf = rand(Uniform(), Ns),
     host_spo_inh = rand(Uniform(0.0, 20.0), Ns),
-    rust_gr = rand(Uniform(0.1, 0.3), Ns),
+    rust_gr = rand(Uniform(), Ns),
     opt_g_temp = rand(opt_temp_dist, Ns),
     max_g_temp = rand(max_temp_dist, Ns),
+    rep_gro = rand(Uniform(0.0, 2.0), Ns),
     spore_pct = rand(Uniform(), Ns),
     rust_paras = rand(Uniform(), Ns),
     exh_threshold = rand(Uniform(0.0, 1.5), Ns),
@@ -30,7 +32,6 @@ parameters = DataFrame(
     # temp_cooling = 
     # light_inh = 
     # rain_washoff = 
-    # rep_gro = 
 )
 
 checktemps = true
