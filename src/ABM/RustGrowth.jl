@@ -102,7 +102,8 @@ function grow_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, 
         temp_mod = -(1.0/(rustpars.max_g_temp - rustpars.opt_g_temp)) * (local_temp - rustpars.opt_g_temp)^2.0 + 1.0
         if temp_mod > 0.0
             let spor_mod = temp_mod * rustpars.host_spo_inh / (rustpars.host_spo_inh + rust.storage),
-                host_gro = rustpars.veg_gro + rustpars.rep_gro * rust.production / (rust.production + rust.veg),
+                # host_gro = rustpars.veg_gro + rustpars.rep_gro * rust.production / (rust.production + rust.veg),
+                host_gro = 1.0 + rustpars.rep_gro * (rust.production / (rust.production + rust.veg)),
                 area_gro = 1.0 - sum(rust.areas) / rustpars.max_lesions,
                 growth_mod = rustpars.rust_gr * temp_mod * host_gro * area_gro
                 # nls = rust.n_lesions #BENCH (wont need nls if only used once)
@@ -133,7 +134,8 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
         temp_mod = -(1.0/(rustpars.max_g_temp - rustpars.opt_g_temp)) * (local_temp - rustpars.opt_g_temp)^2.0 + 1.0
         if temp_mod > 0.0
             let spor_mod = temp_mod * rustpars.host_spo_inh / (rustpars.host_spo_inh + rust.storage),
-                host_gro = rustpars.veg_gro + rustpars.rep_gro * rust.production / (rust.production + rust.veg),
+                # host_gro = rustpars.veg_gro + rustpars.rep_gro * rust.production / (rust.production + rust.veg),
+                host_gro = 1.0 + rustpars.rep_gro * (rust.production / (rust.production + rust.veg)),
                 area_gro = 1.0 - sum(rust.areas) / rustpars.max_lesions,
                 growth_mod = rustpars.rust_gr * temp_mod * host_gro * area_gro,
                 prev_cur = rust.ages .< fday,
@@ -164,7 +166,7 @@ end
 function parasitize!(rust::Coffee, rustpars::RustPars, farm_map::Array{Int, 2})
     rust.storage -= (rustpars.rust_paras * sum(rust.areas))
 
-    if rust.storage < 0 && rust.veg < rustpars.exh_threshold
+    if rust.storage < 0.0 && rust.veg <= rustpars.exh_threshold
         rust.production = 0.0
         rust.exh_countdown = rustpars.exh_countdown
         # fill!(rust.deposited, 0)

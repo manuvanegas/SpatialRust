@@ -63,7 +63,7 @@ function init_spatialrust(;
     host_spo_inh::Float64 = 1.0,            # Coeff for inhibition of storage on sporul
     max_g_temp::Float64 = 30.0,             # maximum rust growth temp
     rep_gro::Float64 = 0.7,                 # resource sink effect on area growth
-    veg_gro::Float64 = 0.3,                 # growth during vegetative phase
+    # veg_gro::Float64 = 0.3,                 # growth during vegetative phase
     spore_pct::Float64 = 0.6,               # % of area that sporulates
     fung_inf::Float64 = 0.9,                # infection prob under fungicide mod
     fung_gro_prev::Float64 = 0.3,           # fungicide mod to growth rate on preventive fungicide
@@ -157,7 +157,8 @@ function init_spatialrust(;
 
     rp = RustPars(
         max_lesions, temp_cooling, light_inh, rain_washoff, max_inf, rust_gr, opt_g_temp,
-        host_spo_inh, max_g_temp, rep_gro, veg_gro, spore_pct, fung_inf, fung_gro_prev,
+        # host_spo_inh, max_g_temp, rep_gro, veg_gro, spore_pct, fung_inf, fung_gro_prev,
+        host_spo_inh, max_g_temp, rep_gro, spore_pct, fung_inf, fung_gro_prev,
         fung_gro_cur, fung_spor_prev, fung_spor_cur, 
         #
         steps, (steps * 2 + 1), rust_paras, exh_threshold, exh_countdown,
@@ -233,7 +234,7 @@ struct RustPars
     host_spo_inh::Float64
     max_g_temp::Float64
     rep_gro::Float64
-    veg_gro::Float64
+    # veg_gro::Float64
     spore_pct::Float64
     fung_inf::Float64 
     fung_gro_prev::Float64
