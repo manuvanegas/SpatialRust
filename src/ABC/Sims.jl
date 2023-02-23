@@ -160,7 +160,7 @@ function abc_run_2017!(model::ABM,
         med_area = Float64[], med_spore = Float64[],
         med_nl = Float64[], occup = Float64[]
     )
-    # allowmissing!(per_age)
+    allowmissing!(per_age)
     prod_clr_df = DataFrame()
 
     for c in eachcol(per_age)
@@ -228,7 +228,7 @@ function abc_run_2018!(model::ABM,
         med_area = Float64[], med_spore = Float64[],
         med_nl = Float64[], occup = Float64[]
     )
-    # allowmissing!(per_age)
+    allowmissing!(per_age)
 
     for c in eachcol(per_age)
         sizehint!(c, 170)
