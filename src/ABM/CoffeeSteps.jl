@@ -78,7 +78,7 @@ function veg_growth!(coffee::Coffee, pars::CoffeePars)
     
     coffee.veg += pars.phs_veg * PhS - pars.μ_veg * coffee.veg
     if coffee.veg < 0.0
-        coffee.veg = 0.0001
+        coffee.veg = min(0.0001, pars.exh_threshold)
     end
     coffee.storage += pars.phs_sto * PhS 
 end
@@ -132,7 +132,7 @@ function rep_growth!(coffee::Coffee, pars::CoffeePars)
     end
 
     if coffee.veg < 0.0
-        coffee.veg = 0.0001
+        coffee.veg = min(0.0001, pars.exh_threshold)
     end
     if coffee.production < 0.0
         coffee.production = 0.0
