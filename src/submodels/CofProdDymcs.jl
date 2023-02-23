@@ -44,7 +44,7 @@ function plot_sun_shade(lastdays::Bool = true, wrust::Bool = true;
     μ_B::Float64 = 1.0,
     μ_S::Float64 = 0.1,
     γ::Float64 = 0.05,
-    veg_gro::Float64 = 0.3,
+    # veg_gro::Float64 = 0.3,
     rep_gro::Float64 = 0.7,
     bd::Int = 182,
     years::Int = 10,
@@ -60,10 +60,14 @@ function plot_sun_shade(lastdays::Bool = true, wrust::Bool = true;
         plotdays = 1:(365*years)
     end
 
-    sn_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 1.0, wrust)
-    sh_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.7, wrust)
-    shh_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.5, wrust)
-    shhh_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.3, wrust)
+    # sn_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 1.0, wrust)
+    # sh_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.7, wrust)
+    # shh_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.5, wrust)
+    # shhh_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.3, wrust)
+    sn_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, rep_gro, bd, years, Vi, Bi, Si, Ri, 1.0, wrust)
+    sh_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.7, wrust)
+    shh_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.5, wrust)
+    shhh_gr = run_oncee(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.3, wrust)
 
     # sn_gr = run_once(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.9, wrust)
     # sh_gr = run_once(a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, bd, years, Vi, Bi, Si, Ri, 0.8, wrust)
@@ -125,7 +129,7 @@ function run_oncee(;
     μ_B::Float64 = 1.0,
     μ_S::Float64 = 0.1,
     γ::Float64 = 0.05,
-    veg_gro::Float64 = 0.3,
+    # veg_gro::Float64 = 0.3,
     rep_gro::Float64 = 0.7,
     bd::Int = 182,
     years::Int = 1,
@@ -136,7 +140,8 @@ function run_oncee(;
     lgh::Float64 = 1.0,
     wrust::Bool)
 
-    params = [a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, lgh]
+    # params = [a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, lgh]
+    params = [a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, rep_gro, lgh]
     init = [Vi, Bi, Si, Ri]
     record = onerun(init, params, bd, years, wrust)
 end
@@ -151,7 +156,7 @@ function run_oncee(a::Float64 = 0.1,
     μ_B::Float64 = 1.0,
     μ_S::Float64 = 0.1,
     γ::Float64 = 0.05,
-    veg_gro::Float64 = 0.3,
+    # veg_gro::Float64 = 0.3,
     rep_gro::Float64 = 0.7,
     bd::Int = 182,
     years::Int = 1,
@@ -162,7 +167,8 @@ function run_oncee(a::Float64 = 0.1,
     lgh::Float64 = 1.0,
     wrust::Bool = false)
 
-    params = [a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, lgh]
+    # params = [a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, veg_gro, rep_gro, lgh]
+    params = [a, b, c, d, e, f, µ_V, μ_B, µ_S, γ, rep_gro, lgh]
     init = [Vi, Bi, Si, Ri]
     record = onerun(init, params, bd, years, wrust)
 end
@@ -228,7 +234,8 @@ end
 
 # Generate growth functions for the 3 phases
 function gen_3stages(params, bd)
-    a, b, c, d, e, f, μ_V, μ_B, μ_S, γ, veg_gro, rep_gro, lgh = params
+    # a, b, c, d, e, f, μ_V, μ_B, μ_S, γ, veg_gro, rep_gro, lgh = params
+    a, b, c, d, e, f, μ_V, μ_B, μ_S, γ, rep_gro, lgh = params
     g_r = 0.15
     β = 0.0
     inh = 1.0 #0.15
@@ -246,7 +253,7 @@ function gen_3stages(params, bd)
         # ΔS = PhS * c - γ * S * R#- μ_S * S
         # ΔR = (g_r * R * (1.0 - R)) * (inh / (inh + γ * S * R))
         ΔS = PhS * c  - γ * R#- μ_S * S
-        host_gro = 0.01 + B / (V + B)
+        host_gro = 1.0 + rep_gro * (B / (V + B))
         ΔR = (g_r * R * (1.0 - R)) * host_gro # (1.0 - 0.5 * (S / (S + inh)))  #* (inh / (inh + γ * S * R))
     
     
@@ -308,7 +315,7 @@ function gen_3stages(params, bd)
         # ΔB = (Ss + PhS) * B / (sink2) - μ_B * B
 
         # ΔR = (g_r * R * (1.0 - R)) * (inh / (inh + γ * S * R))
-        host_gro = 0.01 + B / (V + B)
+        host_gro = 1.0 + rep_gro * (B / (V + B))
         ΔR = (g_r * R * (1.0 - R)) * host_gro # (1.0 - 0.5 * (S / (S + inh)))  #* (inh / (inh + γ * S * R))
     
     
@@ -339,7 +346,7 @@ function gen_3stages(params, bd)
         # ΔV = max(PhS - μ_B * B, 0.0) - (μ_V * V)
         #- μ_S * S
         # ΔR = (g_r * R * (1.0 - R)) * (inh / (inh + γ * S * R))
-        host_gro = 0.01 + B / (V + B)
+        host_gro = 1.0 + rep_gro * (B / (V + B))
         ΔR = (g_r * R * (1.0 - R)) * host_gro # (1.0 - 0.5 * (S / (S + inh)))  #* (inh / (inh + γ * S * R))
     
         # ΔB = a * lgh * V - μ_B * B
@@ -372,7 +379,7 @@ figtest = plot_sun_shade(true, true;
     μ_B=0.01,
     μ_S=0.001,
     γ=0.02,
-    veg_gro=0.3,
+    # veg_gro=0.3,
     rep_gro=0.7,
     Vi=1.0,
     Si=3.0,
