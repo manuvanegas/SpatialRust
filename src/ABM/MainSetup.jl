@@ -162,8 +162,7 @@ function init_spatialrust(;
     )
 
     rp = RustPars(
-        # max_lesions, temp_cooling, light_inh, rain_washoff, max_inf, rust_gr, opt_g_temp,
-        max_lesions, temp_cooling, light_inh, rain_washoff, max_inf, opt_g_temp,
+        max_lesions, temp_cooling, light_inh, rain_washoff, max_inf, rust_gr, opt_g_temp,
         # host_spo_inh, max_g_temp, rep_gro, veg_gro, spore_pct, fung_inf, fung_gro_prev,
         host_spo_inh, max_g_temp, rep_gro, spore_pct, fung_inf, fung_gro_prev,
         fung_gro_cur, fung_spor_prev, fung_spor_cur, 
@@ -236,7 +235,7 @@ struct RustPars
     light_inh::Float64
     rain_washoff::Float64
     max_inf::Float64
-    # rust_gr::Float64
+    rust_gr::Float64
     opt_g_temp::Float64
     host_spo_inh::Float64
     max_g_temp::Float64
