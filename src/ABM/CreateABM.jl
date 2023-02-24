@@ -1,33 +1,3 @@
-
-# Coffee constructor function
-# function Coffee(id, pos, max_lesions::Int, max_age::Int; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
-#     sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0, production::Float64 = 0.0,
-#     deposited::Float64 = 0.0, ages::Vector{Int} = fill(max_age, max_lesions),
-#     areas::Vector{Float64} = fill(0.0, max_lesions), spores::Vector{Bool} = fill(false, max_lesions),
-#     n_lesions::Int = 0)
-
-#     # fill_n = max_lesions - length(ages)
-    
-#     # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
-#     # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
-#     # append!(spores, fill(false, fill_n))) 
-#     Coffee(id, pos, sunlight, veg, storage, production, 0, 0, 0.0,
-#     deposited, n_lesions, ages, areas, spores) 
-# end
-
-function Coffee(id, pos, max_lesions::Int, max_age::Int; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
-    sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0)
-
-    # fill_n = max_lesions - length(ages)
-    
-    # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
-    # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
-    # append!(spores, fill(false, fill_n))) 
-    Coffee(id, pos, sunlight, veg, storage, 0.0, 0, 0,
-    0.0, 0.0, 0, fill(max_age, max_lesions), fill(0.0, max_lesions), fill(false, max_lesions)) 
-end
-# Coffee(id, pos; shades = Int[], production = 0.0) = Coffee(id, pos, 1.0, 1.0, shades, 0.0, production, 0, 0, 0, Int[])
-
 ## Setup functions
 
 # Add coffee agents according to farm_map
@@ -38,12 +8,14 @@ function add_trees!(model::ABM)
     ind_shade::Float64 = model.current.ind_shade
     max_lesions::Int = model.rustpars.max_lesions
     max_age::Int = model.rustpars.reset_age
+    light_noise = truncated(Normal(0.0, 0.005), -0.01, 0.01)
+    rustgr_dist = truncated(Normal(model.rustpars.rust_gr, 0.005), 0.0, 0.35)
 
     cof_pos = findall(x -> x == 1, farm_map)
     for pos in cof_pos
-        let sunlight = 1.0 - shade_map[pos] * ind_shade
+        let sunlight = clamp(1.0 - shade_map[pos] * ind_shade + rand(model.rng, light_noise), 0.0, 1.0)
             add_agent!(
-                Tuple(pos), model, max_lesions, max_age;
+                Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
                 sunlight = sunlight, storage = init_storage(sunlight)
             )
         end

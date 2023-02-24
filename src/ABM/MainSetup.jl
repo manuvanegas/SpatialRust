@@ -9,7 +9,8 @@ export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, creat
     storage::Float64
     production::Float64
     exh_countdown::Int
-    sample_cycle::Int # vector with cycles where coffee should be sampled
+    sample_cycle::Int # cycles where coffee should be sampled
+    rust_gr::Float64
     # fungicide::Int
     # fung_countdown::Int
 
@@ -21,6 +22,19 @@ export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, creat
     ages::Vector{Int}
     areas::Vector{Float64}
     spores::Vector{Bool}
+end
+
+# Coffee constructor
+function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+    sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0)
+
+    # fill_n = max_lesions - length(ages)
+    
+    # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
+    # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
+    # append!(spores, fill(false, fill_n))) 
+    Coffee(id, pos, sunlight, veg, storage, 0.0, 0, 0, rust_gr,
+    0.0, 0.0, 0, fill(max_age, max_lesions), fill(0.0, max_lesions), fill(false, max_lesions)) 
 end
 
 # Main abm initialization function
@@ -57,7 +71,7 @@ function init_spatialrust(;
     temp_cooling::Float64 = 4.0,            # temp reduction due to shade
     light_inh::Float64 = 0.1,               # extent of effect of UV inactivation 
     rain_washoff::Float64 = 0.3,            # " " " rain wash-off (0 to 1); Savary et al 2004
-    max_inf::Float64 = 1.0,                 # Max infection probability
+    max_inf::Float64 = 0.9,                 # Max infection probability
     rust_gr::Float64 = 0.16,                # rust area growth rate
     opt_g_temp::Float64 = 22.5,             # optimal rust growth temp
     host_spo_inh::Float64 = 1.0,            # Coeff for inhibition of storage on sporul
@@ -142,21 +156,14 @@ function init_spatialrust(;
 
     smap = create_shade_map(farm_map, shade_r, map_side)
 
-    if veg_d < rep_d
-        vd = rep_d - veg_d # days of veg growth go from veg_d to 1 day before rep_d
-        rp = 364 - vd # =365-(vd+1) where "+1" is for the day of commitment growth on rep_d
-    else
-        rp = veg_d - (rep_d+1) # "+1" because 1st day of rep growth is actually commitmt
-        vd = 364 - rp # same as above, otherwise vd would be 1 day longer than needed
-    end
-
     cp = CoffeePars(
         veg_d, rep_d, f_avail * phs_max * photo_frac, k_sl, k_v, photo_frac,
         phs_veg, μ_veg, phs_sto, res_commit, μ_prod, exh_countdown
     )
 
     rp = RustPars(
-        max_lesions, temp_cooling, light_inh, rain_washoff, max_inf, rust_gr, opt_g_temp,
+        # max_lesions, temp_cooling, light_inh, rain_washoff, max_inf, rust_gr, opt_g_temp,
+        max_lesions, temp_cooling, light_inh, rain_washoff, max_inf, opt_g_temp,
         # host_spo_inh, max_g_temp, rep_gro, veg_gro, spore_pct, fung_inf, fung_gro_prev,
         host_spo_inh, max_g_temp, rep_gro, spore_pct, fung_inf, fung_gro_prev,
         fung_gro_cur, fung_spor_prev, fung_spor_cur, 
@@ -229,7 +236,7 @@ struct RustPars
     light_inh::Float64
     rain_washoff::Float64
     max_inf::Float64
-    rust_gr::Float64
+    # rust_gr::Float64
     opt_g_temp::Float64
     host_spo_inh::Float64
     max_g_temp::Float64
