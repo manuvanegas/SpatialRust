@@ -65,15 +65,15 @@ function coffee_step!(model::ABM)
         end
 
         if vegd <= cycled < repd
-            for cof in values(model.agents)
+            for cof in model.agents
                 vegetative_step!(cof, pars, model.shade_map, model.current.ind_shade)
             end
         elseif cycled == repd
-            for cof in values(model.agents)
+            for cof in model.agents
                 commit_step!(cof, pars, model.shade_map, model.current.ind_shade)
             end
         else
-            for cof in values(model.agents)
+            for cof in model.agents
                 reproductive_step!(cof, pars, model.shade_map, model.current.ind_shade)
             end
         end

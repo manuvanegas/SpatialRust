@@ -151,37 +151,9 @@ end
 function init_abm_obj(props::Props)::ABM
     space = GridSpaceSingle((props.rustpars.map_side, props.rustpars.map_side), periodic = false, metric = :chebyshev)
 
-    # shade_map = create_shade_map(farm_map, parameters.shade_r, parameters.map_side)
+    model = UnkillableABM(Coffee, space; properties = props, warn = false)
 
-    # if parameters.start_days_at <= 132
-    #     properties = Props(parameters, Books(
-    #     days = parameters.start_days_at,
-    #     ind_shade = ind_shade_i(target_shade, shade_g_rate, start_days_at, prune_sch),
-    #     ), weather,
-    #     farm_map,
-    #     shade_map
-    #     )
-    # else
-    #     properties = Props(parameters, Books(
-    #     days = parameters.start_days_at,
-    #     ind_shade = ind_shade_i(target_shade, shade_g_rate, start_days_at, prune_sch),
-    #     # ticks = ?,
-    #     cycle = [4]), weather,
-    #     farm_map,
-    #     shade_map
-    #     )
-    # end
-
-    model = ABM(Coffee, space; properties = props, warn = false)
-
-        # model = ABM(Union{Shade, Coffee, Rust}, space;
-        #     properties = Props(parameters, Books(days = parameters.start_days_at,
-# Solved (but test first): "ticks = parameters.start_days_at - 132"
-        # , cycle = [4]), weather),
-        #     warn = false)
-
-    # update_shade_map!(model)
-
+    # TODO: comment out ABC coffee initialization
     # add_trees!(model)
     add_abc_trees!(model)
 
