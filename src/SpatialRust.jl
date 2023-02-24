@@ -1,6 +1,6 @@
 module SpatialRust
 
-using Agents, Distributions, Random, StaticArrays
+using Agents, Distributions, Random
 using DataFrames
 using DrWatson: srcdir, datadir
 using StatsBase: sample, weights
