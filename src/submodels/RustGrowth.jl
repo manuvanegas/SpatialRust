@@ -94,15 +94,17 @@
 Pkg.activate(".")
 using CairoMakie
 
-g_r = 0.2
+g_r = 0.15
 
 days = collect(1:100)
 snls = repeat(1:20, inner=5)
+host_rep = 3.0
+# snls = fill(0, 100)
 sizes = zeros(length(days))
 sizes[1] = 0.00014
 
 for day in 2:length(days)
-    sizes[day] = sizes[day - 1] + (g_r * sizes[day - 1] * (1.0 - sizes[day - 1]) * (1.0 - (snls[day - 1] + sizes[day - 1])/25.0)) #* temp_modif#* prod[day - 1]
+    sizes[day] = sizes[day - 1] + host_rep * (g_r * sizes[day - 1] * (1.0 - sizes[day - 1]) * (1.0 - (snls[day - 1] + sizes[day - 1])/25.0)) #* temp_modif#* prod[day - 1]
     if sizes[day] < 0.0 #> 1.0
         sizes[day] = 0.0
     end
@@ -110,8 +112,15 @@ for day in 2:length(days)
 end
 
 sizes[49]
-
 lines(days, sizes)
+
+# relstep = 10
+# sizes[relstep]
+# di = sizes[relstep + 1] - sizes[relstep]
+# rate1 = di / 2.5
+# ratenl = 1.0 - (snls[relstep] + sizes[relstep]) / 25.0
+# rateK = 1.0 - sizes[relstep]
+# ratelogis = g_r * sizes[relstep] * rateK
 
 local_temp = 20.0
 temp_modif = (-0.0178 * ((local_temp - 22.5) ^ 2.0) + 1.0)
