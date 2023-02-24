@@ -42,10 +42,11 @@ function sim_abc(p_row::DataFrameRow,
     # append vs vcat?
     # append!(sun_per_age_df, shade_per_age_df)
     # append!(sun_qual_patterns_df, shade_qual_patterns_df)
-    per_age_df = outerjoin(sun_per_age_df, shade_per_age_df, on = [:dayn, :age], renamecols = "_sun" => "_shade")
-    # if isempty(per_age_df)
-    #     push!(per_age_df, [-1, -1, fill(missing, (size(per_age_df)[2] - 2))])
-    # end
+    # per_age_df = outerjoin(sun_per_age_df, shade_per_age_df, on = [:dayn, :age], renamecols = "_sun" => "_shade")
+    per_age_df = vcat(sun_per_age_df, shade_per_age_df, source = :plot => [:sun, :shade])
+    if isempty(per_age_df)
+        push!(per_age_df, [-1; -1; fill(missing, 4); :none])
+    end
     per_age_df[!, :p_row] .= p_row[:RowN]
     qual_patterns_df = DataFrame(
         p_row = p_row[:RowN],
@@ -160,7 +161,7 @@ function abc_run_2017!(model::ABM,
         med_area = Float64[], med_spore = Float64[],
         med_nl = Float64[], occup = Float64[]
     )
-    allowmissing!(per_age)
+    allowmissing!(per_age, Not([:dayn, :age]))
     prod_clr_df = DataFrame()
 
     for c in eachcol(per_age)
@@ -209,11 +210,11 @@ function abc_run_2017!(model::ABM,
 
     add_clr_areas!(prod_clr_df, model)
     filter!(:clr_area => >(0.0), prod_clr_df)
-    if std(prod_clr_df[!, :clr_area]) == 0
-        prod_clr_cor = 0.0
-    else
+    # if std(prod_clr_df[!, :clr_area]) == 0 || std(prod_clr_df[!, :production])
+    #     prod_clr_cor = 0.0
+    # else
         prod_clr_cor = cor(prod_clr_df[!, :production], prod_clr_df[!, :clr_area])
-    end
+    # end
 
     return per_age, exh_perc, prod_clr_cor
 end
@@ -228,7 +229,7 @@ function abc_run_2018!(model::ABM,
         med_area = Float64[], med_spore = Float64[],
         med_nl = Float64[], occup = Float64[]
     )
-    allowmissing!(per_age)
+    allowmissing!(per_age, Not([:dayn, :age]))
 
     for c in eachcol(per_age)
         sizehint!(c, 170)
