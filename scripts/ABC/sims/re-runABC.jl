@@ -6,20 +6,19 @@ usings_time = @elapsed begin
     end
     @everywhere begin
         using Arrow, DataFrames, Dates
-        using Distributed: pmap
         using SpatialRust
     end
 end
 
-# ARGS: params file, slurm job array id, # cores, # sims per core, quants dirname
+# ARGS: params file, slurm job array id, # cores, # sims per core, quants dirname, hours
 println(ARGS)
 println("Init: $usings_time")
 flush(stdout)
 
 # figuring out which ones are missing
 quantspath = string("/scratch/mvanega1/ABC/sims/", ARGS[5])
-onehourago = datetime2unix(now() - Hour(1))
-recentfiles = filter(f -> mtime(f) > onehourago, readdir(quantspath, join = true))
+recently = datetime2unix(now() - Hour(parse(Int, ARGS[6])))
+recentfiles = filter(f -> mtime(f) > recently, readdir(quantspath, join = true))
 pathlength = length(quantspath)
 recentnums = parse.(Int, f[(pathlength + 4):(pathlength + 6)] for f in recentfiles)
 # missingnums = filter(n -> n ∉ recentnums, 1:100)
