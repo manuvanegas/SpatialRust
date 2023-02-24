@@ -29,7 +29,9 @@ flush(stdout)
 
 # calculate variance from sim outputs
 time_vars = @elapsed begin
-    σ2_quants, n_quants = σ2_nts(quantfiles)
+    # g_σ2_quants, g_n_quants = g_σ2_nts(quantfiles)
+    σ2_quants, n_quants, g_σ2_quants, g_n_quants = σ2_nts(quantfiles)
+    # σ2_quants, n_quants = σ2_nts(quantfiles)
     σ2_quals, n_quals = σ2_ls(qualfiles)
     # dropmissing!.([σ2_quants, n_quants, σ2_quals, n_quals], Ref([:dayn, :age]))
 end
@@ -47,7 +49,7 @@ time_join = @elapsed begin
         ]
     )
     sort!(σ2_quants, [:dayn, :age])
-    n_quants = leftjoin(σ2_quants[:, [1,2]], n_quants, on = [:dayn, :age])
+    n_quants = leftjoin(σ2_quants[:, [:dayn, :age]], n_quants, on = [:dayn, :age])
     sort!(n_quants, [:dayn, :age])
     # newer DataFrames versions have an order keyword for joins, so only one sort! would be needed
     # but I don't want to rebuild the sysimage with the new pkg version now 
@@ -59,8 +61,10 @@ flush(stdout)
 time_write = @elapsed begin
     # write csvs
     CSV.write("results/ABC/variances/v_quants.csv", σ2_quants)
+    CSV.write("results/ABC/variances/v_gquants.csv", g_σ2_quants)
     CSV.write("results/ABC/variances/v_quals.csv", σ2_quals)
     CSV.write("results/ABC/variances/n_quants.csv", n_quants)
+    CSV.write("results/ABC/variances/n_gquals.csv", g_n_quants)
     CSV.write("results/ABC/variances/n_quals.csv", n_quals)
 end
 println("Write: $time_write")
