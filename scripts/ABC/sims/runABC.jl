@@ -7,7 +7,6 @@ usings_time = @elapsed begin
     @everywhere begin
         using DataFrames
         using Arrow
-        using Distributed: pmap
         using SpatialRust
     end
 end
@@ -18,8 +17,8 @@ println("Init: $usings_time")
 flush(stdout)
 
 load_time = @elapsed begin
-    quantdirname = "quants2"
-    qualdirname = "quals2"
+    quantdirname = "quants4"
+    qualdirname = "quals4"
     mkpath(string("/scratch/mvanega1/ABC/sims/", quantdirname))
     mkpath(string("/scratch/mvanega1/ABC/sims/", qualdirname))
     
