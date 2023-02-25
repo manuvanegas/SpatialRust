@@ -1,3 +1,19 @@
+function rearrange_datafile()
+    compare = CSV.read("data/exp_pro/compare/perdateage_age.csv", DataFrame, missingstring = "NA")
+    suncompare = select(compare, 1:6)
+    shadecompare = select(compare, [1,2,7,8,9,10])
+    rename!(shadecompare, names(suncompare))
+    sunovershade = vcat(suncompare,shadecompare, source=:plot => [:sun, :shade])
+    rename!(sunovershade, [:dayn, :age, :nl_dat, :area_dat, :spore_dat, :occup_dat, :plot])
+
+    longcompare = stack(sunovershade, Not([:dayn, :age, :plot]))
+    dropmissing!(longcompare)
+    sunovershade = unstack(longcompare)
+    sunovershade = sunovershade[!, [1,2,3,5,6,4,7]]
+    sort!(sunovershade, [order(:plot, rev = true), :dayn, :age])
+    CSV.write("data/exp_pro/compare/sunovershade.csv", sunovershade)
+    return sunovershade
+end
 
 function σ2_nts(files::Vector{String})
     grouped = @distributed merge for f in files
@@ -20,10 +36,10 @@ function σ2_ls(files::Vector{String})
 end
 
 function run_two_onlines(df)::NTuple{2,OnlineStatsBase.StatCollection}
-    df_sun = select(df, 1:6)
-    df_shade = select(df, [1,2,7,8,9,10])
-    rename!(df_shade, names(df_sun))
-    append!(df_sun, df_shade)
+    # df_sun = select(df, 1:6)
+    # df_shade = select(df, [1,2,7,8,9,10])
+    # rename!(df_shade, names(df_sun))
+    # append!(df_sun, df_shade)
 
     groupseries = GroupBy(Tuple, Series(
         4 * FilterTransform(Variance(), Union{Float64, Missing}, filter = nomisnan),
@@ -35,7 +51,7 @@ function run_two_onlines(df)::NTuple{2,OnlineStatsBase.StatCollection}
     )
 
     fit!(groupseries, grouped_itr(df))
-    fit!(globseries, global_itr(df_sun, 3, 6))
+    fit!(globseries, global_itr(df, 3, 6))
 
     return groupseries, globseries
 end
@@ -43,7 +59,7 @@ end
 @inline nomisnan(x) = !ismissing(x) && !isnan(x)
 
 @inline grouped_itr(df) = ((r.dayn, r.age) => (
-    r.med_area_sun, r.med_spore_sun, r.med_nl_sun, r.occup_sun
+    r.med_area, r.med_spore, r.med_nl, r.occup
 ) for r in eachrow(df))
 
 # @inline grouped_itr8(df) = ((r.dayn, r.age) => (
@@ -64,26 +80,18 @@ function dfize(statstup::NTuple{2,OnlineStatsBase.StatCollection}) # "dataframe-
     var_df = DataFrame(
         dayn = Int[],
         age = Int[],
-        v_med_area_sun = Float64[],
-        v_med_spore_sun = Float64[],
-        v_med_nl_sun = Float64[],
-        v_occup_sun = Float64[],
-        v_med_area_shade = Float64[],
-        v_med_spore_shade = Float64[],
-        v_med_nl_shade = Float64[],
-        v_occup_shade = Float64[]
+        area_var = Float64[],
+        spore_var = Float64[],
+        nl_var = Float64[],
+        occup_var = Float64[]
     )
     n_df = DataFrame(
         dayn = Int[],
         age = Int[],
-        n_area_sun = Int[],
-        n_spore_sun = Int[],
-        n_nl_sun = Int[],
-        n_occup_sun = Int[],
-        n_area_shade = Int[],
-        n_spore_shade = Int[],
-        n_nl_shade = Int[],
-        n_occup_shade = Int[]
+        area_var_n = Int[],
+        spore_var_n = Int[],
+        nl_var_n = Int[],
+        occup_var_n = Int[]
     )
     # allowmissing!(var_df, [:dayn, :age])
     # allowmissing!(n_df, [:dayn, :age])
@@ -100,16 +108,16 @@ function dfize(statstup::NTuple{2,OnlineStatsBase.StatCollection}) # "dataframe-
     end
 
     gvar_df = DataFrame(
-        area = Float64[],
-        spore = Float64[],
-        nl = Float64[],
-        occup = Float64[]
+        area_var = Float64[],
+        spore_var = Float64[],
+        nl_var = Float64[],
+        occup_var = Float64[]
     )
     gn_df = DataFrame(
-        area = Int[],
-        spore = Int[],
-        nl = Int[],
-        occup = Int[]
+        area_var_n = Int[],
+        spore_var_n = Int[],
+        nl_var_n = Int[],
+        occup_var_n = Int[]
     )
 
     push!(gvar_df, value.(value(globaled.stats[1])))
@@ -120,20 +128,20 @@ end
 
 function dfize(ostats::Series) # "dataframe-ize" quals
     var_df = DataFrame(
-        v_exh_sun = Float64[],
-        v_prod_clr_sun = Float64[],
-        v_exh_shade = Float64[],
-        v_prod_clr_shade = Float64[],
-        v_exh_spct = Float64[],
-        v_prod_clr_cor = Float64[]
+        exh_sun_var = Float64[],
+        prod_clr_sun_var = Float64[],
+        exh_shade_var = Float64[],
+        prod_clr_shade_var = Float64[],
+        exh_spct_var = Float64[],
+        prod_clr_cor_var = Float64[]
     )
     n_df = DataFrame(
-        n_exh_sun = Int[],
-        n_prod_clr_sun = Int[],
-        n_exh_shade = Int[],
-        n_prod_clr_shade = Int[],
-        n_exh_spct = Int[],
-        n_prod_clr_cor = Int[]
+        exh_sun_n = Int[],
+        prod_clr_sun_n = Int[],
+        exh_shade_n = Int[],
+        prod_clr_shade_n = Int[],
+        exh_spct_n = Int[],
+        prod_clr_cor_n = Int[]
     )
             
     push!(var_df, value.(value(ostats.stats[1])))

@@ -14,7 +14,11 @@ mkpath("results/ABC/variances")
 
 # read relevant files
 time_read = @elapsed begin
-    quantdata = CSV.read("data/exp_pro/compare/perdateage_age.csv", DataFrame, missingstring = "NA")
+    if isfile("data/exp_pro/compare/sunovershade.csv")
+        quantdata = CSV.read("data/exp_pro/compare/sunovershade.csv", DataFrame, types = Dict(:plot => Symbol))
+    else
+        quantdata = rearrange_datafile()
+    end
     firstn = parse(Int, ARGS[3])
     if firstn == 0
         quantfiles = readdir(string("/scratch/mvanega1/ABC/sims/", ARGS[1]), join = true, sort = false)
@@ -33,26 +37,11 @@ time_vars = @elapsed begin
     σ2_quants, n_quants, g_σ2_quants, g_n_quants = σ2_nts(quantfiles)
     # σ2_quants, n_quants = σ2_nts(quantfiles)
     σ2_quals, n_quals = σ2_ls(qualfiles)
-    # dropmissing!.([σ2_quants, n_quants, σ2_quals, n_quals], Ref([:dayn, :age]))
 end
 
 time_join = @elapsed begin
-    σ2_quants = leftjoin(quantdata, σ2_quants, on = [:dayn, :age])
-    select!(σ2_quants,
-        [1,2,4,11,8,15,5,12,9,16,3,13,7,17,6,14,10,18] .=> 
-        [
-            :dayn, :age,
-            :area_sun_dat, :area_sun_var, :area_sh_dat, :area_sh_var,
-            :spore_sun_dat, :spore_sun_var, :spore_sh_dat, :spore_sh_var,
-            :nl_sun_dat, :nl_sun_var, :nl_sh_dat, :nl_sh_var,
-            :occup_sun_dat, :occup_sun_var, :occup_sh_dat, :occup_sh_var
-        ]
-    )
-    sort!(σ2_quants, [:dayn, :age])
-    n_quants = leftjoin(σ2_quants[:, [:dayn, :age]], n_quants, on = [:dayn, :age])
-    sort!(n_quants, [:dayn, :age])
-    # newer DataFrames versions have an order keyword for joins, so only one sort! would be needed
-    # but I don't want to rebuild the sysimage with the new pkg version now 
+    σ2_quants = leftjoin(quantdata, σ2_quants, on = [:dayn, :age], order = :left)
+    n_quants = leftjoin(σ2_quants[:, [:dayn, :age]], n_quants, on = [:dayn, :age], order = :left)
 end
 println("Variance: $time_vars")
 println("Join: $time_join")
