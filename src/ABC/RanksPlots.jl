@@ -1,142 +1,316 @@
-function best_100(dists::DataFrame, metrics::Vector{Symbol})::Vector{Int}
-    d1 = select(dists, :p_row, AsTable(metrics) => ByRow(sum) => :total_dist)
-    return sort!(d1, :total_dist)[1:100, :p_row]
-end
-
-function best_n(dists::DataFrame, metrics::Vector{Symbol}, n::Int)::Vector{Int}
-    d1 = select(dists, :p_row, AsTable(metrics) => ByRow(sum) => :total_dist)
-    return sort!(d1, :total_dist)[1:n, :p_row]
-end
-
-function metrics(h::Int)
-    if h == 1
-        return [:area_age, :spore_age, :fallen, :prod_fruit]
-    elseif h == 2
-        return [:area_age, :spore_age, :fallen, :prod_node]
-    elseif h == 3
-        return [:area_cycle, :spore_cycle, :fallen, :prod_fruit]
-    else
-        return [:area_cycle, :spore_cycle, :fallen, :prod_node]
+function scale_params(params::DataFrame, medians::DataFrame)
+    df = similar(params)
+    df[!, :RowN] .= params[:, :RowN]
+    for c in 2:ncol(params)
+        df[!, c] .= params[!, c] ./ medians[1, c]
     end
+    return df
 end
+
+function metric_combination(idx::Vector{Int})
+    quants = [:area_d, :spore_d, :nl_d, :occup_d]
+    quals = [
+        :exh_sun, :prod_clr_sun, :exh_shade, :prod_clr_shade,
+        :exh_spct, :prod_clr_cor
+    ]
+    qntsid = filter(i -> i < 5, idx)
+    qlsid = filter(i -> i > 4, idx) .- 4
+    return quals[qlsid], quants[qntsid]
+end
+
+# this version is outdated
+function metric_combination(quantop::Symbol, qualop::Symbol)
+    quants = if quantop == :nl
+        [:area_d, :spore_d, :nl_d]
+    elseif quantop == :occup
+        [:area_d, :spore_d, :occup_d]
+    else
+        [:area_d, :spore_d, :nl_d, :occup_d]
+    end
+    
+    quals = if qualop == :sum
+        [:exh_sun, :prod_clr_sun, :exh_shade, :prod_clr_shade]
+    else
+        [:exh_spct, :prod_clr_cor]
+    end
+
+    return [quants; quals]
+end
+
+function rm_toomanymissings(dists::DataFrame, ns::DataFrame, cut::Int)
+    anymorethan(nmis::Vararg{Int}) = any(n > cut for n in nmis)
+    df = transform(ns, 2:5 => ByRow(anymorethan) => :sel)
+    subset!(df, :sel)
+    return antijoin(dists, df, on = :p_row)
+end
+
+function replacenans(df::DataFrame, regex::Regex, val::Float64)
+    nantoval(x) = ifelse.(isnan.(x), val, x)
+    df2 = copy(df)
+    df2[!, regex] = nantoval.(df[:, regex])
+    return df2
+end
+
+function best_100(dists::DataFrame, qualmetrics::Vector{Symbol}, quantmetrics::Vector{Symbol})
+    return best_n(dists, qualmetrics, quantmetrics, 100)
+end
+
+function best_n(dists::DataFrame, qualmetrics::Vector{Symbol}, quantmetrics::Vector{Symbol}, n::Int)
+    if isempty(quantmetrics)
+        d1 = transform(
+        dists, :p_row,
+        AsTable(qualmetrics) => ByRow(sqrt ∘ sum) => :qual_dist
+        )
+        sort!(d1, :qual_dist)
+    else
+        d1 = transform(
+            dists, :p_row,
+            AsTable(qualmetrics) => ByRow(sqrt ∘ sum) => :qual_dist,
+            AsTable(quantmetrics) => ByRow(sqrt ∘ sum) => :quant_dist,
+            )
+        sort!(d1, [:qual_dist, :quant_dist])
+    end
+    return d1[1:n, :]
+end
+
+get_best_params(params::DataFrame, sel_rows::DataFrame) = subset(params, :RowN => x -> x .∈ Ref(sel_rows.p_row))
 
 ## Plots
 
-function three_violins(pars::NamedTuple, sel::NamedTuple, height = 800, width = 400)
-    par1, par2, par3 = pars
-    sel1, sel2, sel3 = sel
+isnormalpar(v::String) = v == "max_g_temp" || v == "opt_g_temp"
 
-    fviolins = Figure(resolution = (height, width));
-    ax1 = Axis(fviolins[1,1];
-        xticks = (2:2:14, names(parameters)[2:8]),
-        xticklabelrotation = π/4
-    )
-    ax2 = Axis(fviolins[1,2];
-        xticks = ([1], [names(parameters)[9]]),
-        xticklabelrotation = π/4
-    )
-    ax3 = Axis(fviolins[1,3];
-        xticks = ([1], [names(parameters)[10]]),
-        xticklabelrotation = π/4
-    )
+dodged_rainclouds(params::DataFrame, selected::DataFrame, nnorms::Int, randpars::Vector{Int}, ndots::Int; kwargs...) =
+dodged_rainclouds(params[randpars, :], selected, nnorms, ndots; kwargs...)
 
-    violin!(ax1, sel1.group, sel1.value, side = :right, color = :teal)
-    violin!(ax1, par1.group, par1.value, side = :left, color = :orange)
 
-    violin!(ax2, sel2.group, sel2.value, side = :right, color = :teal)
-    violin!(ax2, par2.group, par2.value, side = :left, color = :orange)
+function dodged_rainclouds(wideparams::DataFrame, wideselected::DataFrame, nnorms::Int, ndots::Int;
+    height = 1200, width = 600)
 
-    violin!(ax3, sel3.group, sel3.value, side = :right, color = :teal)
-    violin!(ax3, par3.group, par3.value, side = :left, color = :orange)
+    params = stack(wideparams)
+    selected = stack(wideselected)
+    normsvstot = nnorms/(ncol(wideselected) - 1)
 
-    colsize!(fviolins.layout, 1, Relative(15/18))
+    cloud_w_p = 1.0
+    cloud_w_s = 1.0
+    bp_width = 0.1
+    bp_nudge_p = 0.12
+    bp_nudge_s = 0.24
+    color_p = :orange
+    alpha_p = 0.7
+    color_s = :teal
+    alpha_s = 0.6
+    side_nudge = 0.45 # 0.45 # 0.4
+    jitter_width = 0.1 # 0.25 # 0.075
+    markersize_p = 4.0 # 0.05 # 0.2 # 1.0 # 0.15 still visible, 0.1 makes them disappear
+    markersize_s = 3.8
+    n_dots = ndots
 
-    return fviolins
-end
+    nparams = filter(:variable => v -> isnormalpar(v), params)
+    nselected = filter(:variable => v -> isnormalpar(v), selected)
+    uparams = filter(:variable => v -> !isnormalpar(v), params)
+    uselected = filter(:variable => v -> !isnormalpar(v), selected)
 
-function three_boxplots(pars::NamedTuple, sel::NamedTuple, height = 800, width = 400)
-    par1, par2, par3 = pars
-    sel1, sel2, sel3 = sel
+    fbox = Figure(resolution = (width, height));
+    # fbox = Figure(resolution = (72 .* (5, 10)), fontsize = 11);
 
-    fbox = Figure(resolution = (height, width));
     ax1 = Axis(fbox[1,1];
-        xticks = (2:2:14, names(parameters)[2:8]),
-        xticklabelrotation = π/4,
-        ylabel = "Value"
+    limits = ((0.75, 1.25), nothing),
+    xticks = 0.8:0.1:1.2,
+    yticklabelrotation = π/4,
     )
-    ax2 = Axis(fbox[1,2];
-        xticks = ([1], [names(parameters)[9]]),
-        xticklabelrotation = π/4
+    ax2 = Axis(fbox[2,1];
+        limits = ((-0.2, 2.2), nothing),
+        yticklabelrotation = π/4,
+        xlabel = "Scaled Value"
     )
-    xlims! = (ax2,-2, 2)
-    ax3 = Axis(fbox[1,3];
-        xticks = ([1], [names(parameters)[10]]),
-        yticks = (0:5:25),
-        xticklabelrotation = π/4
+
+    nrcp, nrcs = tworainclouds!(
+        ax1, nparams.variable, nparams.value, nselected.variable, nselected.value,
+        color_p, color_s, alpha_p, alpha_s, cloud_w_p, cloud_w_s,
+        bp_width, bp_nudge_p, bp_nudge_s, side_nudge,
+        jitter_width, markersize_p, markersize_s, n_dots
     )
-    # Label(fbox[2,:], "Parameter name")
-
-    boxplot!(ax1, sel1.group, sel1.value, dodge = 2, dodge_gap = 2.4, color = (:teal, 0.8))
-    boxplot!(ax1, par1.group, par1.value, dodge = 1, dodge_gap = 2.4, color = (:orange, 0.8))
-
-    boxplot!(ax2, sel2.group, sel2.value, dodge = 2, dodge_gap = 2.4, color = (:teal, 0.8))
-    boxplot!(ax2, par2.group, par2.value, dodge = 1, dodge_gap = 2.4, color = (:orange, 0.8))
-
-    boxplot!(ax3, sel3.group, sel3.value, dodge = 2, dodge_gap = 2.4, color = (:teal, 0.8))
-    boxplot!(ax3, par3.group, par3.value, dodge = 1, dodge_gap = 2.4, color = (:orange, 0.8))
-
-    colsize!(fbox.layout, 1, Relative(15/18))
-    colgap!(fbox.layout, 5)
-    fbox
+    urcp, urcs = tworainclouds!(
+        ax2, uparams.variable, uparams.value, uselected.variable, uselected.value,
+        color_p, color_s, alpha_p, alpha_s, cloud_w_p, cloud_w_s,
+        bp_width, bp_nudge_p, bp_nudge_s, side_nudge,
+        jitter_width, markersize_p, markersize_s, n_dots
+    )
+    
+    rowsize!(fbox.layout, 1, Relative(normsvstot))
+    Label(fbox[:,0], "Parameter", rotation = π/2)
+    # return fbox, nrcp, nrcs, urcp, urcs
+    return fbox
 end
 
-## Arranging data
-
-function long_and_separate(df::DataFrame)::NamedTuple
-    df1 = select(df, 1:8)
-    df2 = select(df, [1,9])
-    df3 = select(df, [1,10])
-
-    ldf1 = stack(df1)
-    transform!(ldf1, :variable => ByRow(whichgroup) => :group)
-    ldf1[:,:group] .= ldf1[!, :group] .* 2
-    ldf2 = stack(df2)
-    ldf2[:, :group] .= 1
-    ldf3 = stack(df3)
-    ldf3[:, :group] .= 1
-
-    return (g1 = ldf1, g2 = ldf2, g3 = ldf3)
+function tworainclouds!(
+    ax::Axis, pvariables, pvalues, svariables, svalues,
+    color_p, color_s, alpha_p, alpha_s, cloud_w_p, cloud_w_s,
+    bp_width, bp_nudge_p, bp_nudge_s, side_nudge,
+    jitter_width, markersize_p, markersize_s, n_dots
+    )
+    
+    rcp = lessscatterrainclouds!(
+        ax,
+        pvariables, pvalues,
+        color = (color_p, alpha_p),
+        # dodge = fill(1, nrow(params)),
+        cloud_width = cloud_w_p,
+        orientation = :horizontal,
+        violin_limits = (0.0, 2.0), # extrema,
+        center_boxplot = false,
+        boxplot_width = bp_width,
+        boxplot_nudge = bp_nudge_p,
+        side_nudge = side_nudge,
+        jitter_width = jitter_width,
+        markersize = markersize_p,
+        n_dots = n_dots
+    )
+    rcs = rainclouds!(
+        ax,
+        svariables, svalues,
+        color = (color_s, alpha_s),
+        # dodge = fill(2, nrow(selected)),
+        cloud_width = cloud_w_s,
+        orientation = :horizontal,
+        violin_limits = (0.0, 2.0),# extrema,
+        center_boxplot = false,
+        boxplot_width = bp_width,
+        boxplot_nudge = bp_nudge_s,
+        side_nudge = side_nudge,
+        markersize = markersize_s
+    )
+    return rcp, rcs
 end
 
-function whichgroup(var)
-    return findfirst(x -> x == var, ("rust_gr", "cof_gr",
-    "spore_pct", "fruit_load", "light_inh", "rain_washoff",
-    "rain_distance", "wind_distance", "exhaustion"))
+function dodged_rainclouds_maxinf(wideparams::DataFrame, wideselected::DataFrame, nnorms::Int;
+    height = 1200, width = 600)
+
+    params = stack(wideparams)
+    selected = stack(wideselected)
+    normsvstot = nnorms/(ncol(wideselected) - 1)
+    maxinfvstot = 0.9/(ncol(wideselected) - 1)
+    restvstot = 1.0 - (normsvstot + maxinfvstot)
+
+    cloud_w_p = 1.0
+    cloud_w_s = 1.0
+    bp_width = 0.1
+    bp_nudge_p = 0.12
+    bp_nudge_s = 0.24
+    color_p = :orange
+    alpha_p = 0.7
+    color_s = :teal
+    alpha_s = 0.6
+    side_nudge = 0.45 
+    jitter_width = 0.15 
+    markersize_p = 0.05 
+    markersize_s = 3.8
+
+    nparams = filter(:variable => v -> isnormalpar(v), params)
+    nselected = filter(:variable => v -> isnormalpar(v), selected)
+    maxinfparams = filter(:variable => v -> v == "max_inf", params)
+    maxinfselec = filter(:variable => v -> v == "max_inf", selected)
+    uparams = filter(:variable => v -> !isnormalpar(v) && v != "max_inf", params)
+    uselected = filter(:variable => v -> !isnormalpar(v) && v != "max_inf", selected)
+
+    fbox = Figure(resolution = (width, height));
+
+    ax1 = Axis(fbox[1,1];
+    limits = ((0.75, 1.25), nothing),
+    xticks = 0.8:0.1:1.2,
+    yticklabelrotation = π/4,
+    )
+    ax2 = Axis(fbox[2,1];
+    limits = ((-0.2, 2.2), nothing),
+    yticklabelrotation = π/4,
+    bottomspinevisible = false
+    )
+    hidexdecorations!(ax2, grid = false)
+    ax3 = Axis(fbox[3,1];
+        limits = ((-0.2, 2.2), nothing),
+        yticklabelrotation = π/4,
+        topspinevisible = false,
+        xlabel = "Scaled Value"
+    )
+    rowgap!(fbox.layout, 2, 0)
+
+    tworainclouds!(
+        ax1, nparams.variable, nparams.value, nselected.variable, nselected.value,
+        color_p, color_s, alpha_p, alpha_s, cloud_w_p, cloud_w_s,
+        bp_width, bp_nudge_p, bp_nudge_s, side_nudge,
+        jitter_width, markersize_p, markersize_s
+    )
+
+    tworainclouds!(
+        ax2, uparams.variable, uparams.value, uselected.variable, uselected.value,
+        color_p, color_s, alpha_p, alpha_s, cloud_w_p, cloud_w_s,
+        bp_width, bp_nudge_p, bp_nudge_s, side_nudge,
+        jitter_width, markersize_p, markersize_s
+    )
+
+    tworainclouds!(
+        ax3, maxinfparams.variable, maxinfparams.value, maxinfselec.variable, maxinfselec.value,
+        color_p, color_s, alpha_p, alpha_s, cloud_w_p, cloud_w_s,
+        bp_width, bp_nudge_p, bp_nudge_s, side_nudge,
+        jitter_width, markersize_p, markersize_s
+    )
+    
+    rowsize!(fbox.layout, 1, Relative(normsvstot))
+    rowsize!(fbox.layout, 2, Relative(restvstot))
+    rowsize!(fbox.layout, 3, Relative(maxinfvstot))
+    Label(fbox[:,0], "Parameter", rotation = π/2)
+    return fbox
 end
 
-######################_____________________________
-# testing stuff
-# using CSV
-# dists = CSV.read("results/ABC/dists.csv", DataFrame)
-# describe(dists)
-#
-# ["p_row", "area_age", "spore_age", "area_cycle", "spore_cycle", "fallen", "prod_fruit", "prod_node"]
-#
-# ttrows = best_100(dists, age_fallen_fruits())
-# ttrows2 = best_100(dists, age_fallen_nodes())
-#
-# setdiff(ttrows, ttrows2)
-# all(ttrows .== ttrows2)
-#
-# ttcrows = best_100(dists, age_fallen_fruits())
-# ttcrows2 = best_100(dists, age_fallen_nodes())
-#
-# setdiff(ttcrows, ttcrows2)
-# all(ttcrows .== ttcrows2)
-#
-#
-# setdiff(ttrows, ttcrows)
-#
-# ttage = best_100(dists, [:area_age, :spore_age])
-# ttcycle = best_100(dists, [:area_cycle, :spore_cycle])
-# setdiff(ttage, ttcycle)
+function dodged_rainclouds_smalldots(params::DataFrame, selected::DataFrame, relnorms::Float64;
+    # height = 1200, 
+    width = 800)
+    height = width * 2
+
+    bp_width = 0.1
+    bp_nudge_p = 0.12
+    bp_nudge_s = 0.24
+    side_nudge = 0.5
+    jitter_width = 0.25
+    markersize_p = 0.15
+    markersize_s = 3.2
+    color_p = :orange
+    alpha_p = 0.7
+    color_s = :teal
+    alpha_s = 0.6
+
+    uparams = filter(:variable => v -> !isnormalpar(v), params)
+    uselected = filter(:variable => v -> !isnormalpar(v), selected)
+    nparams = filter(:variable => v -> isnormalpar(v), params)
+    nselected = filter(:variable => v -> isnormalpar(v), selected)
+
+    fbox = Figure(resolution = (width, height));
+    ax1 = Axis(fbox[1,1];
+    limits = ((0.75, 1.25), nothing),
+    xticks = 0.8:0.1:1.2,
+    yticklabelrotation = π/4,
+    # xlabel = "Scaled Value"
+    )
+    ax2 = Axis(fbox[2,1];
+        limits = ((-0.2, 2.2), nothing),
+        yticklabelrotation = π/4,
+        # ylabel = "Parameter",
+        xlabel = "Scaled Value"
+    )
+    tworainclouds!(
+        ax1, nparams.variable, nparams.value, nselected.variable, nselected.value,
+        color_p, color_s, alpha_p, alpha_s, cloud_w_p, cloud_w_s,
+        bp_width, bp_nudge_p, bp_nudge_s, side_nudge,
+        jitter_width, markersize_p, markersize_s
+    )
+
+    tworainclouds!(
+        ax2, uparams.variable, uparams.value, uselected.variable, uselected.value,
+        color_p, color_s, alpha_p, alpha_s, cloud_w_p, cloud_w_s,
+        bp_width, bp_nudge_p, bp_nudge_s, side_nudge,
+        jitter_width, markersize_p, markersize_s
+    )
+    rowsize!(fbox.layout, 1, Relative(relnorms))
+    Label(fbox[:,0], "Parameter", rotation = π/2)
+    return fbox
+end

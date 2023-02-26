@@ -1,39 +1,61 @@
+using Pkg
 Pkg.activate(".")
-using Arrow, CairoMakie, CSV, DataFrames
+using Arrow, CSV, DataFrames, Random, Statistics
+using CairoMakie
 
-violin(repeat([1,2], 10), 1:20)
-boxplot(repeat([1,2], 10), 1:20)
+# violin(repeat([1,2], 10), 1:20)
+# boxplot(repeat([1,2], 10), 1:20)
+# scatter(1:10,2:2:20,1:10)
+rainclouds(["a","b","a","b"], [1.0,1.0,2.0,2.0])
 
 include("../../../src/ABC/RanksPlots.jl")
+include("../../../src/ABC/CustomRainclouds.jl")
 
-parameters = DataFrame(Arrow.Table(string("data/ABC/", "parameters_", 10^6, ".arrow")))
-dists = CSV.read("results/ABC/dists/hand_dists.csv", DataFrame)
-selected = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(4), 100)))
-# selected2 = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(2), 100)))
-# selected3 = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(3), 100)))
-# selected4 = subset(parameters, :RowN => x -> x .∈ Ref(best_n(dists, metrics(4), 100)))
-# selected = subset(parameters, :RowN => x -> x .∈ Ref(best_100(dists, [:area_cycle, :spore_cycle, :fallen])))
-medians = combine(selected, names(selected) .=> median)
+parameters = DataFrame(Arrow.Table(string("data/ABC/", "parameters_", 4, ".arrow")))
+prior_medians = combine(parameters, All() .=> median)
+scaledparams = scale_params(parameters, prior_medians)
+# relev_mets = metric_combination(:both, :sum)
+# relev_mets2 = metric_combination([9,10])
+qual_mets = metric_combination([5:8;])
+all_mets = metric_combination([1:8;])
+notspore_mets = metric_combination([1; 3:8])
+noareas_mets = metric_combination([3:8;])
 
-longpars = long_and_separate(parameters)
-longsel = long_and_separate(selected)
-# longsel2 = long_and_separate(selected2)
-# longsel3 = long_and_separate(selected3)
-# longsel4 = long_and_separate(selected4)
+dists = CSV.read("results/ABC/dists/squareddists.csv", DataFrame)
+ndists = CSV.read("results/ABC/dists/nmissings.csv", DataFrame)
+rmdists = rm_toomanymissings(dists, ndists, 50)
+nonansdists = replacenans(rmdists, r"prod_clr", 100.0)
+
+# trows = [641970,350963]
+# filter(:p_row => p -> p in trows, nonansdists)
+# filter(:RowN => p -> p in trows, parameters)
+
+sel_rows = best_100(nonansdists, all_mets...)
+
+selected = get_best_params(scaledparams, sel_rows)
+selparams = get_best_params(parameters, sel_rows)
+selhead = first(selparams, 10)
+append!(selhead, combine(selparams, :RowN => first, Not(:RowN) .=> median, renamecols = false))
+selhead[11, :RowN] = -1
+
+CSV.write("results/ABC/params/selected.csv", selhead)
 
 
-fig1 = three_boxplots(longpars, longsel)
-Label(fig1[0,:], "With areas per age", textsize = 18)
-fig1
-fig2 = three_boxplots(longpars, longsel2)
-Label(fig2[0,:], "With areas per age", textsize = 18)
-fig2
-fig3 = three_boxplots(longpars, longsel3)
-Label(fig3[0,:], "With sum of areas", textsize = 18)
-fig3
-fig4 = three_boxplots(longpars, longsel4)
-Label(fig4[0,:], "With sum of areas", textsize = 18)
-fig4
+randpars100 = rand(1:10^6, 100)
+randpars1000 = rand(1:10^6, 1000)
+randpars1e5 = rand(1:10^6, 1*10^5)
 
-save("plots/ABC/areas_age.png", fig2)
-save("plots/ABC/sum_areas.png", fig4)
+fig1 = dodged_rainclouds(scaledparams, selected, 2, randpars100, 10)
+fig12 = dodged_rainclouds(scaledparams, selected, 2, 1000, height = 1200)
+fig14 = dodged_rainclouds(scaledparams, selected, 2, 1000, height = 1400)
+
+save("plots/ABC/all_stats1200.png", fig12)
+save("plots/ABC/all_stats1400.png", fig14)
+save("plots/ABC/all_stats1200half.pdf", fig12, pt_per_unit = 0.5)
+save("plots/ABC/all_stats1400half.pdf", fig14, pt_per_unit = 0.5)
+save("plots/ABC/all_stats1400.pdf", fig14, pt_per_unit = 1)
+
+save("plots/ABC/all_stats1200.svg", fig12)
+save("plots/ABC/all_stats1400.svg", fig14)
+
+GC.gc()
