@@ -25,7 +25,7 @@ rain_data = Tuple(w_table[3])
 wind_data = Tuple(w_table[4])
 
 accepted, rejected, pointestimate = read(
-    string.(pdir, ("accepted", "rejected", "pointestimate"), csvtail)
+    string.(pardir, ("accepted", "rejected", "pointestimate"), csvtail)...
 )
 repeat!(pointestimate, 100)
 pointestimate.RowN = collect(1:100)
@@ -43,15 +43,14 @@ point_outs = pmap(
     eachrow(accepted); retry_delays = fill(0.1, 3)
 )
 
-accepted_quant, accepted_qual = reduce(cat_dfs, acc_outs)
-rejected_quant, rejected_qual = reduce(cat_dfs, rej_outs)
-pointest_quant, pointest_qual = reduce(cat_dfs, point_outs)
+acc_quant, acc_qual = reduce(cat_dfs, acc_outs)
+rej_quant, rej_qual = reduce(cat_dfs, rej_outs)
+point_quant, point_qual = reduce(cat_dfs, point_outs)
 
 awrite(
     pdir, arrtail,
-    accepted_quant, accepted_qual,
-    rejected_quant, rejected_qual,
-    pointest_quant, pointest_qual
+    [acc_quant, acc_qual, rej_quant, rej_qual, point_quant, point_qual],
+    ["accepted_quant", "accepted_qual", "rejected_quant", "rejected_qual", "pointest_quant", "pointest_qual"]
 )
 
     

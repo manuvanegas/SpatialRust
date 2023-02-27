@@ -14,6 +14,5 @@ module purge
 module load julia/1.8.2
 
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
-julia --machine-file $SLURM_NODEFILE --sysimage \
-src/PkgCompile/ABCPrecompiledSysimagePosteriors.so \
-~/SpatialRust/scripts/ABC/dists/runPosteriorChecks.jl sim
+julia --machine-file $SLURM_NODEFILE \
+~/SpatialRust/scripts/ABC/posteriors/runPosteriorChecks.jl
