@@ -8,8 +8,12 @@ using CairoMakie
 # scatter(1:10,2:2:20,1:10)
 rainclouds(["a","b","a","b"], [1.0,1.0,2.0,2.0])
 
-include("../../../src/ABC/RanksPlots.jl")
+include("../../../src/ABC/AcceptRuns.jl")
+include("../../../src/ABC/DistributionPlots.jl")
 include("../../../src/ABC/CustomRainclouds.jl")
+
+nmissings_max = 50
+nanpenalty = 100.0
 
 parameters = DataFrame(Arrow.Table(string("data/ABC/", "parameters_", 4, ".arrow")))
 prior_medians = combine(parameters, All() .=> median)
@@ -23,8 +27,8 @@ noareas_mets = metric_combination([3:8;])
 
 dists = CSV.read("results/ABC/dists/squareddists.csv", DataFrame)
 ndists = CSV.read("results/ABC/dists/nmissings.csv", DataFrame)
-rmdists = rm_toomanymissings(dists, ndists, 50)
-nonansdists = replacenans(rmdists, r"prod_clr", 100.0)
+rmdists = rm_toomanymissings(dists, ndists, nmissings_max)
+nonansdists = replacenans(rmdists, r"prod_clr", nanpenalty)
 
 # trows = [641970,350963]
 # filter(:p_row => p -> p in trows, nonansdists)
@@ -33,12 +37,13 @@ nonansdists = replacenans(rmdists, r"prod_clr", 100.0)
 sel_rows = best_100(nonansdists, all_mets...)
 
 selected = get_best_params(scaledparams, sel_rows)
-selparams = get_best_params(parameters, sel_rows)
-selhead = first(selparams, 10)
-append!(selhead, combine(selparams, :RowN => first, Not(:RowN) .=> median, renamecols = false))
-selhead[11, :RowN] = -1
 
-CSV.write("results/ABC/params/selected.csv", selhead)
+write_accept_reject_runs(parameters, sel_rows, "all", nmissings_max)
+# selparams = get_best_params(parameters, sel_rows)
+# selhead = first(selparams, 10)
+# append!(selhead, combine(selparams, :RowN => first, Not(:RowN) .=> median, renamecols = false))
+# selhead[11, :RowN] = -1
+# CSV.write("results/ABC/params/selected.csv", selhead)
 
 
 randpars100 = rand(1:10^6, 100)
