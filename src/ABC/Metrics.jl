@@ -46,7 +46,8 @@ surveyed_today(c::Coffee, cycle::Vector{Int})::Bool = c.sample_cycle ∈ cycle &
 function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_last::Bool)
     survey_cofs = Iterators.filter(c -> surveyed_today(c, cycle_n), model.agents)
     spore_pct = model.rustpars.spore_pct
-    avail_sites_wpct = length(collect(survey_cofs)) * model.rustpars.max_lesions * inv(100.0)
+    max_les = model.rustpars.max_lesions
+    avail_sites_wpct = length(collect(survey_cofs)) * max_les * inv(100.0)
 
     let df_i = DataFrame(age = Int[], area = Float64[], spore = Float64[], nl = Int[], id = Int[])
         for cof in survey_cofs
@@ -62,11 +63,16 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
             df_c[!, :id] .= cof.id
             append!(df_i, df_c)
         end
+
+        pctareas = filter(:area => <=(0.75), combine(groupby(df_i, :id), :area => a -> sum(a)/max_les, renamecols = false))
+        meanpctarea = isempty(pctareas) ? missing : mean(pctareas[!, :area])
+
         filter!(:age => <=(max_age), df_i)
         if isempty(df_i)
-            return DataFrame(age = Int[],
-            med_area = Float64[], med_spore = Float64[],
-            med_nl = Float64[], occup = Float64[])
+            return DataFrame(age = -1,
+            med_area = missing, med_spore = missing,
+            med_nl = missing, occup = missing,
+            area_pct = meanpctarea)
         else
             nlesions_age = combine(groupby(df_i, :id), :age => maximum => :age, :nl => first => :nl)
             df_nlesions = combine(groupby(nlesions_age, :age), :nl => median => :med_nl)
@@ -84,7 +90,10 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
                 df_areas[!, :occup] .= 0.0
             end
 
-            return outerjoin(df_areas, df_nlesions, on = :age)
+            df_age = outerjoin(df_areas, df_nlesions, on = :age)
+            df_age.area_pct .= meanpctarea
+
+            return df_age
         end
     end
 end

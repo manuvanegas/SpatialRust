@@ -44,9 +44,9 @@ function sim_abc(p_row::DataFrameRow,
     # append!(sun_qual_patterns_df, shade_qual_patterns_df)
     # per_age_df = outerjoin(sun_per_age_df, shade_per_age_df, on = [:dayn, :age], renamecols = "_sun" => "_shade")
     per_age_df = vcat(sun_per_age_df, shade_per_age_df, source = :plot => [:sun, :shade])
-    if isempty(per_age_df)
-        push!(per_age_df, [-1; -1; fill(missing, 4); :none])
-    end
+    # if isempty(per_age_df)
+    #     push!(per_age_df, [-1; -1; fill(missing, 4); :none])
+    # end
     per_age_df[!, :p_row] .= p_row[:RowN]
     qual_patterns_df = DataFrame(
         p_row = p_row[:RowN],
@@ -159,7 +159,8 @@ function abc_run_2017!(model::ABM,
     per_age = DataFrame(
         dayn = Int[], age = Int[],
         med_area = Float64[], med_spore = Float64[],
-        med_nl = Float64[], occup = Float64[]
+        med_nl = Float64[], occup = Float64[],
+        area_pct = Float64[]
     )
     allowmissing!(per_age, Not([:dayn, :age]))
     prod_clr_df = DataFrame()
@@ -174,6 +175,8 @@ function abc_run_2017!(model::ABM,
             cycle_n, max_age, cycle_last = current_cycle_ages_2017(s)
             let df = get_weekly_data(model, cycle_n, max_age, cycle_last)
                 df[!, :dayn] .= s
+                # println(names(per_age))
+                # println(names(df))
                 append!(per_age, df)
 
             # let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
@@ -227,7 +230,8 @@ function abc_run_2018!(model::ABM,
     per_age = DataFrame(
         dayn = Int[], age = Int[],
         med_area = Float64[], med_spore = Float64[],
-        med_nl = Float64[], occup = Float64[]
+        med_nl = Float64[], occup = Float64[],
+        area_pct = Float64[]
     )
     allowmissing!(per_age, Not([:dayn, :age]))
 
