@@ -23,7 +23,7 @@ Pkg.instantiate()
 Pkg.precompile()
 using PackageCompiler
 PackageCompiler.create_sysimage(["DataFrames", "Arrow", "SpatialRust"];
-	sysimage_path="src/PkgCompile/ABCSysimage.so")
+	sysimage_path="src/PkgCompile/ABCSysimagePosteriors.so")
 EOF
 
 julia << EOF
@@ -31,7 +31,7 @@ using Pkg
 Pkg.activate(".")
 using PackageCompiler
 PackageCompiler.create_sysimage(["DataFrames", "Arrow", "SpatialRust"];
-	sysimage_path="src/PkgCompile/ABCPrecompiledSysimage.so",
+	sysimage_path="src/PkgCompile/ABCPrecompiledSysimagePosteriors.so",
 	precompile_execution_file="src/PkgCompile/ABCprecompile.jl",
-	base_sysimage="src/PkgCompile/ABCSysimage.so")
+	base_sysimage="src/PkgCompile/ABCSysimagePosteriors.so")
 EOF
