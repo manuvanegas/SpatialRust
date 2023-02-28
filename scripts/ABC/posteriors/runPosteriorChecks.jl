@@ -9,7 +9,7 @@ end
 
 
 metrics = "all"
-max_missings = 50
+max_missings = 15
 pardir = "results/ABC/params/"
 pdir = mkpath("results/ABC/posteriors")
 csvtail = string("_", metrics, "_", max_missings, ".csv")
@@ -40,7 +40,7 @@ rej_outs = pmap(
 )
 point_outs = pmap(
     p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018),
-    eachrow(accepted); retry_delays = fill(0.1, 3)
+    eachrow(pointestimate); retry_delays = fill(0.1, 3)
 )
 
 acc_quant, acc_qual = reduce(cat_dfs, acc_outs)
