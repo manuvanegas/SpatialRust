@@ -14,4 +14,4 @@ module purge
 module load julia/1.8.2
 
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
-julia --machine-file $SLURM_NODEFILE --sysimage src/PkgCompile/ABCSysimage.so ~/SpatialRust/scripts/ABC/dists/calcDists.jl 0.75 0.0 quants4 quals4
+julia --machine-file $SLURM_NODEFILE --sysimage src/PkgCompile/ABCSysimage.so ~/SpatialRust/scripts/ABC/dists/calcDists.jl 0.6 0.0 quants4 quals4

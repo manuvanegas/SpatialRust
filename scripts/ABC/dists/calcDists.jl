@@ -17,8 +17,8 @@ qualsdirname = ARGS[4]
 qualv = CSV.read("results/ABC/variances/v_quals.csv", DataFrame)
 quantv = CSV.read(
     "results/ABC/variances/v_quants.csv", DataFrame, 
-    # skipto = 2,
-    # header = [:dayn, :age, :plot, :area_dat, :spore_dat, :nl_dat, :occup_dat, :area_var, :spore_var, :nl_var, :occup_var],
+    skipto = 2,
+    header = [:dayn, :age, :plot, :area_dat, :spore_dat, :nl_dat, :occup_dat, :area_var, :spore_var, :nl_var, :occup_var],
     types = Dict(:plot => Symbol)
 )
 gquantv = CSV.read("results/ABC/variances/v_gquants.csv", DataFrame)
