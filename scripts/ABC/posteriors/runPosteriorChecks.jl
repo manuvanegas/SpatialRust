@@ -9,7 +9,7 @@ end
 
 
 metrics = "all"
-max_missings = 15
+max_missings = 10
 pardir = "results/ABC/params/"
 pdir = mkpath("results/ABC/posteriors")
 csvtail = string("_", metrics, "_", max_missings, ".csv")
@@ -29,6 +29,7 @@ accepted, rejected, pointestimate = read(
 )
 repeat!(pointestimate, 100)
 pointestimate.RowN = collect(1:100)
+select!(pointestimate, 15, 1:14)
 
 acc_outs = pmap(
     p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018),
