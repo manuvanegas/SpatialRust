@@ -51,24 +51,37 @@ function replacenans(df::DataFrame, regex::Regex, val::Float64)
     return df2
 end
 
-function best_100(dists::DataFrame, qualmetrics::Vector{Symbol}, quantmetrics::Vector{Symbol})
-    return best_n(dists, qualmetrics, quantmetrics, 100)
+function best_100(dists::DataFrame, qualsfirst::Bool, qualmetrics::Vector{Symbol}, quantmetrics::Vector{Symbol})
+    return best_n(dists, qualsfirst, qualmetrics, quantmetrics, 100)
 end
 
-function best_n(dists::DataFrame, qualmetrics::Vector{Symbol}, quantmetrics::Vector{Symbol}, n::Int)
+function best_n(dists::DataFrame, qualsfirst::Bool, qualmetrics::Vector{Symbol}, quantmetrics::Vector{Symbol}, n::Int)
     if isempty(quantmetrics)
         d1 = transform(
         dists, :p_row,
         AsTable(qualmetrics) => ByRow(sqrt ∘ sum) => :qual_dist
         )
         sort!(d1, :qual_dist)
-    else
+    elseif isempty(qualmetrics)
+        d1 = transform(
+        dists, :p_row,
+        AsTable(quantmetrics) => ByRow(sqrt ∘ sum) => :quant_dist
+        )
+        sort!(d1, :qual_dist)
+    elseif qualsfirst
         d1 = transform(
             dists, :p_row,
             AsTable(qualmetrics) => ByRow(sqrt ∘ sum) => :qual_dist,
             AsTable(quantmetrics) => ByRow(sqrt ∘ sum) => :quant_dist,
             )
         sort!(d1, [:qual_dist, :quant_dist])
+    else
+        d1 = transform(
+            dists, :p_row,
+            AsTable(qualmetrics) => ByRow(sqrt ∘ sum) => :qual_dist,
+            AsTable(quantmetrics) => ByRow(sqrt ∘ sum) => :quant_dist,
+            )
+        sort!(d1, [:quant_dist, :qual_dist])
     end
     return d1[1:n, :]
 end
