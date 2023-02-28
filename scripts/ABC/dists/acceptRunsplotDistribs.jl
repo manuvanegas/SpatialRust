@@ -12,7 +12,7 @@ include("../../../src/ABC/AcceptRuns.jl")
 include("../../../src/ABC/DistributionPlots.jl")
 include("../../../src/ABC/CustomRainclouds.jl")
 
-nmissings_max = 50
+nmissings_max = 5
 nanpenalty = 100.0
 
 parameters = DataFrame(Arrow.Table(string("data/ABC/", "parameters_", 4, ".arrow")))
@@ -34,7 +34,7 @@ nonansdists = replacenans(rmdists, r"prod_clr", nanpenalty)
 # filter(:p_row => p -> p in trows, nonansdists)
 # filter(:RowN => p -> p in trows, parameters)
 
-sel_rows = best_100(nonansdists, all_mets...)
+sel_rows = best_100(nonansdists, true, all_mets...)
 
 selected = get_best_params(scaledparams, sel_rows)
 
