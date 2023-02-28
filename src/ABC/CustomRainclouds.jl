@@ -33,6 +33,7 @@ rand_localized(RNG::Random.AbstractRNG, min, max) = rand(RNG) * (max - min) .+ m
         boxplot_nudge = 0.075,
 
         gap = 0.2,
+
         markersize = 2.0,
         dodge = Makie.automatic,
         n_dodge = Makie.automatic,
@@ -203,21 +204,7 @@ function Makie.plot!(plot::LessScatterRainClouds)
                                                     plot.n_dodge[], plot.dodge_gap[])
     width_ratio = width / full_width
 
-    ## Edited here
-    # groupeddata = group_labels(category_labels, data_array)
-    thelabels = unique(category_labels)
-    npars = length(first(values(group_labels(category_labels, data_array))))
-    randidx = rand(1:npars, plot.n_dots[])
-    longidx = Int[]
-    for i in eachindex(thelabels)
-        append!(longidx, randidx .+ (npars * (i - 1)))
-    end
-    # randidx = rand(1:length(data_array), plot.n_dots[])
-    # longidx = randidx
-    jitterdata = data_array[longidx]
-    jitter = create_jitter_array(length(jitterdata);
-                                    jitter_width = jitter_width*width_ratio)
-
+    
     if !isnothing(clouds)
         if clouds === violin
             violin!(plot, final_x_positions .- recenter_to_boxplot_nudge_value.*width_ratio, data_array;
@@ -247,7 +234,21 @@ function Makie.plot!(plot::LessScatterRainClouds)
         end
     end
 
-    # And here
+
+    ## Edited here
+    thelabels = unique(category_labels)
+    npars = div(length(data_array), length(thelabels))
+    randidx = rand(1:npars, plot.n_dots[])
+    longidx = Int[]
+    for i in eachindex(thelabels)
+        append!(longidx, randidx .+ (npars * (i - 1)))
+    end
+    # randidx = rand(1:length(data_array), plot.n_dots[])
+    # longidx = randidx
+    jitterdata = data_array[longidx]
+    jitter = create_jitter_array(length(jitterdata);
+                                    jitter_width = jitter_width*width_ratio)
+
     c_name = plot.color[][1]
     c_alpha = plot.color[][2] - 0.3
     scatter_x = final_x_positions[longidx] .+ side_scatter_nudge_with_direction.*width_ratio .+
