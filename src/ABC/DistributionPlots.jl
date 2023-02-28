@@ -16,7 +16,7 @@ function dodged_rainclouds(wideparams::DataFrame, wideselected::DataFrame, nnorm
     bp_width = 0.1
     bp_nudge_p = 0.12
     bp_nudge_s = 0.24
-    color_p = :orange
+    color_p = :goldenrod # :sandybrown
     alpha_p = 0.7
     color_s = :teal
     alpha_s = 0.6
