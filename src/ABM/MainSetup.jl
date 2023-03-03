@@ -331,7 +331,7 @@ function ind_shade_i(
     target_shade::Float64,
     shade_g_rate::Float64,
     start_day_at::Int,
-    prune_sch::Tuple{Int})
+    prune_sch::NTuple{N, Int}) where N
 
     day = start_day_at > 0 ? start_day_at : 1
     # calculate elapsed days since last prune
@@ -342,7 +342,7 @@ function ind_shade_i(
         last_prune = minimum(prune_diff)
     end
     # logistic equation to determine starting shade level
-    return (target_shade * 0.95) / (1 + (0.95 - target_shade) * exp(-(shade_g_rate * last_prune)))
+    return (target_shade * 0.7) / (target_shade + (0.7 - target_shade) * exp(-(shade_g_rate * last_prune)))
 end
 
 
