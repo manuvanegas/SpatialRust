@@ -58,7 +58,7 @@ function simulate_plots(p_row::DataFrameRow,
 
     steps_2017 = 231
     steps_2018 = 455
-    sampled_blocks = 50
+    sampled_blocks = 100
 
 
     model1 = init_spatialrust(
