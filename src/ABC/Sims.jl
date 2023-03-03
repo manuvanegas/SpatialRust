@@ -25,13 +25,6 @@ function sim_abc(p_row::DataFrameRow,
         p_row, temp_data, rain_data, wind_data, when_2017, when_2018, :regshaded
     )
 
-    # per_age_df, per_cycle_df = dewrinkle(rust_df) # "wrinkles" being the nested DataFrames
-
-    # plant_df = extract_prod(per_cycle_df)
-    # per_age_df.p_row .= p_row[:RowN]
-    # per_cycle_df.p_row .= p_row[:RowN]
-    # plant_df.p_row .= p_row[:RowN]
-
     # if p_row[:RowN] % 200 == 0
     #     println("Row $(p_row[:RowN])")
     #     println("Time $simtime")
@@ -39,10 +32,6 @@ function sim_abc(p_row::DataFrameRow,
     #     flush(stdout)
     # end
 
-    # append vs vcat?
-    # append!(sun_per_age_df, shade_per_age_df)
-    # append!(sun_qual_patterns_df, shade_qual_patterns_df)
-    # per_age_df = outerjoin(sun_per_age_df, shade_per_age_df, on = [:dayn, :age], renamecols = "_sun" => "_shade")
     per_age_df = vcat(sun_per_age_df, shade_per_age_df, source = :plot => [:sun, :shade])
     # if isempty(per_age_df)
     #     push!(per_age_df, [-1; -1; fill(missing, 4); :none])
@@ -53,29 +42,10 @@ function sim_abc(p_row::DataFrameRow,
         exh_sun = sun_exh_perc,
         prod_clr_sun = sun_prod_clr_cor,
         exh_shade = shade_exh_perc,
-        prod_clr_shade = shade_prod_clr_cor,
-        exh_spct = meannan(sun_exh_perc, shade_exh_perc),
-        prod_clr_cor = meannan(sun_prod_clr_cor, shade_prod_clr_cor)
+        prod_clr_shade = shade_prod_clr_cor
         )
 
-    # return ABCOuts(per_age_df, per_cycle_df, plant_df)
     return per_age_df, qual_patterns_df
-end
-
-function meannan(x::Float64,y::Float64)
-    if isnan(x)
-        if isnan(y)
-            return NaN
-        else
-            return y
-        end
-    else
-        if isnan(y)
-            return x
-        else
-            return (x + y) / 2.0
-        end
-    end
 end
 
 function simulate_plots(p_row::DataFrameRow,
@@ -93,12 +63,14 @@ function simulate_plots(p_row::DataFrameRow,
 
     model1 = init_spatialrust(
         steps = steps_2017,
-        start_days_at = 116, 
+        start_days_at = 115, 
         common_map = type,
         rain_data = rain_data,
         wind_data = wind_data,
         temp_data = temp_data,
         ini_rusts = 0.02,
+        target_shade = 0.15,
+        shade_g_rate = 0.008,
         fungicide_sch = Int[];
         p_row[2:end]...
 
@@ -115,12 +87,14 @@ function simulate_plots(p_row::DataFrameRow,
 
     model2 = init_spatialrust(
         steps = steps_2018,
-        start_days_at = 116, 
+        start_days_at = 115, 
         common_map = type,
         rain_data = rain_data,
         wind_data = wind_data,
         temp_data = temp_data,
         ini_rusts = 0.02,
+        target_shade = 0.15,
+        shade_g_rate = 0.008,
         fungicide_sch = Int[];
         p_row[2:end]...
 
@@ -175,17 +149,7 @@ function abc_run_2017!(model::ABM,
             cycle_n, max_age, cycle_last = current_cycle_ages_2017(s)
             let df = get_weekly_data(model, cycle_n, max_age, cycle_last)
                 df[!, :dayn] .= s
-                # println(names(per_age))
-                # println(names(df))
                 append!(per_age, df)
-
-            # let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-                # update_dfs!(
-                # per_age,
-                # per_cycle,
-                # # per_plant,
-                # df[1, :ind_data][1, :rust],
-                # df[1, :ind_data][1, :prod])
             end
         end
         if s == 25
@@ -199,13 +163,6 @@ function abc_run_2017!(model::ABM,
         let df = get_weekly_data(model, cycle_n, max_age, cycle_last)
             df[!, :dayn] .= s
             append!(per_age, df)
-        # let df = collect_model_data!(DataFrame(step = Int[], ind_data = DataFrame()), model, rust_data, s; obtainer)
-        #     update_dfs!(
-        #     per_age,
-        #     per_cycle,
-        #     # per_plant,
-        #     df[1, :ind_data][1, :rust],
-        #     df[1, :ind_data][1, :prod])
         end
     end
 
