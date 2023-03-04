@@ -15,11 +15,11 @@ function vegetative_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}
     end
 end
 
-function commit_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, ind_shade::Float64)
+function commit_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, ind_shade::Float64, commit::Normal, rng)
     if coffee.exh_countdown == 0
         update_sunlight!(coffee, map, ind_shade)
         veg_growth!(coffee, pars)
-        coffee.production = max(0.0, pars.res_commit * coffee.sunlight * coffee.veg * coffee.storage)
+        coffee.production = max(0.0, rand(rng, commit) * coffee.sunlight * coffee.veg * coffee.storage)
     elseif coffee.exh_countdown > 1
         coffee.exh_countdown -= 1
     else

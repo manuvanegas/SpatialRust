@@ -69,8 +69,9 @@ function coffee_step!(model::ABM)
                 vegetative_step!(cof, pars, model.shade_map, model.current.ind_shade)
             end
         elseif cycled == repd
+            commit_dist = Normal(pars.res_commit, 0.02)
             for cof in model.agents
-                commit_step!(cof, pars, model.shade_map, model.current.ind_shade)
+                commit_step!(cof, pars, model.shade_map, model.current.ind_shade, commit_dist, model.rng)
             end
         else
             for cof in model.agents
