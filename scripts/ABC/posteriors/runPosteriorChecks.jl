@@ -28,7 +28,7 @@ accepted, rejected, pointestimate = read(
     string.(pardir, ("accepted", "rejected", "pointestimate"), csvtail)...
 )
 repeat!(pointestimate, 100)
-pointestimate.RowN = collect(1:100)
+pointestimate.p_row = collect(1:100)
 select!(pointestimate, 15, 1:14)
 
 acc_outs = pmap(

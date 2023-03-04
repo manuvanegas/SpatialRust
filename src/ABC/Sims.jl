@@ -25,8 +25,8 @@ function sim_abc(p_row::DataFrameRow,
         p_row, temp_data, rain_data, wind_data, when_2017, when_2018, :regshaded
     )
 
-    # if p_row[:RowN] % 200 == 0
-    #     println("Row $(p_row[:RowN])")
+    # if p_row[:p_row] % 200 == 0
+    #     println("Row $(p_row[:p_row])")
     #     println("Time $simtime")
     #     println("")
     #     flush(stdout)
@@ -36,9 +36,9 @@ function sim_abc(p_row::DataFrameRow,
     # if isempty(per_age_df)
     #     push!(per_age_df, [-1; -1; fill(missing, 4); :none])
     # end
-    per_age_df[!, :p_row] .= p_row[:RowN]
+    per_age_df[!, :p_row] .= p_row[:p_row]
     qual_patterns_df = DataFrame(
-        p_row = fill(p_row[:RowN], 2),
+        p_row = fill(p_row[:p_row], 2),
         plot = [:sun, :shade],
         exh = [sun_exh_perc, shade_exh_perc],
         incid = [sun_incid, shade_incid],
@@ -108,7 +108,7 @@ function simulate_plots(p_row::DataFrameRow,
     per_age_df2, anyrusts = abc_run_2018!(model2, step_model!, steps_2018, when_2018)
     
     append!(per_age_df, per_age_df2)
-    # per_age_df[!, :p_row] .= p_row[:RowN]
+    # per_age_df[!, :p_row] .= p_row[:p_row]
     # per_age_df[!, :shading] .= type
 
     return per_age_df, exh_perc, incid, prod_clr_cor, anyrusts

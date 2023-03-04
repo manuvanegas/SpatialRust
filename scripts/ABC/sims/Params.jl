@@ -14,7 +14,7 @@ opt_temp_dist = truncated(Normal(22.0, 1.0), 14.0, 30.0)
 max_temp_dist = truncated(Normal(30.0, 1.0), 22.0, 38.0)
 
 parameters = DataFrame(
-    RowN = collect(1:Ns),
+    p_row = collect(1:Ns),
     max_inf = rand(Uniform(), Ns),
     host_spo_inh = rand(Uniform(0.0, 20.0), Ns),
     rust_gr = rand(Uniform(0.0, 0.3), Ns),
@@ -45,7 +45,7 @@ while checktemps
         newrows = Ns - remrows
         append!(parameters,
         DataFrame(
-            RowN = filter(n -> n ∉ parameters[:, :RowN], 1:Ns),
+            p_row = filter(n -> n ∉ parameters[:, :p_row], 1:Ns),
             max_inf = rand(Uniform(), newrows),
             host_spo_inh = rand(Uniform(0.0, 20.0), newrows),
             opt_g_temp = rand(opt_temp_dist, newrows),

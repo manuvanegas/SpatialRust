@@ -2,7 +2,7 @@ using DataFrames, Arrow
 using SpatialRust
 
 tdf = DataFrame(
-    RowN = [1,2], 
+    p_row = [1,2], 
     max_inf = [0.5,0.6], 
     host_spo_inh = [0.5,1.5], 
     opt_g_temp = [22.0, 23.0], 
