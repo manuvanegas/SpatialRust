@@ -17,11 +17,11 @@ function sim_abc(p_row::DataFrameRow,
     when_2018::Vector{Int}
     )
 
-    sun_per_age_df, sun_exh_perc, sun_prod_clr_cor = simulate_plots(
+    sun_per_age_df, sun_exh_perc, sun_incid, sun_prod_clr_cor, sun_anyrusts = simulate_plots(
         p_row, temp_data, rain_data, wind_data, when_2017, when_2018, :fullsun
     )
 
-    shade_per_age_df, shade_exh_perc, shade_prod_clr_cor = simulate_plots(
+    shade_per_age_df, shade_exh_perc, shade_incid, shade_prod_clr_cor, shade_anyrusts = simulate_plots(
         p_row, temp_data, rain_data, wind_data, when_2017, when_2018, :regshaded
     )
 
@@ -38,11 +38,12 @@ function sim_abc(p_row::DataFrameRow,
     # end
     per_age_df[!, :p_row] .= p_row[:RowN]
     qual_patterns_df = DataFrame(
-        p_row = p_row[:RowN],
-        exh_sun = sun_exh_perc,
-        prod_clr_sun = sun_prod_clr_cor,
-        exh_shade = shade_exh_perc,
-        prod_clr_shade = shade_prod_clr_cor
+        p_row = fill(p_row[:RowN], 2),
+        plot = [:sun, :shade],
+        exh = [sun_exh_perc, shade_exh_perc],
+        incid = [sun_incid, shade_incid],
+        prod_clr = [sun_prod_clr_cor, shade_prod_clr_cor],
+        frusts = [sun_anyrusts, shade_anyrusts]
         )
 
     return per_age_df, qual_patterns_df
@@ -82,7 +83,7 @@ function simulate_plots(p_row::DataFrameRow,
 
     setup_plant_sampling!(model1, 3, sampled_blocks)
 
-    per_age_df, exh_perc, prod_clr_cor = abc_run_2017!(model1, step_model!, steps_2017, when_2017)
+    per_age_df, exh_perc, incid, prod_clr_cor = abc_run_2017!(model1, step_model!, steps_2017, when_2017)
 
     model2 = init_spatialrust(
         steps = steps_2018,
@@ -104,13 +105,13 @@ function simulate_plots(p_row::DataFrameRow,
 
     setup_plant_sampling!(model2, 6, div(sampled_blocks, 2)) # sampling groups in 2nd half were 1/2 and overlapped with each other
 
-    per_age_df2 = abc_run_2018!(model2, step_model!, steps_2018, when_2018)
+    per_age_df2, anyrusts = abc_run_2018!(model2, step_model!, steps_2018, when_2018)
     
     append!(per_age_df, per_age_df2)
     # per_age_df[!, :p_row] .= p_row[:RowN]
     # per_age_df[!, :shading] .= type
 
-    return per_age_df, exh_perc, prod_clr_cor
+    return per_age_df, exh_perc, incid, prod_clr_cor, anyrusts
 end
 
 ## Custom runs
@@ -156,7 +157,8 @@ function abc_run_2017!(model::ABM,
         end
     end
 
-    exh_perc = calc_exh_perc(model)
+    exh_and_totinc = exh_incid(model)
+    exh_incid_percent = exh_and_totinc ./ length(model.agents)
 
     add_clr_areas!(prod_clr_df, model)
     # prod_clr_df[!, :exh] = getproperty.(model.agents, :exh_countdown) .> 0
@@ -164,7 +166,7 @@ function abc_run_2017!(model::ABM,
     
     prod_clr_cor = corspearman(prod_clr_df[!, :FtL], prod_clr_df[!, :clr_area])
 
-    return per_age, exh_perc, prod_clr_cor
+    return per_age, exh_incid_percent..., prod_clr_cor
 end
 
 function abc_run_2018!(model::ABM,
@@ -204,7 +206,7 @@ function abc_run_2018!(model::ABM,
         end
     end
 
-    return per_age
+    return per_age, (length(model.current.rusts) > 0)
 end
 
 function cat_dfs(Ti::Tuple{DataFrame, DataFrame}, Tj::Tuple{DataFrame, DataFrame})

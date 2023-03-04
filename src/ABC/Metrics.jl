@@ -45,8 +45,9 @@ end
 #     end
 # end
 
-function calc_exh_perc(model::ABM)
-    sum(map(c -> c.exh_countdown > 0, model.agents)) / length(model.agents)
+function exh_incid(model::ABM)
+    nexh = sum(map(c -> c.exh_countdown > 0, model.agents)) 
+    return nexh, nexh + sum(getproperty.(model.agents, :n_lesions) .> 0)
 end
 
 ## Quantitative patterns
@@ -80,23 +81,23 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
         filter!(:age => <=(max_age), df_i)
         if isempty(df_i)
             return DataFrame(age = -1,
-            med_area = missing, med_spore = missing,
-            med_nl = missing, occup = missing,
+            area = missing, spore = missing,
+            nl = missing, occup = missing,
             area_pct = meanpctarea)
         else
             nlesions_age = combine(groupby(df_i, :id), :age => maximum => :age, :nl => first => :nl)
-            df_nlesions = combine(groupby(nlesions_age, :age), :nl => median => :med_nl)
+            df_nlesions = combine(groupby(nlesions_age, :age), :nl => median => :nl)
 
             df_areas = combine(
                 groupby(df_i, :age),
-                :area => median => :med_area,
-                :spore => median => :med_spore,
-                :nl => sum => :totnl
+                :area => median => :area,
+                :spore => median => :spore,
+                :nl => sum => :nl
             )
             if cycle_last
-                select!(df_areas, Not(:totnl), :totnl => (n -> n / avail_sites_wpct) => :occup)
+                select!(df_areas, Not(:nl), :nl => (n -> n / avail_sites_wpct) => :occup)
             else
-                select!(df_areas, Not(:totnl))
+                select!(df_areas, Not(:nl))
                 df_areas[!, :occup] .= 0.0
             end
 
