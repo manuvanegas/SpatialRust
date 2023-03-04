@@ -122,8 +122,8 @@ function abc_run_2017!(model::ABM,
 
     per_age = DataFrame(
         dayn = Int[], age = Int[],
-        med_area = Float64[], med_spore = Float64[],
-        med_nl = Float64[], occup = Float64[],
+        area = Float64[], spore = Float64[],
+        nl = Float64[], occup = Float64[],
         area_pct = Float64[]
     )
     allowmissing!(per_age, Not([:dayn, :age]))
@@ -174,8 +174,8 @@ function abc_run_2018!(model::ABM,
 
     per_age = DataFrame(
         dayn = Int[], age = Int[],
-        med_area = Float64[], med_spore = Float64[],
-        med_nl = Float64[], occup = Float64[],
+        area = Float64[], spore = Float64[],
+        nl = Float64[], occup = Float64[],
         area_pct = Float64[]
     )
     allowmissing!(per_age, Not([:dayn, :age]))

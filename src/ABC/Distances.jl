@@ -39,7 +39,7 @@ end
 
 function sq_diff_var_quants(sims::DataFrame, quantv::DataFrame, globvars::DataFrame)::DataFrame
     joined = leftjoin(quantv, sims, on = [:dayn, :age, :plot])
-    rename!(joined, :med_area => :area, :med_spore => :spore, :med_nl => :nl)
+    # rename!(joined, :med_area => :area, :med_spore => :spore, :med_nl => :nl)
 
     dists = DataFrame(p_row = joined[:, :p_row])
     for name in [:area, :spore, :nl, :occup]
