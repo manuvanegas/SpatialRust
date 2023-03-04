@@ -4,7 +4,7 @@ export sim_abc, cat_dfs
 
 # using DataFramesMeta, NaNStatistics
 # using NaNStatistics
-using Statistics: cor
+using StatsBase: corspearman
 
 include(srcdir("ABC","Metrics.jl"))
 include(srcdir("ABC","PrepforABC.jl"))
@@ -77,7 +77,6 @@ function simulate_plots(p_row::DataFrameRow,
         # temp_cooling = p_row[:temp_cooling],
         # light_inh = p_row[:light_inh],
         # rain_washoff = p_row[:rain_washoff],
-        # rep_gro = p_row[:rep_gro],
         )
 
 
@@ -101,20 +100,11 @@ function simulate_plots(p_row::DataFrameRow,
         # temp_cooling = p_row[:temp_cooling],
         # light_inh = p_row[:light_inh],
         # rain_washoff = p_row[:rain_washoff],
-        # rep_gro = p_row[:rep_gro],
         )
 
     setup_plant_sampling!(model2, 6, div(sampled_blocks, 2)) # sampling groups in 2nd half were 1/2 and overlapped with each other
 
     per_age_df2 = abc_run_2018!(model2, step_model!, steps_2018, when_2018)
-
-    # plant_df = per_cycle_df[per_cycle_df .∈ Ref(when_prod), [:tick, :coffee_production]]
-
-    # per_age_df2[:, :tick] .= per_age_df2.tick .+ restart_after
-    # per_cycle_df2[:, :tick] .= per_cycle_df2.tick .+ restart_after
-    # plant_df2[:, :tick] .= plant_df2.tick .+ restart_after
-
-    # return vcat(per_age_df, per_age_df2), vcat(per_cycle_df, per_cycle_df2), vcat(plant_df, plant_df2)
     
     append!(per_age_df, per_age_df2)
     # per_age_df[!, :p_row] .= p_row[:RowN]
@@ -169,12 +159,10 @@ function abc_run_2017!(model::ABM,
     exh_perc = calc_exh_perc(model)
 
     add_clr_areas!(prod_clr_df, model)
+    # prod_clr_df[!, :exh] = getproperty.(model.agents, :exh_countdown) .> 0
     filter!(:clr_area => >(0.0), prod_clr_df)
-    # if std(prod_clr_df[!, :clr_area]) == 0 || std(prod_clr_df[!, :production])
-    #     prod_clr_cor = 0.0
-    # else
-        prod_clr_cor = cor(prod_clr_df[!, :production], prod_clr_df[!, :clr_area])
-    # end
+    
+    prod_clr_cor = corspearman(prod_clr_df[!, :FtL], prod_clr_df[!, :clr_area])
 
     return per_age, exh_perc, prod_clr_cor
 end

@@ -2,38 +2,48 @@
 
 function get_prod_df!(df::DataFrame, model::ABM)
     # df[!, :id] = map(c -> c.id, values(model.agents))
-    df[!, :production] = getprod.(model.agents)
+    df[!, :production] = getproperty.(model.agents, :production)
+    df[!, :veg] = getproperty.(model.agents, :veg)
+    select!(df, [:veg, :production] => ByRow(fruittoleaf) => :FtL)
 end
 
-getprod(c::Coffee) = c.production
+fruittoleaf(v::Float64, p::Float64) = p / (v + p)
 
 function add_clr_areas!(df::DataFrame, model::ABM)
-    df[!, :clr_area] = finalrust.(model.agents)
+    df[!, :clr_area] = meanareas.(model.agents)
 end
 
-function finalrust(c::Coffee)
-    # area = sum(c.areas)
-    # if area == 0.0 
-    #     if c.exh_countdown == 0
-    #         return -10.0
-    #     else
-    #         return 25.0
-    #     end
-    # else
-    #     return area
-    # end
-    # area = sum(c.areas)
-    # if area == 0.0 && c.exh_countdown == 0
-    #     return -10.0
-    # else
-    #     return area
-    # end
-    if c.exh_countdown > 0
-        return 24.0 + (sum(c.areas) / 25.0)
+function meanareas(a)
+    if sum(a.areas) == 0.0
+        return 0.0
     else
-        return sum(c.areas)
+        return mean(filter(>(0.0), a.areas))
     end
 end
+
+# function finalrust(c::Coffee)
+#     # area = sum(c.areas)
+#     # if area == 0.0 
+#     #     if c.exh_countdown == 0
+#     #         return -10.0
+#     #     else
+#     #         return 25.0
+#     #     end
+#     # else
+#     #     return area
+#     # end
+#     # area = sum(c.areas)
+#     # if area == 0.0 && c.exh_countdown == 0
+#     #     return -10.0
+#     # else
+#     #     return area
+#     # end
+#     if c.exh_countdown > 0
+#         return 24.0 + (sum(c.areas) / 25.0)
+#     else
+#         return sum(c.areas)
+#     end
+# end
 
 function calc_exh_perc(model::ABM)
     sum(map(c -> c.exh_countdown > 0, model.agents)) / length(model.agents)
