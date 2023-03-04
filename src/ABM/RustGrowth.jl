@@ -34,7 +34,7 @@ function r_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                         rust.deposited -= 1.0
                         nl = rust.n_lesions += 1
                         @inbounds rust.ages[nl] = -1
-                        @inbounds rust.areas[nl] = 0.00014
+                        @inbounds rust.areas[nl] = 0.001# 0.00014
                     end
                 end
             else
@@ -78,7 +78,7 @@ function nr_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float6
                         rust.deposited -= 1.0
                         nl = rust.n_lesions += 1
                         @inbounds rust.ages[nl] = -1
-                        @inbounds rust.areas[nl] = 0.00014
+                        @inbounds rust.areas[nl] = 0.001 #0.00014
                     end
                 end
             else
@@ -101,25 +101,27 @@ function grow_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, 
         # For non sporulated lesions, see if spor happens, then update total and sporulated areas
         temp_mod = -(1.0/(rustpars.max_g_temp - rustpars.opt_g_temp)) * (local_temp - rustpars.opt_g_temp)^2.0 + 1.0
         if temp_mod > 0.0
-            let spor_mod = temp_mod * rustpars.host_spo_inh / (rustpars.host_spo_inh + rust.storage),
+            let spor_mod = if rust.storage > 0
+                    temp_mod * rustpars.host_spo_inh / (rustpars.host_spo_inh + rust.storage)
+                else
+                    temp_mod
+                end,
+                # spor_mod = temp_mod * rustpars.host_spo_inh / (rustpars.host_spo_inh + rust.storage)
                 # host_gro = rustpars.veg_gro + rustpars.rep_gro * rust.production / (rust.production + rust.veg),
                 host_gro = 1.0 + rustpars.rep_gro * (rust.production / (rust.production + rust.veg)),
-                area_gro = 1.0 - sum(rust.areas) / rustpars.max_lesions,
-                growth_mod = rust.rust_gr * temp_mod * host_gro * area_gro
-                # nls = rust.n_lesions #BENCH (wont need nls if only used once)
+                area_gro = max(0.0, 1.0 - sum(rust.areas) / 5.0),
+                growth_mod = rust.rust_gr * temp_mod * host_gro * area_gro,
+                nls = rust.n_lesions #BENCH (wont need nls if only used once)
                 
-                for (nl, spo) in enumerate(@views(@inbounds(rust.spores[1:rust.n_lesions])))
-                # for nl in 1:nls
+                # for (nl, spo) in enumerate(@views(@inbounds(rust.spores[1:rust.n_lesions])))
+                for (nl, spo) in enumerate(@views(@inbounds(rust.spores[1:nls])))
                     if !spo && rand(rng) < @inbounds rust.areas[nl] * spor_mod
                         @inbounds rust.spores[nl] = true
                     end
                 end
                 # update total lesion areas
-                # @simd @fastmath
-                @fastmath rust.areas .+= rust.areas .* (1.0 .- rust.areas) .* growth_mod
-                # @views(@inbounds(rust.areas[1:nls] .+= rust.areas[1:nls] .* (1 .- rust.areas[1:nls]) .* growth_mod)) #BENCH 
-                # update sporulated area
-                # rust.spores .= rust.spores .* rust.areas .* rustpars.spore_pct
+                # @fastmath rust.areas .+= rust.areas .* (1.0 .- rust.areas) .* growth_mod
+                @views(@inbounds(rust.areas[1:nls] .+= rust.areas[1:nls] .* (1 .- rust.areas[1:nls]) .* growth_mod)) 
             end
         end
     # end
@@ -133,26 +135,32 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
         rust.ages .+= 1
         temp_mod = -(1.0/(rustpars.max_g_temp - rustpars.opt_g_temp)) * (local_temp - rustpars.opt_g_temp)^2.0 + 1.0
         if temp_mod > 0.0
-            let spor_mod = temp_mod * rustpars.host_spo_inh / (rustpars.host_spo_inh + rust.storage),
+            let spor_mod = if rust.storage > 0
+                    temp_mod * rustpars.host_spo_inh / (rustpars.host_spo_inh + rust.storage)
+                else
+                    temp_mod
+                end,
+                # spor_mod = temp_mod * rustpars.host_spo_inh / (rustpars.host_spo_inh + rust.storage)
                 # host_gro = rustpars.veg_gro + rustpars.rep_gro * rust.production / (rust.production + rust.veg),
                 host_gro = 1.0 + rustpars.rep_gro * (rust.production / (rust.production + rust.veg)),
-                area_gro = 1.0 - sum(rust.areas) / rustpars.max_lesions,
+                area_gro = max(0.0, 1.0 - sum(rust.areas) / 5.0),
                 growth_mod = rust.rust_gr * temp_mod * host_gro * area_gro,
                 prev_cur = rust.ages .< fday,
                 spor_probs = rust.areas .* spor_mod .* ifelse.(prev_cur, rustpars.fung_spor_prev, rustpars.fung_spor_cur),
-                gro_mods = growth_mod .* ifelse.(prev_cur, rustpars.fung_gro_prev, rustpars.fung_gro_cur)
-                # nls = rust.n_lesions
+                gro_mods = growth_mod .* ifelse.(prev_cur, rustpars.fung_gro_prev, rustpars.fung_gro_cur),
+                nls = rust.n_lesions
                 # @views(prev_cur = @inbounds rust.ages[1:nls] .< fday),
                 # @views(spor_probs = @inbounds rust.area[1:nls] .* spor_mod .* ifelse.(prev_cur, rustpars.fung_spor_prev, rustpars.fung_spor_cur)),
                 # @views(gro_mods = @inbounds growth_mod[1:nls] .* ifelse.(prev_cur, rustpars.fung_gro_prev, rustpars.fung_gro_cur))
 
-                for (nl, spo) in enumerate(@views(@inbounds(rust.spores[1:rust.n_lesions])))
+                # for (nl, spo) in enumerate(@views(@inbounds(rust.spores[1:rust.n_lesions])))
+                for (nl, spo) in enumerate(@views(@inbounds(rust.spores[1:nls])))
                     if !spo && rand(rng) < @inbounds spor_probs[nl]
                         @inbounds rust.spores[nl] = true
                     end
                 end
-                @fastmath rust.areas .+= rust.areas .* (1.0 .- rust.areas) .* gro_mods
-                # @views(@inbounds(rust.areas[1:nl] .+= rust.areas[1:nl] .* (1 .- rust.areas[1:nl]) .* gro_mods)) # BENCH 
+                # @fastmath rust.areas .+= rust.areas .* (1.0 .- rust.areas) .* gro_mods
+                @views(@inbounds(rust.areas[1:nls] .+= rust.areas[1:nls] .* (1 .- rust.areas[1:nls]) .* growth_mod)) 
                 # update sporulated area
                 # rust.spores .= rust.spores .* rust.areas .* rustpars.spore_pct
             end
@@ -164,9 +172,9 @@ end
 
 # function parasitize!(rust::Coffee, rustpars::RustPars, rusts::Set{Coffee})
 function parasitize!(rust::Coffee, rustpars::RustPars, farm_map::Array{Int, 2})
-    rust.storage -= (rustpars.rust_paras * sum(rust.areas))
+    stor = rust.storage -= (rustpars.rust_paras * sum(rust.areas))
 
-    if rust.storage < 0.0 && rust.veg <= rustpars.exh_threshold
+    if stor < -10.0 || (stor < 0.0 && rust.veg <= rustpars.exh_threshold)
         rust.production = 0.0
         rust.exh_countdown = rustpars.exh_countdown
         # fill!(rust.deposited, 0)
