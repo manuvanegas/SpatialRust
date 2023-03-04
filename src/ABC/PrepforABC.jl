@@ -70,5 +70,5 @@ function init_veg_116(sunlight::Float64)
 end
 
 function init_storage_116(sunlight::Float64)
-    return 100.0 * exp(-6.5 * sunlight) + 7.8
+    return 80.0 * exp(-5.8 * sunlight) + 7.8
 end

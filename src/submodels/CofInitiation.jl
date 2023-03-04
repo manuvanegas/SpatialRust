@@ -197,3 +197,11 @@ function veg_appr_abc(light)
 
     C * exp(k * light) + c
 end
+
+function newstor_appr_abc(light)
+    C = 80.0
+    k = -5.8
+    c = 7.8
+
+    C * exp(k * light) + c
+end
