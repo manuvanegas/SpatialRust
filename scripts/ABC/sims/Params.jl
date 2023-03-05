@@ -5,7 +5,7 @@ using Arrow, CSV, DataFrames, Distributions, Random
 
 Ns = 10^6 # number of parameter combinations to test
 
-newid = 4
+newid = 5
 file_name = string("parameters_", newid, ".csv")
 arr_file_name = string("parameters_", newid, ".arrow")
 par_path = datadir("ABC", file_name)
@@ -16,8 +16,8 @@ max_temp_dist = truncated(Normal(30.0, 1.0), 22.0, 38.0)
 parameters = DataFrame(
     p_row = collect(1:Ns),
     max_inf = rand(Uniform(), Ns),
-    host_spo_inh = rand(Uniform(0.0, 20.0), Ns),
-    rust_gr = rand(Uniform(0.0, 0.3), Ns),
+    host_spo_inh = rand(Uniform(0.0, 10.0), Ns),
+    rust_gr = rand(Uniform(0.0, 0.5), Ns),
     opt_g_temp = rand(opt_temp_dist, Ns),
     max_g_temp = rand(max_temp_dist, Ns),
     rep_gro = rand(Uniform(0.0, 2.0), Ns),
