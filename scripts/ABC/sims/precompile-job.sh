@@ -21,17 +21,22 @@ using Pkg
 Pkg.activate(".")
 Pkg.instantiate()
 Pkg.precompile()
+using Arrow, DataFrames, SpatialRust
 using PackageCompiler
 PackageCompiler.create_sysimage(["DataFrames", "Arrow", "SpatialRust"];
-	sysimage_path="src/PkgCompile/ABCSysimagePosteriors.so")
+	sysimage_path="src/PkgCompile/ABCSysimage2.so")
 EOF
+
+julia --sysimage "src/PkgCompile/ABCSysimage2.so" --project=. -e 'using SpatialRust; dummyrun_spatialrust(); println("Ok")'
 
 julia << EOF
 using Pkg
 Pkg.activate(".")
 using PackageCompiler
 PackageCompiler.create_sysimage(["DataFrames", "Arrow", "SpatialRust"];
-	sysimage_path="src/PkgCompile/ABCPrecompiledSysimagePosteriors.so",
+	sysimage_path="src/PkgCompile/ABCPrecompiledSysimage2.so",
 	precompile_execution_file="src/PkgCompile/ABCprecompile.jl",
-	base_sysimage="src/PkgCompile/ABCSysimagePosteriors.so")
+	base_sysimage="src/PkgCompile/ABCSysimage2.so")
 EOF
+
+julia --sysimage "src/PkgCompile/ABCPrecompiledSysimage2.so" --project=. -e 'using SpatialRust; dummyrun_spatialrust(); println("Ok2")'
