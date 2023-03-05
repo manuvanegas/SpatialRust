@@ -2,7 +2,7 @@ function sentinel(id)
     Sentinel(false, id, 0, 0, Int[], Float64[], Bool[])
 end
 
-function cycle_sentinels(model::ABM, oldcycle::Int, newcycle::Int)
+function cycle_sentinels(model::SpatialRustABM, oldcycle::Int, newcycle::Int)
     for s in model.sentinels
         if s.cycle == oldcycle
             s.active = false

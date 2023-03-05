@@ -318,7 +318,7 @@ end
 #     return sum(@view rust.state[2,:]) * inv(lesions)
 # end
 
-# function kill_rust!(model::ABM, rust::Rust, cof::Coffee)
+# function kill_rust!(model::SpatialRustABM, rust::Rust, cof::Coffee)
 #     cof.hg_id = 0
 #     rm_id = rust.id
 #     delete!(model.agents, rust.id)

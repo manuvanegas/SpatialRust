@@ -1,7 +1,7 @@
 ## Setup functions
 
 # Add coffee agents according to farm_map
-function add_trees!(model::ABM)
+function add_trees!(model::SpatialRustABM)
     farm_map::Matrix{Int} = model.farm_map
     shade_map::Matrix{Float64} = model.shade_map
     # startday::Int = model.current.days
@@ -33,7 +33,7 @@ end
 #     end
 # end
 
-# function add_coffees!(model::ABM, start_days_at::Int, pos::CartesianIndex{2})
+# function add_coffees!(model::SpatialRustABM, start_days_at::Int, pos::CartesianIndex{2})
 #     # newcof = Coffee(nextid(model), Tuple(pos); shades = [round(Int, model.shade_map[pos])], production = float(start_days_at))
 #     newcof = Coffee(nextid(model), Tuple(pos), 1.0, 1.0, Int[], 0.0, 0.0, 0, 0, 0, Int[])
 #
@@ -42,7 +42,7 @@ end
 
 # Add initial rust agents
 
-function rusted_cluster(model::ABM, r::Int, avail_cofs) # Returns a "cluster" of initially rusted coffees
+function rusted_cluster(model::SpatialRustABM, r::Int, avail_cofs) # Returns a "cluster" of initially rusted coffees
     main_c = sample(model.rng, collect(Iterators.filter( 
         c -> all(minp .<= c.pos .<= maxp), avail_cofs
     )))
@@ -51,7 +51,7 @@ function rusted_cluster(model::ABM, r::Int, avail_cofs) # Returns a "cluster" of
     return cluster
 end
 
-function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
+function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee plants
     if ini_rusts < 1.0
         n_rusts = max(round(Int, ini_rusts * nagents(model)), 1)
         rusted_cofs = sample(model.rng, collect(allagents(model)), n_rusts, replace = false)
@@ -120,10 +120,10 @@ function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
     end
 end
 
-function init_abm_obj(props::Props)::ABM
+function init_abm_obj(props::Props)::SpatialRustABM
     space = GridSpaceSingle((props.rustpars.map_side, props.rustpars.map_side), periodic = false, metric = :chebyshev)
 
-    model = UnkillableABM(Coffee, space; properties = props, warn = false)
+    model = UnkillableABM(Coffee, space; properties = props, rng = Random.Xoshiro())
 
     # TODO: comment out ABC coffee initialization
     # add_trees!(model)
@@ -132,7 +132,7 @@ function init_abm_obj(props::Props)::ABM
     return model
 end
 
-function init_abm_obj(props::Props, ini_rusts::Float64)::ABM
+function init_abm_obj(props::Props, ini_rusts::Float64)::SpatialRustABM
     model = init_abm_obj(props)
     init_rusts!(model, ini_rusts)
 

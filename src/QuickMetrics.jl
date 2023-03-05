@@ -1,16 +1,16 @@
 export totprod, maxA, incidence, n_coffees, justcofs, justrusts
 
-totprod(model::ABM) = model.current.prod
+totprod(model::SpatialRustABM) = model.current.prod
 
-# maxA(model::ABM) = model.current.max_rust
+# maxA(model::SpatialRustABM) = model.current.max_rust
 
-incidence(model::ABM) = length(model.rusts) / nagents(model)
-# incidence(model::ABM) = count(r.n_lesions > 0 for r in allagents(model)) / nagents(model)
+incidence(model::SpatialRustABM) = length(model.rusts) / nagents(model)
+# incidence(model::SpatialRustABM) = count(r.n_lesions > 0 for r in allagents(model)) / nagents(model)
 
-n_rusts(model::ABM) = length(model.rusts)
-# n_rusts(model::ABM) = count(r.n_lesions > 0 for r in allagents(model))
+n_rusts(model::SpatialRustABM) = length(model.rusts)
+# n_rusts(model::SpatialRustABM) = count(r.n_lesions > 0 for r in allagents(model))
 
-n_coffees(model::ABM) = nagents(model)
+n_coffees(model::SpatialRustABM) = nagents(model)
 
 ## Not exported
 

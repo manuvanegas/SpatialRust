@@ -1,6 +1,6 @@
 ## Qualitative patterns
 
-function get_prod_df!(df::DataFrame, model::ABM)
+function get_prod_df!(df::DataFrame, model::SpatialRustABM)
     # df[!, :id] = map(c -> c.id, values(model.agents))
     df[!, :production] = getproperty.(model.agents, :production)
     df[!, :veg] = getproperty.(model.agents, :veg)
@@ -9,7 +9,7 @@ end
 
 fruittoleaf(v::Float64, p::Float64) = p / (v + p)
 
-function add_clr_areas!(df::DataFrame, model::ABM)
+function add_clr_areas!(df::DataFrame, model::SpatialRustABM)
     df[!, :clr_area] = meanareas.(model.agents)
 end
 
@@ -45,7 +45,7 @@ end
 #     end
 # end
 
-function exh_incid(model::ABM)
+function exh_incid(model::SpatialRustABM)
     nexh = sum(map(c -> c.exh_countdown > 0, model.agents)) 
     return nexh, nexh + sum(getproperty.(model.agents, :n_lesions) .> 0)
 end
@@ -56,7 +56,7 @@ surveyed_today(c::Coffee, cycle::Vector{Int})::Bool = c.sample_cycle ∈ cycle &
 
 area_pct(c::Coffee) = c.exh_countdown > 0 ? -1.0 : sum(c.areas)
 
-function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_last::Bool)
+function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::Int, cycle_last::Bool)
     # survey_cofs = Iterators.filter(c -> surveyed_today(c, cycle_n), model.agents)
     active_sents = filter!(s -> s.active, model.sentinels)
     spore_pct = model.rustpars.spore_pct
@@ -124,7 +124,7 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
 end
 
 # # prob wont work
-# function get_weekly_data_2017_2(model::ABM, s::Int)
+# function get_weekly_data_2017_2(model::SpatialRustABM, s::Int)
 #     cycle_n, max_age, cycle_last = current_cycle_ages_2017(s)
 #     survey_cofs = Iterators.filter(c -> surveyed_today(c, cycle_n), values(model.agents))
 #     let df_i = DataFrame()

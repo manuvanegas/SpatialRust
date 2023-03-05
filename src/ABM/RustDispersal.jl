@@ -1,6 +1,6 @@
 # Spore dispersal and deposition
 
-function disperse_rain!(model::ABM, rust::Coffee)
+function disperse_rain!(model::SpatialRustABM, rust::Coffee)
     d_mod = (4.0 - 4.0 * model.rustpars.diff_splash) * (rust.sunlight - 0.5)^2.0 + model.rustpars.diff_splash
     exp_dist = Exponential(model.rustpars.rain_distance)
     for area in @inbounds rust.areas[rust.spores]
@@ -33,7 +33,7 @@ function disperse_rain!(model::ABM, rust::Coffee)
 end
 
 
-function disperse_wind!(model::ABM, rust::Coffee)
+function disperse_wind!(model::SpatialRustABM, rust::Coffee)
     shading = @inbounds model.shade_map[rust.pos...]
     w_distance = rand(model.rng, Exponential(model.rustpars.wind_distance)) * (1 + rust.sunlight * model.rustpars.diff_wind)
     if w_distance < 1.0
@@ -180,7 +180,7 @@ end
 
 ## Dispersal from outside the farm
 
-function outside_spores!(model::ABM)
+function outside_spores!(model::SpatialRustABM)
     heading = model.current.wind_h
     side = model.rustpars.map_side
     expdist = Exponential(model.rustpars.wind_distance)
@@ -282,7 +282,7 @@ function starting_pos(rng, side::Int, q::Int)
 end
 
 
-# function r_rust_dispersal!(model::ABM, rust::Rust, sunlight::Float64)
+# function r_rust_dispersal!(model::SpatialRustABM, rust::Rust, sunlight::Float64)
 #     let distance = abs(2.0 * randn(model.rng) * model.pars.rain_distance) *
 #         ((sunlight - 0.55)^2.0 * ((1.0 - model.pars.diff_splash) * inv(0.2025)) + model.pars.diff_splash)
 
@@ -290,7 +290,7 @@ end
 #     end
 # end
 
-# function w_rust_dispersal!(model::ABM, rust::Rust, wdistance::Float64)
+# function w_rust_dispersal!(model::SpatialRustABM, rust::Rust, wdistance::Float64)
 #     wind_travel!(model, CartesianIndex(rust.pos), wdistance, (model.current.wind_h + (rand(model.rng) * 5) - 2.5))
 # end
 
@@ -358,7 +358,7 @@ end
 #     end
 # end
 
-# function wind_travel!(model::ABM, pos::CartesianIndex{2}, dist::Float64, heading::Float64)
+# function wind_travel!(model::SpatialRustABM, pos::CartesianIndex{2}, dist::Float64, heading::Float64)
 #     let ca = cosd(heading), co = sind(heading), shade_block = model.pars.tree_block
 #         notlanded = true
 #         infarm = true
@@ -440,7 +440,7 @@ end
 
 ## When dispersal is successful, create new Rusts
 
-# function inoculate_rust!(model::ABM, target::Coffee) # inoculate target coffee
+# function inoculate_rust!(model::SpatialRustABM, target::Coffee) # inoculate target coffee
 #     # here = collect(agents_in_position(target, model))
 #     if target.hg_id != 0
 #         if model[target.hg_id].n_lesions < model.pars.max_lesions
@@ -458,7 +458,7 @@ end
 ## Rust initial inoculation (optional function, not in use currently)
 # This one assumes that rust epidemic has to come from an influx of wind-dispersed spores
 
-# function inoculate_farm(model::ABM, nrusts::Int) #PROBLEM: increased variability because each sim starts with != #rusts
+# function inoculate_farm(model::SpatialRustABM, nrusts::Int) #PROBLEM: increased variability because each sim starts with != #rusts
 #     # byrain = rand(model.rng, 1:nrusts)
 #     # bywind = nrusts - byrain
 #     inoc_ids = Int[]

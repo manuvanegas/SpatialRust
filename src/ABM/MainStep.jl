@@ -1,6 +1,6 @@
 export step_model!
 
-function step_model!(model::ABM)
+function step_model!(model::SpatialRustABM)
     pre_step!(model)
     grow_shades!(model.current, model.mngpars.shade_g_rate)
     # agent_step!(model)
@@ -23,7 +23,7 @@ end
 
 ## "Step" functions
 
-function pre_step!(model::ABM)
+function pre_step!(model::SpatialRustABM)
     # update day counters
     model.current.days += 1
     model.current.ticks += 1
@@ -50,7 +50,7 @@ function pre_step!(model::ABM)
     # end
 end
 
-function coffee_step!(model::ABM)
+function coffee_step!(model::SpatialRustABM)
     let prod_cycle_d = mod1(model.current.days, 365),
         pars = model.coffeepars
 
@@ -81,7 +81,7 @@ function coffee_step!(model::ABM)
     end
 end
 
-function rust_step!(model::ABM)
+function rust_step!(model::SpatialRustABM)
     # fung = ifelse(model.current.fungicide > 0, (growth = 0.95, spor = 0.8, germ = 0.9),
     #     (growth = 1.0, spor = 1.0, germ = 1.0))
     # three independent conditions: fungicide in effect? rainy? windy? -> 8 options
@@ -115,7 +115,7 @@ function rust_step!(model::ABM)
                     rust_step_schedule(model, fung_inf, f_day, r_germinate!, grow_f_rust!, disperse_rain!, disperse_wind!)
                     outside_spores!(model)
                     # rust_step_schedule(rust, model.rng, local_temp, grow_f_rust!, parasitize!, disperse_rain!, disperse_wind!)
-                    # f_r_w_step(model::ABM)
+                    # f_r_w_step(model::SpatialRustABM)
                 else
                     rust_step_schedule(model, fung_inf, f_day, r_germinate!, grow_f_rust!, disperse_rain!)
                     # f_r_step(model)
@@ -138,7 +138,7 @@ function rust_step!(model::ABM)
     end
 end
 
-function rust_step_schedule(model::ABM, f_inf::Float64, f_day::Int, germinate_f::Function, grow_f::Function,
+function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, germinate_f::Function, grow_f::Function,
     # rust::Rust, rng::AbstractRNG, local_temp::Float64,
     # # fung_mods::NTuple{5, Float64}, #put fung_mods within rustpars. reason to keep out was if using same fnc and ones(), but not anymore
     dispersal_fs::Vararg{Function, N}

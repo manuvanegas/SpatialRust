@@ -1,6 +1,6 @@
 ## Plant sampling setup
 
-function setup_plant_sampling!(model::ABM, ncycles::Int, nblocks::Int)
+function setup_plant_sampling!(model::SpatialRustABM, ncycles::Int, nblocks::Int)
     # draw 5x5 sampling blocks
     blocks = sample(model.rng, 1:324, nblocks, replace = false)
     # create matrix with block position coordinates from 1 to 5
@@ -43,7 +43,7 @@ quickdist(pos1::NTuple{2,Int}, pos2::NTuple{2,Int}) = sqrt(sum((pos1 .- pos2) .^
 
 ## Coffee storage and veg initialization
 
-function add_abc_trees!(model::ABM)
+function add_abc_trees!(model::SpatialRustABM)
     farm_map::Matrix{Int} = model.farm_map
     shade_map::Matrix{Float64} = model.shade_map
     ind_shade::Float64 = model.current.ind_shade

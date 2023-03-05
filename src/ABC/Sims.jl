@@ -117,7 +117,7 @@ end
 
 ## Custom runs
 
-function abc_run_2017!(model::ABM,
+function abc_run_2017!(model::SpatialRustABM,
     model_step!,
     n::Int,
     when_weekly::Vector{Int} = [])
@@ -176,7 +176,7 @@ function abc_run_2017!(model::ABM,
     return per_age, exh_incid_percent..., prod_clr_cor
 end
 
-function abc_run_2018!(model::ABM,
+function abc_run_2018!(model::SpatialRustABM,
     model_step!,
     n::Int,
     when_weekly::Vector{Int} = [])
@@ -370,7 +370,7 @@ end
 
 ## Selecting sampled locations for each cycle
 
-# function custom_sampling_first!(model::ABM, percent::Float64)
+# function custom_sampling_first!(model::SpatialRustABM, percent::Float64)
 #     let n_persample = floor(Int, length(model.current.coffee_ids) * percent),
 #     first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95),
 #         model.current.coffee_ids), n_persample, replace = false),
@@ -397,7 +397,7 @@ end
 # end
 
 
-# function custom_sampling_second!(model::ABM, percent::Float64)
+# function custom_sampling_second!(model::SpatialRustABM, percent::Float64)
 #     let n_persample = floor(Int, length(model.current.coffee_ids) * percent),
 #     first_ids = sample(model.rng, filter(id -> all(5 .< model[id].pos .<= 95),
 #         model.current.coffee_ids), n_persample, replace = false),
@@ -423,12 +423,12 @@ end
 #     end
 # end
 
-# function select_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::Int)::Vector{Int}
+# function select_s_neighbors(model::SpatialRustABM, sampled_coffees::Array{Int,2}, c_id::Int)::Vector{Int}
 #     return shuffle(model.rng, collect(Iterators.filter(x -> model[x] isa Coffee && x ∉ sampled_coffees,
 #         nearby_ids(model[c_id], model, 2))))
 # end
 
-# function complete_s_neighbors(model::ABM, sampled_coffees::Array{Int,2}, c_id::Int, i::Int, c::Int)
+# function complete_s_neighbors(model::SpatialRustABM, sampled_coffees::Array{Int,2}, c_id::Int, i::Int, c::Int)
 #     return shuffle(model.rng, collect(Iterators.filter(x -> model[x] isa Coffee &&
 #         x ∉ sampled_coffees[i,:] && x ∉ sampled_coffees[:,c], nearby_ids(model[c_id], model, 2))))
 # end

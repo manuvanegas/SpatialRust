@@ -6,6 +6,12 @@ using DrWatson: srcdir, datadir
 using StatsBase: sample, weights
 
 include(srcdir("ABM/MainSetup.jl"))
+
+const SpatialRustABM = Agents.SingleContainerABM{
+    Agents.GridSpaceSingle{2, false}, Coffee, Vector{Coffee},
+    typeof(Agents.Schedulers.fastest), SpatialRust.Props, Random.Xoshiro
+}
+
 include(srcdir("ABM/CreateABM.jl"))
 include(srcdir("ABM/FarmMap.jl"))
 include(srcdir("ABM/ShadeMap.jl"))
@@ -22,7 +28,7 @@ include(srcdir("QuickMetrics.jl"))
 
 include(srcdir("ABC", "Sims.jl"))
 
-precompile(dummyrun_spatialrust, (Int, Int, Int))
+# precompile(dummyrun_spatialrust, (Int, Int, Int))
 end
 #
 # function dummyrun_spatialrust()

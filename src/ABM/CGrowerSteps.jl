@@ -1,4 +1,4 @@
-function harvest!(model::ABM)
+function harvest!(model::SpatialRustABM)
     # model.current.net_rev += (model.pars.coffee_price * harvest) - model.current.costs
     # model.current.gains += model.coffee_price * harvest * model.pars.p_density
     # model.current.prod += harvest
@@ -33,12 +33,12 @@ end
 
 ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
 
-function prune_shades!(model::ABM)
+function prune_shades!(model::SpatialRustABM)
     model.current.ind_shade = model.mngpars.target_shade
     model.current.costs += model.mngpars.tot_prune_cost
 end
 
-# function prune!(model::ABM)
+# function prune!(model::SpatialRustABM)
 #     # n_pruned = trunc(model.pars.prune_effort * length(model.current.shade_ids))
 #     # model.current.costs += n_pruned * model.pars.prune_cost
 #     model.current.costs += length(model.current.shade_ids) * model.pars.prune_cost
@@ -49,7 +49,7 @@ end
 #     end
 # end
 
-function inspect!(model::ABM)
+function inspect!(model::SpatialRustABM)
     # exhausted coffees can be inspected in this version. They have a 100% chance of being regarded as infected.
     inspected = sample(model.rng, collect(allagents(model)), model.mngpars.n_inspected, replace = false)
     n_infected = 0
@@ -99,7 +99,7 @@ end
 
 visible(a::Float64) = a > 0.1 ? a : 0.0
 
-function fungicide!(model::ABM)
+function fungicide!(model::SpatialRustABM)
     model.current.costs += model.mngpars.tot_fung_cost
     model.current.fungicide = model.mngpars.fung_effect
     model.current.fung_count += 1
