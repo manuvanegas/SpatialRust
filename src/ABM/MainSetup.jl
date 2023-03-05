@@ -211,21 +211,21 @@ function init_spatialrust(;
     doy = start_days_at == 0 ? veg_d - 1 : start_days_at
 
     b = Books(
-        doy, 0, Set{Coffee}(), ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
-        # doy, 0, ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
+        # doy, 0, Set{Coffee}(), ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
+        doy, 0, ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0
     )
 
     if ini_rusts > 0.0
         return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
         # ),
-        # Set{Coffee}(),
+        Set{Coffee}(),
         Set{Sentinel}()),
         ini_rusts)
     else
         return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
         # ),
-        # Set{Coffee}(),
+        Set{Coffee}(),
         Set{Sentinel}()),
         )
     end
@@ -319,7 +319,7 @@ mutable struct Books
     days::Int                               # same as ticks unless start_days_at != 0
     ticks::Int                              # initialized as 0 but the 1st thing that happens is +=1, so it effectvly starts at 1
     # cycle::Vector{Int}
-    rusts::Set{Coffee}
+    # rusts::Set{Coffee}
     ind_shade::Float64
     temperature:: Float64
     rain::Bool
@@ -343,7 +343,7 @@ struct Props
     farm_map::Array{Int, 2}
     shade_map::Array{Float64}
     outpour::Vector{Float64}
-    # rusts::Set{Coffee}
+    rusts::Set{Coffee}
     sentinels::Set{Sentinel}
     # 8 positions, one per direction the spores can leave the farm (from (0,0) which is the farm)
     # indexing is weird (also remember, julia goes column-first): 

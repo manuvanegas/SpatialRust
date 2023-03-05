@@ -20,7 +20,7 @@ function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::
         fill!(c.spores, false)
         # if c.deposited < 0.1 
         #     c.deposited = 0.0
-        #     delete!(rust.current.rusts, c)
+        #     delete!(rust.rusts, c)
         # end
     else
         fill_n = max_nl - surv_n
@@ -68,7 +68,7 @@ function inspect!(model::ABM)
             c.spores = append!(c.spores[Not(spotted)], fill(false, fill_n))
             if c.n_lesions == 0 && c.deposited < 0.1 
                 c.deposited == 0.0
-                delete!(model.current.rusts, c)
+                delete!(model.rusts, c)
             end
         end
  

@@ -116,7 +116,7 @@ function init_rusts!(model::ABM, ini_rusts::Real) # inoculate coffee plants
         rusted.ages = ages[sortidx]
         rusted.areas = areas[sortidx]
         rusted.spores = spores[sortidx]
-        push!(model.current.rusts, rusted)
+        push!(model.rusts, rusted)
     end
 end
 

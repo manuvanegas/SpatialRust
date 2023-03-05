@@ -7,14 +7,14 @@ function step_model!(model::ABM)
     coffee_step!(model)
     rust_step!(model)
     farmer_step!(model)
-    # for rust in model.current.rusts
+    # for rust in model.rusts
     #     if any(rust.ages .> model.rustpars.steps * 2 + 1 + model.current.ticks)
     #     # if any(model.rustpars.steps + 1 .> rust.ages .> model.current.ticks)
-    #         rids = getproperty.(model.current.rusts, (:id))
+    #         rids = getproperty.(model.rusts, (:id))
     #         @error "t $(model.current.ticks), rusts $rids, eg $(rust.id)"
     #         break
     #     end
-    #     rids = collect(r.id for r in model.current.rusts)
+    #     rids = collect(r.id for r in model.rusts)
     #     if !allunique(rids)
     #         @error "t $(model.current.ticks), repeated id within $rids"
     #     end
@@ -133,8 +133,8 @@ function rust_step!(model::ABM)
         end
     end
     # Update happens in a second loop because first all rusts have had to (try to) disperse
-    for rust in model.current.rusts
-        update_deposited!(rust, model.current.rusts)
+    for rust in model.rusts
+        update_deposited!(rust, model.rusts)
     end
 end
 
@@ -145,9 +145,9 @@ function rust_step_schedule(model::ABM, f_inf::Float64, f_day::Int, germinate_f:
     ) where {N}
     # for rust in shuffle!(model.rng, collect(values(model.agents))) # shuffle may not be necessary 
     # for rust in shuffle!(filter!(isinfected, collect(allagents(model)))) # or
-    # for rust in shuffle!([model.current.rusts...]) # dispersal pushes, parasitize rm
+    # for rust in shuffle!([model.rusts...]) # dispersal pushes, parasitize rm
     # for rust in values(model.agents) #BENCH 
-    for rust in shuffle!(model.rng, collect(model.current.rusts)) # using Rust set is faster than looping through agents
+    for rust in shuffle!(model.rng, collect(model.rusts)) # using Rust set is faster than looping through agents
         let local_temp = model.current.temperature - (model.rustpars.temp_cooling * (1.0 - rust.sunlight))
             germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
             grow_f(rust, model.rng, model.rustpars, local_temp, f_day)
@@ -155,7 +155,7 @@ function rust_step_schedule(model::ABM, f_inf::Float64, f_day::Int, germinate_f:
         # if any(model.rustpars.steps * 2 .>= rust.ages .> model.current.ticks)
         #     @error "t $(model.current.ticks), r $(rust.id), $(rust.n_lesions), $(rust.ages), $(rust.deposited)"
         # end
-        # parasitize!(rust, model.rustpars, model.current.rusts)
+        # parasitize!(rust, model.rustpars, model.rusts)
         parasitize!(rust, model.rustpars, model.farm_map)
         for f in dispersal_fs
             f(model, rust)
@@ -163,7 +163,7 @@ function rust_step_schedule(model::ABM, f_inf::Float64, f_day::Int, germinate_f:
         # if rust.deposited < 0.1
         #     rust.deposited = 0.0
         #     if rust.n_lesions == 0
-        #         delete!(model.current.rusts, rust)
+        #         delete!(model.rusts, rust)
         #     end
         # end
     end

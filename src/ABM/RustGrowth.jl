@@ -323,7 +323,7 @@ end
 #     rm_id = rust.id
 #     delete!(model.agents, rust.id)
 #     @inbounds deleteat!(model.space.s[rust.pos...], 2)
-#     @inbounds deleteat!(model.current.rusts, findfirst(i -> i.id == rm_id, model.current.rusts))
+#     @inbounds deleteat!(model.rusts, findfirst(i -> i.id == rm_id, model.rusts))
 # end
 
 # kill_rust!(model, rust::Rust) = kill_rust!(model, rust, model[rust.hg_id])

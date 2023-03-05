@@ -219,7 +219,7 @@ function abc_run_2018!(model::ABM,
         end
     end
 
-    return per_age, (length(model.current.rusts) > 0)
+    return per_age, (length(model.rusts) > 0)
 end
 
 function cat_dfs(Ti::Tuple{DataFrame, DataFrame}, Tj::Tuple{DataFrame, DataFrame})

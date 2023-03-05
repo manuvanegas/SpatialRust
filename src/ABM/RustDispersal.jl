@@ -14,8 +14,8 @@ function disperse_rain!(model::ABM, rust::Coffee)
                 if any(fin_pos .> 0) && 
                     (c = (@inbounds model[id_in_position(fin_pos,model)])).exh_countdown == 0
                     c.newdeps += 1.0
-                    # existing = c in model.current.rusts
-                    push!(model.current.rusts, c)
+                    # existing = c in model.rusts
+                    push!(model.rusts, c)
                 elseif any(fin_pos .< 0) 
                     model.outpour[sum(fin_pos .* (-3,-1))] += 1.0
                 end
@@ -51,8 +51,8 @@ function disperse_wind!(model::ABM, rust::Coffee)
                 if any(fin_pos .> 0) && 
                     (c = (@inbounds model[id_in_position(fin_pos,model)])).exh_countdown == 0
                     c.newdeps += 1.0
-                    # existing = c in model.current.rusts
-                    push!(model.current.rusts, c)
+                    # existing = c in model.rusts
+                    push!(model.rusts, c)
                 elseif any(fin_pos .< 0) 
                     model.outpour[sum(fin_pos .* (-3,-1))] += 1.0
                 end
@@ -232,9 +232,9 @@ function outside_spores!(model::ABM)
     for dep in filter!(t -> any(t .> 0), deposited)
         c = (model[id_in_position(dep, model)])
         if c.exh_countdown == 0
-            # existing = c.id in model.current.rusts
+            # existing = c.id in model.rusts
             c.newdeps += 1.0
-            push!(model.current.rusts, c)
+            push!(model.rusts, c)
         end
     end
 end
@@ -451,7 +451,7 @@ end
 #         new = add_agent!(target.pos, Rust, model, model.pars.max_lesions, model.pars.steps;
 #             hg_id = target.id, sample_cycle = target.sample_cycle)
 #         target.hg_id = new.id
-#         push!(model.current.rusts, new)
+#         push!(model.rusts, new)
 #     end
 # end
 
