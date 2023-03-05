@@ -107,7 +107,7 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
             )
             if cycle_last
                 # avail_sites_wpct = length(collect(survey_cofs)) * max_les * inv(100.0)
-                avail_sites_wpct = length(active_sents) * max_les * inv(100.0)
+                avail_sites_wpct = length(active_sents) * max_les
                 select!(df_areas, Not(:nl), :nl => (n -> n / avail_sites_wpct) => :occup)
             else
                 select!(df_areas, Not(:nl))

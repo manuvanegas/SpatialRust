@@ -2,8 +2,14 @@
 # RustDB Subsetting, Preparation, and Correction
 #################################################################
 
+preprocess_info <- function(d, firstday, maxnl){
+  sun <- filter.format.correct.add(d, "Sun", firstday, maxnl)
+  shade <- filter.format.correct.add(d, "Shade", firstday, maxnl)
+  return(bind_rows("sun" = sun, "shade" = shade, .id = "plot"))
+}
+
 filter.format.correct.add <-  function(d, SunOrShade, firstday, maxnl){
-  t.plot <- ifelse(SunOrShade == "Sun", "TFSSF", "TMSSF") 
+  t.plot <- ifelse(SunOrShade == "Sun", "TFSSF", "TMSSF")
   
   d %>%
     filter(Treatment == t.plot, Lesion <= maxnl,
@@ -19,7 +25,7 @@ filter.format.correct.add <-  function(d, SunOrShade, firstday, maxnl){
     count.leaves() %>%
     keep.infected() %>%
     lesion.age() %>%
-    select(fdate,dayn,Plant:Infected,Lesion:age)
+    select(fdate,dayn,Plant:Infected,Lesion:cycle)
 }
 
 drop.vars <- function(d) {
@@ -103,11 +109,14 @@ keep.infected <- function(d) {
 }
 
 lesion.age <- function(d) {
-  d %>%
+  d <- d %>%
     group_by(rust.id) %>%
     mutate(firstfound = min(fdate),
            age = round(difftime(fdate, firstfound, units = "weeks"))) %>%
     ungroup()
+  cycledates <- unique(d$first.samp)
+  mutate(d,
+         cycle = findInterval(first.samp, cycledates))
 }
 
 #################################################################
@@ -116,54 +125,54 @@ lesion.age <- function(d) {
 
 ############################
 # Metrics 1 & 2
-summ.areas <- function(sun, shade) {
-  if (any(sun$Plant == 1)) {
-    stop("Sun data should not include Plant # 1. Double-check argument order.")
-  }
-  d1 <- areas(sun)
-  d2 <- areas(shade)
-  # putting sd2 first because it has more observations than sd1
-  df <- full_join(d2, d1, by = c("fdate","dayn","age", "firstfound"), suffix = c("_sh","_sun"))
-}
+# summ.areas <- function(sun, shade) {
+#   if (any(sun$Plant == 1)) {
+#     stop("Sun data should not include Plant # 1. Double-check argument order.")
+#   }
+#   d1 <- areas(sun)
+#   d2 <- areas(shade)
+#   # putting sd2 first because it has more observations than sd1
+#   df <- full_join(d2, d1, by = c("fdate","dayn","age", "firstfound"), suffix = c("_sh","_sun"))
+# }
 
 areas <- function(d) {
   d %>%
-    group_by(fdate, dayn, age, firstfound) %>%
-    summarise(area_med = median(num.area),
-              spore_med = median(spore.area),
+    group_by(plot, fdate, dayn, age, firstfound, cycle) %>%
+    summarise(area_dat = median(num.area),
+              spore_dat = median(spore.area),
               n = n(),
               .groups = "drop") %>% 
-    filter(n > 1)
+    filter(n > 2)
 }
 
 ############################
 # Metric 3
-summ.count.nl <- function(sun, shade) {
-  if (any(sun$Plant == 1)) {
-    stop("Sun data should not include Plant # 1. Double-check argument order.")
-  }
-  sd1 <- count.lesions(sun) %>% summ.nl()
-  sd2 <- count.lesions(shade) %>% summ.nl()
-  # putting sd2 first because it has more observations than sd1
-  df <- full_join(sd2, sd1, by = c("fdate","dayn","age", "firstfound"), suffix = c("_sh","_sun"))
-}
+# summ.count.nl <- function(sun, shade) {
+#   if (any(sun$Plant == 1)) {
+#     stop("Sun data should not include Plant # 1. Double-check argument order.")
+#   }
+#   sd1 <- count.lesions(sun) %>% summ.nl()
+#   sd2 <- count.lesions(shade) %>% summ.nl()
+#   # putting sd2 first because it has more observations than sd1
+#   df <- full_join(sd2, sd1, by = c("fdate","dayn","age", "firstfound"), suffix = c("_sh","_sun"))
+# }
 
 count.lesions <- function(d) {
   d %>%
-    group_by(fdate, dayn, leaf.id) %>%
+    group_by(plot, fdate, cycle, dayn, leaf.id) %>%
     summarise(nl = max(Lesion),
               firstfound = min(firstfound),
               age = max(age),
               .groups = "drop_last") %>% 
     mutate(n = n()) %>% 
     ungroup() %>% 
-    filter(n > 1)
+    filter(n > 2)
 }
 
 summ.nl <- function(d){
   d %>%
-    group_by(fdate, dayn, age, firstfound) %>%
-    summarise(nl_med = median(nl),
+    group_by(plot, fdate, dayn, age, firstfound, cycle) %>%
+    summarise(nl_dat = median(nl),
               nl_n = n(),
               .groups = "drop")
 }
@@ -171,25 +180,26 @@ summ.nl <- function(d){
 ############################
 # Metric 4
 
-summ.sites <- function(sun, shade) {
-  if (any(sun$Plant == 1)) {
-    stop("Sun data should not include Plant # 1. Double-check argument order.")
-  }
-  sd1 <- site.occupancy(sun)
-  sd2 <- site.occupancy(shade)
-  # putting sd2 first because it has more observations than sd1
-  df <- full_join(sd2, sd1, by = c("fdate","dayn","age"), suffix = c("_sh","_sun")) %>%
-    select(fdate:age, contains("occupancy"))
-}
+# summ.sites <- function(sun, shade) {
+#   if (any(sun$Plant == 1)) {
+#     stop("Sun data should not include Plant # 1. Double-check argument order.")
+#   }
+#   sd1 <- site.occupancy(sun)
+#   sd2 <- site.occupancy(shade)
+#   # putting sd2 first because it has more observations than sd1
+#   df <- full_join(sd2, sd1, by = c("fdate","dayn","age"), suffix = c("_sh","_sun")) %>%
+#     select(fdate:age, contains("occupancy"))
+# }
 
 site.occupancy <- function(d) {
   d %>% 
     filter(sampling.week == 8) %>%
-    group_by(fdate, dayn, age) %>% 
+    group_by(plot, fdate, dayn, age, cycle) %>% 
     summarise(
       totlesions = n(),
       leaves.sampled = mean(leaves.samp),
       avail.sites = leaves.sampled * 25,
-      occupancy = 100 * totlesions / avail.sites,
-      .groups = "drop")
+      occup_dat = totlesions / avail.sites,
+      .groups = "drop") %>% 
+    select(plot:cycle, leaves.sampled, occup_dat)
 }
