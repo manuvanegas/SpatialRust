@@ -8,6 +8,7 @@ using StatsBase: corspearman
 
 include(srcdir("ABC","Metrics.jl"))
 include(srcdir("ABC","PrepforABC.jl"))
+include(srcdir("ABC","Sentinels.jl"))
 
 function sim_abc(p_row::DataFrameRow,
     temp_data::NTuple{455, Float64},
@@ -122,12 +123,12 @@ function abc_run_2017!(model::ABM,
     when_weekly::Vector{Int} = [])
 
     per_age = DataFrame(
-        dayn = Int[], age = Int[],
+        dayn = Int[], age = Int[], cycle = Int[],
         area = Float64[], spore = Float64[],
         nl = Float64[], occup = Float64[],
         area_pct = Float64[]
     )
-    allowmissing!(per_age, Not([:dayn, :age]))
+    allowmissing!(per_age, Not([:dayn, :age, :cycle]))
     prod_clr_df = DataFrame()
 
     for c in eachcol(per_age)
@@ -137,8 +138,11 @@ function abc_run_2017!(model::ABM,
     s = 0
     while Agents.until(s, n, model)
         if s ∈ when_weekly
-            cycle_n, max_age, cycle_last = current_cycle_ages_2017(s)
-            let df = get_weekly_data(model, cycle_n, max_age, cycle_last)
+            cycle_n, max_age, week8, week1 = current_cycle_ages_2017(s)
+            if week1
+                cycle_sentinels(model, minimum(cycle_n) - 1, maximum(cycle_n))
+            end
+            let df = get_weekly_data(model, cycle_n, max_age, week8)
                 df[!, :dayn] .= s
                 append!(per_age, df)
             end
@@ -150,8 +154,11 @@ function abc_run_2017!(model::ABM,
         s += 1
     end
     if s ∈ when_weekly
-        cycle_n, max_age, cycle_last = current_cycle_ages_2017(s)
-        let df = get_weekly_data(model, cycle_n, max_age, cycle_last)
+        cycle_n, max_age, week8, week1 = current_cycle_ages_2017(s)
+        if week1
+            cycle_sentinels(model, minimum(cycle_n) - 1, maximum(cycle_n))
+        end
+        let df = get_weekly_data(model, cycle_n, max_age, week8)
             df[!, :dayn] .= s
             append!(per_age, df)
         end
@@ -175,12 +182,12 @@ function abc_run_2018!(model::ABM,
     when_weekly::Vector{Int} = [])
 
     per_age = DataFrame(
-        dayn = Int[], age = Int[],
+        dayn = Int[], age = Int[], cycle = Int[],
         area = Float64[], spore = Float64[],
         nl = Float64[], occup = Float64[],
         area_pct = Float64[]
     )
-    allowmissing!(per_age, Not([:dayn, :age]))
+    allowmissing!(per_age, Not([:dayn, :age, :cycle]))
 
     for c in eachcol(per_age)
         sizehint!(c, 170)
@@ -189,8 +196,11 @@ function abc_run_2018!(model::ABM,
     s = 0
     while Agents.until(s, n, model)
         if s ∈ when_weekly
-            cycle_n, max_age, cycle_last = current_cycle_ages_2018(s)
-            let df = get_weekly_data(model, cycle_n, max_age, cycle_last)
+            cycle_n, max_age, week8, week1 = current_cycle_ages_2018(s)
+            if week1
+                cycle_sentinels(model, minimum(cycle_n) - 1, maximum(cycle_n))
+            end
+            let df = get_weekly_data(model, cycle_n, max_age, week8)
                 df[!, :dayn] .= s
                 append!(per_age, df)
             end
@@ -199,8 +209,11 @@ function abc_run_2018!(model::ABM,
         s += 1
     end
     if s ∈ when_weekly
-        cycle_n, max_age, cycle_last = current_cycle_ages_2018(s)
-        let df = get_weekly_data(model, cycle_n, max_age, cycle_last)
+        cycle_n, max_age, week8, week1 = current_cycle_ages_2018(s)
+        if week1
+            cycle_sentinels(model, minimum(cycle_n) - 1, maximum(cycle_n))
+        end
+        let df = get_weekly_data(model, cycle_n, max_age, week8)
             df[!, :dayn] .= s
             append!(per_age, df)
         end
@@ -217,113 +230,113 @@ end
 
 function current_cycle_ages_2017(today::Int)
     if today == 23
-        return [1], 0, false
+        return [1], 0, false, true
     elseif today == 29
-        return [1], 1, false
+        return [1], 1, false, false
     elseif today == 36
-        return [1], 2, false
+        return [1], 2, false, false
     elseif today == 42
-        return [1], 3, false
+        return [1], 3, false, false
     elseif today == 50
-        return [1], 4, false
+        return [1], 4, false, false
     elseif today == 57
-        return [1], 5, false
+        return [1], 5, false, false
     elseif today == 64
-        return [1], 6, false
+        return [1], 6, false, false
     elseif today == 71
-        return [1], 7, true
+        return [1], 7, true, false
     elseif today == 84
-        return [2], 0, false
+        return [2], 0, false, true
     elseif today == 91
-        return [2], 1, false
+        return [2], 1, false, false
     elseif today == 98
-        return [2], 2, false
+        return [2], 2, false, false
     elseif today == 105
-        return [2], 3, false
+        return [2], 3, false, false
     elseif today == 112
-        return [2], 4, false
+        return [2], 4, false, false
     elseif today == 119
-        return [2], 5, false
+        return [2], 5, false, false
     elseif today == 126
-        return [2], 6, false
+        return [2], 6, false, false
     elseif today == 133
-        return [2], 7, true
+        return [2], 7, true, false
     elseif today == 147
-        return [3], 0, false
+        return [3], 0, false, true
     elseif today == 154
-        return [3], 1, false
+        return [3], 1, false, false
     elseif today == 161
-        return [3], 2, false
+        return [3], 2, false, false
     elseif today == 168
-        return [3], 3, false
+        return [3], 3, false, false
     elseif today == 175
-        return [3], 4, false
+        return [3], 4, false, false
     elseif today == 182
-        return [3], 5, false
+        return [3], 5, false, false
     elseif today == 189
-        return [3], 6, false
+        return [3], 6, false, false
     elseif today == 196
-        return [3], 7, true
+        return [3], 7, true, false
     end
 end 
 
 function current_cycle_ages_2018(today::Int)
     if today == 266
-        return [4], 0, false
+        return [4], 0, false, true
     elseif today == 273
-        return [4], 1, false
+        return [4], 1, false, false
     elseif today == 280
-        return [4], 2, false
+        return [4], 2, false, false
     elseif today == 287
-        return [4], 3, false
+        return [4], 3, false, false
     elseif today == 294
-        return [4, 5], 4, false
+        return [4, 5], 4, false, true
     elseif today == 301
-        return [4, 5], 5, false
+        return [4, 5], 5, false, false
     elseif today == 308
-        return [4, 5], 6, false
+        return [4, 5], 6, false, false
     elseif today == 315
-        return [4, 5], 7, true
+        return [4, 5], 7, true, false
     elseif today == 322
-        return [5, 6], 3, false
+        return [5, 6], 3, false, true
     elseif today == 329
-        return [5, 6], 4, false
+        return [5, 6], 4, false, false
     elseif today == 336
-        return [5, 6], 5, false
+        return [5, 6], 5, false, false
     elseif today == 343
-        return [5, 6], 6, true
+        return [5, 6], 6, true, false
     elseif today == 350
-        return [6, 7], 4, false
+        return [6, 7], 4, false, true
     elseif today == 357
-        return [6, 7], 5, false
+        return [6, 7], 5, false, false
     elseif today == 364
-        return [6, 7], 6, false
+        return [6, 7], 6, false, false
     elseif today == 372
-        return [6, 7], 7, true
+        return [6, 7], 7, true, false
     elseif today == 378
-        return [7, 8], 4, false
+        return [7, 8], 4, false, true
     elseif today == 385
-        return [7, 8], 5, false
+        return [7, 8], 5, false, false
     elseif today == 392
-        return [7, 8], 6, false
+        return [7, 8], 6, false, false
     elseif today == 399
-        return [7, 8], 6, true
+        return [7, 8], 6, true, false
     elseif today == 406
-        return [8, 9], 4, false
+        return [8, 9], 4, false, true
     elseif today == 413
-        return [8, 9], 5, false
+        return [8, 9], 5, false, false
     elseif today == 420
-        return [8, 9], 6, false
+        return [8, 9], 6, false, false
     elseif today == 427
-        return [8, 9], 6, true
+        return [8, 9], 6, true, false
     elseif today == 434
-        return [9, 10], 4, false
+        return [9, 10], 4, false, true
     elseif today == 442
-        return [9, 10], 5, false
+        return [9, 10], 5, false, false
     elseif today == 448
-        return [9, 10], 5, false
+        return [9, 10], 5, false, false
     elseif today == 455
-        return [9, 10], 6, true
+        return [9, 10], 6, true, false
     end
 end
 

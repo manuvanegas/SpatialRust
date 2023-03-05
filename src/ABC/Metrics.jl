@@ -54,14 +54,19 @@ end
 
 surveyed_today(c::Coffee, cycle::Vector{Int})::Bool = c.sample_cycle ∈ cycle && c.exh_countdown == 0
 
+area_pct(c::Coffee) = c.exh_countdown > 0 ? -1.0 : sum(c.areas)
+
 function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_last::Bool)
-    survey_cofs = Iterators.filter(c -> surveyed_today(c, cycle_n), model.agents)
+    # survey_cofs = Iterators.filter(c -> surveyed_today(c, cycle_n), model.agents)
+    active_sents = filter!(s -> s.active, model.sentinels)
     spore_pct = model.rustpars.spore_pct
     max_les = model.rustpars.max_lesions
-    avail_sites_wpct = length(collect(survey_cofs)) * max_les * inv(100.0)
 
-    let df_i = DataFrame(age = Int[], area = Float64[], spore = Float64[], nl = Int[], id = Int[])
-        for cof in survey_cofs
+    # let df_i = DataFrame(age = Int[], area = Float64[], spore = Float64[], nl = Int[], id = Int[])
+    let df_i = DataFrame(age = Int[], area = Float64[], cycle = Int[],
+        spore = Float64[], nl = Int[], id = Int[])
+        # for cof in survey_cofs
+        for cof in active_sents
             # within_age = findall(<=(max_age), cof.ages)
             # for l in within_age
             #     push!(df_i, survey_lesion(cof, l))
@@ -70,38 +75,47 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
             df_c[!, :age] = cof.ages
             df_c[!, :area] = cof.areas
             df_c[!, :spore] = cof.spores .* cof.areas .* spore_pct
-            df_c[!, :nl] .= cof.n_lesions
             df_c[!, :id] .= cof.id
+            df_c[!, :cycle] .= cof.cycle
+            df_c[!, :nl] .= cof.n_lesions
             append!(df_i, df_c)
         end
 
-        pctareas = filter(:area => <=(0.75), combine(groupby(df_i, :id), :area => a -> sum(a)/max_les, renamecols = false))
-        meanpctarea = isempty(pctareas) ? missing : mean(pctareas[!, :area])
+        # pctareas = filter(:area => <=(0.75), combine(groupby(df_i, :id), :area => a -> sum(a)/max_les, renamecols = false))
+        # meanpctarea = isempty(pctareas) ? missing : mean(pctareas[!, :area])
+        areas = filter!(>(0), area_pct.(model.agents))
+        meanpctarea = isempty(areas) ? missing : mean(areas)
 
         filter!(:age => <=(max_age), df_i)
         if isempty(df_i)
-            return DataFrame(age = -1,
+            return DataFrame(age = -1, cycle = -1,
             area = missing, spore = missing,
             nl = missing, occup = missing,
             area_pct = meanpctarea)
         else
-            nlesions_age = combine(groupby(df_i, :id), :age => maximum => :age, :nl => first => :nl)
-            df_nlesions = combine(groupby(nlesions_age, :age), :nl => median => :nl)
+            # nlesions_age = combine(groupby(df_i, :id), :age => maximum => :age, :nl => first => :nl)
+            # df_nlesions = combine(groupby(nlesions_age, :age), :nl => median => :nl)
+            nlesions_age = combine(groupby(df_i, [:id, :cycle]), :age => maximum => :age, :nl => first => :nl)
+            df_nlesions = combine(groupby(nlesions_age, [:age, :cycle]), :nl => median => :nl)
 
             df_areas = combine(
-                groupby(df_i, :age),
+                # groupby(df_i, :age),
+                groupby(df_i, [:age, :cycle]),
                 :area => median => :area,
                 :spore => median => :spore,
                 :nl => sum => :nl
             )
             if cycle_last
+                # avail_sites_wpct = length(collect(survey_cofs)) * max_les * inv(100.0)
+                avail_sites_wpct = length(active_sents) * max_les * inv(100.0)
                 select!(df_areas, Not(:nl), :nl => (n -> n / avail_sites_wpct) => :occup)
             else
                 select!(df_areas, Not(:nl))
                 df_areas[!, :occup] .= 0.0
             end
 
-            df_age = outerjoin(df_areas, df_nlesions, on = :age)
+            # df_age = outerjoin(df_areas, df_nlesions, on = :age)
+            df_age = outerjoin(df_areas, df_nlesions, on = [:age, :cycle])
             df_age.area_pct .= meanpctarea
 
             return df_age

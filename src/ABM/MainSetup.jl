@@ -1,5 +1,16 @@
 export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, create_regshaded_farm_map
 
+
+mutable struct Sentinel
+    active::Bool
+    id::Int
+    cycle::Int
+    n_lesions::Int
+    ages::Vector{Int}
+    areas::Vector{Float64}
+    spores::Vector{Bool}
+end
+
 # Coffee agent type
 # mutable struct Coffee <: AbstractAgent
 @agent Coffee GridAgent{2} begin
@@ -9,7 +20,6 @@ export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, creat
     storage::Float64
     production::Float64
     exh_countdown::Int
-    sample_cycle::Int # cycles where coffee should be sampled
     rust_gr::Float64
     # fungicide::Int
     # fung_countdown::Int
@@ -22,6 +32,10 @@ export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, creat
     ages::Vector{Int}
     areas::Vector{Float64}
     spores::Vector{Bool}
+
+    # ABC
+    sample_cycle::Int # cycles where coffee should be sampled
+    sentinel::Sentinel
 end
 
 # Coffee constructor
@@ -33,8 +47,11 @@ function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # htt
     # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
     # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
     # append!(spores, fill(false, fill_n))) 
-    Coffee(id, pos, sunlight, veg, storage, 0.0, 0, 0, rust_gr,
-    0.0, 0.0, 0, fill(max_age, max_lesions), fill(0.0, max_lesions), fill(false, max_lesions)) 
+    Coffee(
+        id, pos, sunlight, veg, storage, 0.0, 0, rust_gr,
+        0.0, 0.0, 0, fill(max_age, max_lesions), fill(0.0, max_lesions), fill(false, max_lesions),
+        0, sentinel(id)
+    ) 
 end
 
 # Main abm initialization function
@@ -195,13 +212,22 @@ function init_spatialrust(;
 
     b = Books(
         doy, 0, Set{Coffee}(), ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
+        # doy, 0, ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0
     )
 
     if ini_rusts > 0.0
-        return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8)), ini_rusts)
+        return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
+        # ),
+        # Set{Coffee}(),
+        Set{Sentinel}()),
+        ini_rusts)
     else
-        return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8)))
+        return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
+        # ),
+        # Set{Coffee}(),
+        Set{Sentinel}()),
+        )
     end
 end
 
@@ -289,10 +315,6 @@ struct MngPars{N,M}
     shade_r::Int
 end
 
-struct ABCsampling{N}
-    switch_cycles::NTuple{N,Int}
-end
-
 mutable struct Books
     days::Int                               # same as ticks unless start_days_at != 0
     ticks::Int                              # initialized as 0 but the 1st thing that happens is +=1, so it effectvly starts at 1
@@ -321,6 +343,8 @@ struct Props
     farm_map::Array{Int, 2}
     shade_map::Array{Float64}
     outpour::Vector{Float64}
+    # rusts::Set{Coffee}
+    sentinels::Set{Sentinel}
     # 8 positions, one per direction the spores can leave the farm (from (0,0) which is the farm)
     # indexing is weird (also remember, julia goes column-first): 
     # 1 -> (0,-1), 2 -> (0,1), 3 -> (-1,0), 4 -> (-1,-1), 5 -> (-1,1), 6 -> (1,0), 7 -> (1,-1), 8 ->(1,1)
