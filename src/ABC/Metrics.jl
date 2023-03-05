@@ -72,7 +72,7 @@ function get_weekly_data(model::ABM, cycle_n::Vector{Int}, max_age::Int, cycle_l
             #     push!(df_i, survey_lesion(cof, l))
             # end
             df_c = DataFrame()
-            df_c[!, :age] = cof.ages
+            df_c[!, :age] = div.(cof.ages, 7, RoundNearest)
             df_c[!, :area] = cof.areas
             df_c[!, :spore] = cof.spores .* cof.areas .* spore_pct
             df_c[!, :id] .= cof.id
