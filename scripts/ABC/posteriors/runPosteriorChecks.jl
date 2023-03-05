@@ -7,11 +7,10 @@ end
     include("../../../src/ABC/PosteriorChecks.jl")
 end
 
-
-metrics = "all"
-max_missings = 10
+metrics = "sentinels"
+max_missings = 5
 pardir = "results/ABC/params/"
-pdir = mkpath("results/ABC/posteriors")
+pdir = mkpath("results/ABC/posteriors/b")
 csvtail = string("_", metrics, "_", max_missings, ".csv")
 arrtail = string("_", metrics, "_", max_missings, ".arrow")
 
@@ -28,7 +27,7 @@ accepted, rejected, pointestimate = read(
     string.(pardir, ("accepted", "rejected", "pointestimate"), csvtail)...
 )
 repeat!(pointestimate, 100)
-pointestimate.p_row = collect(1:100)
+pointestimate.RowN = collect(10^6 + 1:10^6 + 100)
 select!(pointestimate, 15, 1:14)
 
 acc_outs = pmap(
@@ -48,11 +47,10 @@ acc_quant, acc_qual = reduce(cat_dfs, acc_outs)
 rej_quant, rej_qual = reduce(cat_dfs, rej_outs)
 point_quant, point_qual = reduce(cat_dfs, point_outs)
 
-awrite(
-    pdir, arrtail,
-    [acc_quant, acc_qual, rej_quant, rej_qual, point_quant, point_qual],
-    ["accepted_quant", "accepted_qual", "rejected_quant", "rejected_qual", "pointest_quant", "pointest_qual"]
-)
+quants = vcat(acc_quant, rej_quant, point_quant, source = :source => [:acc, :rej, :point])
+quals = vcat(acc_qual, rej_qual, point_qual, source = :source => [:acc, :rej, :point])
+
+cwrite(pdir, csvtail, [quants, quals], ["quant","qual"])
 
     
 

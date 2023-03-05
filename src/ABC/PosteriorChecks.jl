@@ -4,7 +4,12 @@ read(paths::Vararg{String}) = map(read, paths)
 
 function awrite(path::String, tail::String, dfs::Vector{DataFrame}, names::Vector{String})
     for (df, name) in zip(dfs, names)
-        Arrow.write(string(path, "/", name, tail), df)
+        Arrow.write(joinpath(path, string(name, tail)), df)
     end
 end
 
+function cwrite(path::String, tail::String, dfs::Vector{DataFrame}, names::Vector{String})
+    for (df, name) in zip(dfs, names)
+        CSV.write(joinpath(path, string(name, tail)), df)
+    end
+end
