@@ -136,7 +136,7 @@ function grow_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, 
                         end
                     end
                     sent_area_gro = max(0.0, 1.0 - sum(sent_areas) / 5.0)
-                    @fastmath sent_areas .+= sent_areas .* (1.0 .- sent_areas .* (growth_mod .* sent_area_gro))
+                    @fastmath sent_areas .+= sent_areas .* (1.0 .- sent_areas) .* (growth_mod .* sent_area_gro)
                 end
             end
         end
@@ -194,7 +194,7 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                         end
                     end
                     sent_area_gro = max(0.0, 1.0 - sum(sent_areas) / 5.0)
-                    @fastmath sent_areas .+= sent_areas .* (1.0 .- sent_areas .* (sgro_mods .* sent_area_gro))
+                    @fastmath sent_areas .+= sent_areas .* (1.0 .- sent_areas) .* (sgro_mods .* sent_area_gro)
                 end
             end
         end
