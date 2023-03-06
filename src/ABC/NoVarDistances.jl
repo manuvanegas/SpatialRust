@@ -16,8 +16,7 @@ function calc_l_dists(qualsdirname::String, exh_min::Float64, exh_max::Float64, 
     end
     rowdists = combine(
         groupby(dists_l, :p_row),
-        Not([:p_row, :frusts]) .=> sum,
-        :frusts => maximum,
+        Not(:p_row) .=> sum,
         renamecols = false
     )
     return rowdists
