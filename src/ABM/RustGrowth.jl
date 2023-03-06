@@ -128,6 +128,7 @@ function grow_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, 
                 areas .+= areas .* (1.0 .- areas) .* (growth_mod .* area_gro)
 
                 if rust.sentinel.active
+                    rust.sentinel.ages .+= 1
                     sent_areas = rust.sentinel.areas
                     for (nl, spo) in enumerate(rust.sentinel.spores)
                         if !spo && rand(rng) < @inbounds sent_areas[nl] * spor_mod
@@ -182,6 +183,7 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                 # rust.spores .= rust.spores .* rust.areas .* rustpars.spore_pct
 
                 if rust.sentinel.active
+                    rust.sentinel.ages .+= 1
                     sent_areas = rust.sentinel.areas
                     sprev_cur = @inbounds(rust.ages[1:nls]) .< fday
                     sspor_probs = sent_areas .* spor_mod .* ifelse.(sprev_cur, rustpars.fung_spor_prev, rustpars.fung_spor_cur)
