@@ -103,7 +103,7 @@ function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::I
                 groupby(df_i, [:age, :cycle]),
                 :area => median => :area,
                 :spore => median => :spore,
-                Float64 ∘ nrow => :occup
+                nrow => :occup
             )
             if cycle_last
                 # avail_sites_wpct = length(collect(survey_cofs)) * max_les * inv(100.0)
