@@ -12,7 +12,7 @@ function cycle_sentinels(model::SpatialRustABM, oldcycle::Int, newcycle::Int)
             delete!(model.sentinels, s)
         end
     end
-    for c in filter(c -> c.sample_cycle == newcycle, model.agents)
+    for c in filter(c -> c.sentinel.cycle == newcycle, model.agents)
         c.sentinel.active = true
         # c.sentinel.n_lesions = true
 

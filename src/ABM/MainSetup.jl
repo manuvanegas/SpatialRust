@@ -34,7 +34,7 @@ end
     spores::Vector{Bool}
 
     # ABC
-    sample_cycle::Int # cycles where coffee should be sampled
+    # sample_cycle::Int # cycles where coffee should be sampled
     sentinel::Sentinel
 end
 
@@ -50,7 +50,7 @@ function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # htt
     Coffee(
         id, pos, sunlight, veg, storage, 0.0, 0, rust_gr,
         0.0, 0.0, 0, fill(max_age, max_lesions), fill(0.0, max_lesions), fill(false, max_lesions),
-        0, sentinel(id)
+        sentinel(id)
     ) 
 end
 

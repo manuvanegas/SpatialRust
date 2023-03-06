@@ -52,7 +52,7 @@ end
 
 ## Quantitative patterns
 
-surveyed_today(c::Coffee, cycle::Vector{Int})::Bool = c.sample_cycle ∈ cycle && c.exh_countdown == 0
+# surveyed_today(c::Coffee, cycle::Vector{Int})::Bool = c.sample_cycle ∈ cycle && c.exh_countdown == 0
 
 area_pct(c::Coffee) = c.exh_countdown > 0 ? -1.0 : sum(c.areas)
 

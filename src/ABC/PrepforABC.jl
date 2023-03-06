@@ -31,9 +31,9 @@ function setup_plant_sampling!(model::SpatialRustABM, ncycles::Int, nblocks::Int
         cofs = sample(model.rng, idsinblock, weights(distweights), nadd, replace = false)
 
         # assign sample cycle id to each coffee 
-        model[c1id].sample_cycle = init
+        model[c1id].sentinel.cycle = init
         for (cycle, cof) in enumerate(cofs)
-            model[cof].sample_cycle = cycle + init
+            model[cof].sentinel.cycle = cycle + init
         end
     end
 end
