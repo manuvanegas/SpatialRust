@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=86
+#SBATCH --array=1-100
 #SBATCH --ntasks=5
 #SBATCH --ntasks-per-core=1
 #SBATCH -p htc
