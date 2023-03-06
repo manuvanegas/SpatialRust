@@ -7,16 +7,17 @@ function calc_l_dists(qualsdirname::String, exh_min::Float64, exh_max::Float64, 
         DataFrame(Arrow.Table(path(file)))
     end
     lazy_dists = mapvalues(
-        x -> sq_diff_var_quals(x, exh_min, exh_max, incidm, corm),
+        x -> diff_quals(x, exh_min, exh_max, incidm, corm),
         l_file_tree)
     dists_l = exec(reducevalues(vcat, lazy_dists))
 
     return dists_l
 end
 
-function sq_diff_var_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
+function diff_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
+    excess_pty = exh_max < 1.0 ? (exh_min - 0.4) / (1.0 - exh_max) : 1.0
     dist_df = DataFrame(p_row = sims[:, :p_row])
-    dist_df[!, :exh_d] = accept_range.(sims[!, :exh], exh_min, exh_max)
+    dist_df[!, :exh_d] = accept_range.(sims[!, :exh], exh_min, exh_max, excess_pty)
     dist_df[!, :incid_d] = min.(sims[!, :incid] .- incidm, 0.0)
     dist_df[!, :cor_d] = min.(sims[!, :prod_clr] .- corm, 0.0) ./ 2.0 # cor is in [-1,1], while exh and incid are [0,1]
     dist_df[!, :frusts] = sims[:, :frusts]
@@ -24,13 +25,13 @@ function sq_diff_var_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, 
     return dist_df
 end
 
-function accept_range(out::Float64, minv::Float64, maxv::Float64)
+function accept_range(out::Float64, minv::Float64, maxv::Float64, pty::Float64)
     if out < minv
         return minv - out
     elseif out < maxv
         return 0.0
     else
-        return out - maxv
+        return (out - maxv) * pty # dist(1.0, 0.95) = dist(0.4, 0.5)
     end
 end
 
@@ -48,7 +49,7 @@ function calc_nt_dists(quantsdirname::String, empdata::DataFrame)::NTuple{2, Dat
 end
 
 function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
-    joined = leftjoin(quantv, sims, on = [:plot, :cycle, :dayn, :age])
+    joined = leftjoin(empdata, sims, on = [:plot, :cycle, :dayn, :age])
     # rename!(joined, :med_area => :area, :med_spore => :spore, :med_nl => :nl)
 
     dists = DataFrame(p_row = joined[:, :p_row])
@@ -56,12 +57,20 @@ function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
         dists[!, Symbol(name, :_d)] .= absdiff.(joined[!, Symbol(name, :_dat)], joined[!, name])
         dists[!, Symbol(name, :_n)] .= findmissing.(joined[!, Symbol(name, :_dat)], joined[!, name])
     end
-    # if 1 in joined.p_row
-    #     CSV.write("results/ABC/dists/samplerawjoined.csv", joined)
-    #     CSV.write("results/ABC/dists/samplerawdists.csv", dists)
+
+    # if 1 in skipmissing(joined.p_row)
+    #     CSV.write("results/ABC/dists/novar/samplerawjoined.csv", joined)
+    #     CSV.write("results/ABC/dists/novar/samplerawdists.csv", dists)
     # end
+
     sumdists = combine(groupby(dists, :p_row), Not(:p_row) .=> sum, renamecols = false)
 
+    misrow = subset(sumdists, :p_row => r -> ismissing.(r))[!, 2:end]
+    if !isempty(misrow)
+        dropmissing!(sumdists)
+        sumdists[!, 2:end] = sumdists[!, 2:end] .+ misrow
+    end
+    
     return sumdists
 end
 

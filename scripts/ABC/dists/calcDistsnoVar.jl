@@ -12,7 +12,7 @@ compare_quals = parse.(Float64, ARGS[1:4])
 quantsdirname = ARGS[5]
 qualsdirname = ARGS[6]
 
-empdata = CSV.read("data/exp_pro/perdate_age_long.csv", DataFrame, missingstring = "NA")
+empdata = CSV.read("data/exp_pro/compare/perdate_age_long.csv", DataFrame, missingstring = "NA")
 
 time_dists = @elapsed begin
     l_dists = calc_l_dists(qualsdirname, compare_quals...)
@@ -23,13 +23,13 @@ flush(stdout)
 
 time_joinwrite = @elapsed begin
     # count # observations per stat
-    obscounts = count_obs(quantv)
+    obscounts = count_obs(empdata)
     # scale quant dists by # obs
     scale_dists!(nt_dists, obscounts)
     # join quant and qual dists
     dists = leftjoin(nt_dists, l_dists, on = :p_row)
     # write
-    CSV.write("results/ABC/novardists/squareddists.csv", dists)
-    CSV.write("results/ABC/novardists/nmissings.csv", nmissings)
+    CSV.write("results/ABC/dists/novar/squareddists.csv", dists)
+    CSV.write("results/ABC/dists/novar/nmissings.csv", nmissings)
 end
 println("Join+write: $time_joinwrite")
