@@ -45,7 +45,7 @@ else
         const rain_data = Tuple(w_table[3])
         const wind_data = Tuple(w_table[4])
 
-        const parameters = DataFrame(Arrow.Table(string("data/ABC/", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
+        const parameters = DataFrame(Arrow.Table(string("data/ABC/parameters_", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
 
         mkpath("/scratch/mvanega1/ABC/sims/requants")
         mkpath("/scratch/mvanega1/ABC/sims/requals")
@@ -54,18 +54,21 @@ else
     println("Loads: $load_time")
     flush(stdout)
 
-# dummy_time = @elapsed begin
-#     #dummy run
-#     sim_abc(parameters[10,:], rain_data, temp_data, when_rust, when_plant, 0.5)
-#     println("Dummy run completed")
-# end
+    # dummy_time = @elapsed begin
+    #     #dummy run
+    #     sim_abc(parameters[10,:], rain_data, temp_data, when_rust, when_plant, 0.5)
+    #     println("Dummy run completed")
+    # end
 
-# println("Compile: $dummy_time")
-# flush(stdout)
+    # println("Compile: $dummy_time")
+    # flush(stdout)
 
     run_time = @elapsed begin
-        outputs = pmap(p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018),
-                        eachrow(parameters); retry_delays = fill(0.1, 3))
+        wp = CachingPool(workers())
+        outputs = pmap(
+            p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018),
+            wp,
+            eachrow(parameters); retry_delays = fill(0.1, 3))
         # outputs = pmap(p -> sim_abc(p),
         #                 eachrow(parameters); retry_delays = fill(0.1, 3), batch_size = 20)
         println("total: ", length(outputs))
