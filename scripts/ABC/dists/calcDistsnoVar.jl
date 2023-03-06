@@ -12,7 +12,7 @@ compare_quals = parse.(Float64, ARGS[1:4])
 quantsdirname = ARGS[5]
 qualsdirname = ARGS[6]
 
-empdata = CSV.read("data/exp_pro/compare/perdate_age_long.csv", DataFrame, missingstring = "NA")
+empdata = DataFrame(Arrow.Table("data/exp_pro/compare/perdate_age_long.arrow"))
 
 time_dists = @elapsed begin
     l_dists = calc_l_dists(qualsdirname, compare_quals...)
