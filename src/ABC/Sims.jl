@@ -170,13 +170,16 @@ function abc_run_2017!(model::SpatialRustABM,
     exh_and_totinc = exh_incid(model)
     exh_incid_percent = exh_and_totinc ./ length(model.agents)
 
-    if isempty(model.rusts)
+    if length(model.rusts) < 3
         prod_clr_cor = missing
     else
         add_clr_areas!(prod_clr_df, model)
-        # prod_clr_df[!, :exh] = getproperty.(model.agents, :exh_countdown) .> 0
         filter!(:clr_area => >(0.0), prod_clr_df)
-        prod_clr_cor = corspearman(prod_clr_df[!, :FtL], prod_clr_df[!, :clr_area])
+        if isempty(prod_clr_df)
+            prod_clr_cor = missing
+        else
+            prod_clr_cor = corspearman(prod_clr_df[!, :FtL], prod_clr_df[!, :clr_area])
+        end
     end
     println(prod_clr_cor)
 
