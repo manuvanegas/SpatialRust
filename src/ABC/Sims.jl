@@ -126,7 +126,7 @@ function abc_run_2017!(model::SpatialRustABM,
         dayn = Int[], age = Int[], cycle = Int[],
         area = Float64[], spore = Float64[],
         nl = Float64[], occup = Float64[],
-        area_sum = Float64[]
+        ar_sum = Float64[], ar_mn = Float64[], nl_mn = Float64[]
     )
     allowmissing!(per_age, Not([:dayn, :age, :cycle]))
     prod_clr_df = DataFrame()
@@ -185,7 +185,7 @@ function abc_run_2018!(model::SpatialRustABM,
         dayn = Int[], age = Int[], cycle = Int[],
         area = Float64[], spore = Float64[],
         nl = Float64[], occup = Float64[],
-        area_sum = Float64[]
+        ar_sum = Float64[], ar_mn = Float64[], nl_mn = Float64[]
     )
     allowmissing!(per_age, Not([:dayn, :age, :cycle]))
 
