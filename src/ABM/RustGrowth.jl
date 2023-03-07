@@ -210,12 +210,11 @@ function parasitize!(rust::Coffee, rustpars::RustPars, farm_map::Array{Int, 2})
     if stor < -10.0 || (stor < 0.0 && rust.veg <= rustpars.exh_threshold)
         rust.production = 0.0
         rust.exh_countdown = rustpars.exh_countdown
-        # fill!(rust.deposited, 0)
         rust.newdeps = 0.0
         rust.deposited = 0.0
         rust.n_lesions = 0
         fill!(rust.ages, rustpars.reset_age)
-        # fill!(rust.areas, 0.0)
+        fill!(rust.areas, 0.0)
         fill!(rust.spores, false)
         @inbounds farm_map[rust.pos...] = 0
     end
