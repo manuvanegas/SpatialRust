@@ -124,6 +124,10 @@ function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::I
 
             # df_age = outerjoin(df_areas, df_nlesions, on = :age)
             df_age = outerjoin(df_areas, df_nlesions, on = [:age, :cycle])
+            df_age = leftjoin(DataFrame(
+                age = repeat(0:max_age, length(cycle_n)),
+                cycle = repeat(cycle_n, inner = (max_age + 1))
+                ), df_age, on = [:age, :cycle])
             df_age.ar_sum .= meansumarea
             df_age.ar_mn .= meanarea
             df_age.nl_mn .= meannl
