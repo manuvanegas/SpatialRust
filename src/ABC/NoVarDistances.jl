@@ -58,6 +58,7 @@ end
 function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
     joined = leftjoin(empdata, sims, on = [:plot, :dayn, :age, :cycle])
     # rename!(joined, :med_area => :area, :med_spore => :spore, :med_nl => :nl)
+    any(ismissing.(joined.p_row)) && error("missing rows $(first(skipmissing(joined.p_row)))")
 
     dists = DataFrame(p_row = joined[:, :p_row])
     for name in [:area, :spore, :nl, :occup]
@@ -72,11 +73,11 @@ function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
 
     sumdists = combine(groupby(dists, :p_row), Not(:p_row) .=> sum, renamecols = false)
 
-    misrow = subset(sumdists, :p_row => r -> ismissing.(r))[!, 2:end]
-    if !isempty(misrow)
-        dropmissing!(sumdists)
-        sumdists[!, 2:end] = sumdists[!, 2:end] .+ misrow
-    end
+    # misrow = subset(sumdists, :p_row => r -> ismissing.(r))[!, 2:end]
+    # if !isempty(misrow)
+    #     dropmissing!(sumdists)
+    #     sumdists[!, 2:end] = sumdists[!, 2:end] .+ misrow
+    # end
     
     return sumdists
 end
