@@ -42,7 +42,7 @@ end
 
 time_join = @elapsed begin
     σ2_quants = leftjoin(quantdata, σ2_quants, on = [:plot, :dayn, :age, :cycle], order = :left)
-    n_quants = leftjoin(σ2_quants[:, [:plot, :dayn, :age, :cycle]], n_quants, on = [:dayn, :age], order = :left)
+    n_quants = leftjoin(quantdata[:, [:plot, :dayn, :age, :cycle]], n_quants, on = [:plot, :dayn, :age, :cycle], order = :left)
 end
 println("Variance: $time_vars")
 println("Join: $time_join")
@@ -54,7 +54,7 @@ time_write = @elapsed begin
     CSV.write("results/ABC/variances/sents/v_gquants.csv", g_σ2_quants)
     CSV.write("results/ABC/variances/sents/v_quals.csv", σ2_quals)
     CSV.write("results/ABC/variances/sents/n_quants.csv", n_quants)
-    CSV.write("results/ABC/variances/sents/n_gquals.csv", g_n_quants)
+    CSV.write("results/ABC/variances/sents/n_gquants.csv", g_n_quants)
     CSV.write("results/ABC/variances/sents/n_quals.csv", n_quals)
 end
 println("Write: $time_write")

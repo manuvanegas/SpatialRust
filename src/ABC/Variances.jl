@@ -78,16 +78,20 @@ function dfize(statstup::NTuple{2,OnlineStatsBase.StatCollection}) # "dataframe-
     globaled = statstup[2]
     
     var_df = DataFrame(
+        plot = Symbol[],
         dayn = Int[],
         age = Int[],
+        cycle = Int[],
         area_var = Float64[],
         spore_var = Float64[],
         nl_var = Float64[],
         occup_var = Float64[]
     )
     n_df = DataFrame(
+        plot = Symbol[],
         dayn = Int[],
         age = Int[],
+        cycle = Int[],
         area_var_n = Int[],
         spore_var_n = Int[],
         nl_var_n = Int[],
@@ -97,14 +101,15 @@ function dfize(statstup::NTuple{2,OnlineStatsBase.StatCollection}) # "dataframe-
     # allowmissing!(n_df, [:dayn, :age])
 
     for k in keys(value(grouped))
-        rowv::Vector{Union{Int, Float64}} = collect(k)
-        rown::Vector{Int} = collect(k)
+        # rowv::Vector{Union{Int, Float64, Symbol}} = collect(k)
+        # rown::Vector{Int} = collect(k)
         # rowv::Vector{Union{Int, Float64, Missing}} = collect(k)
         # rown::Vector{Union{Int, Missing}} = collect(k)
-        append!(rowv, collect(value.(value(grouped[k].stats[1]))))
-        append!(rown, collect(value.(value(grouped[k].stats[2]))))
-        push!(var_df, rowv)
-        push!(n_df, rown)
+        # append!(rowv, collect(value.(value(grouped[k].stats[1]))))
+        # append!(rown, collect(value.(value(grouped[k].stats[2]))))
+        statsr = grouped[k].stats
+        push!(var_df, [collect(k); collect(value.(value(statsr[1])))])
+        push!(n_df, [collect(k); collect(value.(value(statsr[2])))])
     end
 
     gvar_df = DataFrame(
