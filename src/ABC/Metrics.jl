@@ -108,7 +108,7 @@ function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::I
             if cycle_last
                 # avail_sites_wpct = length(collect(survey_cofs)) * max_les * inv(100.0)
                 avail_sites_wpct = length(active_sents) * max_les
-                df_areas[!, :occup] = df[!, :occup] ./ avail_sites_wpct
+                df_areas[!, :occup] = df_areas[!, :occup] ./ avail_sites_wpct
                 # select!(df_areas, Not(:lcount), :lcount => (n -> n / avail_sites_wpct) => :occup)
             else
                 # select!(df_areas, Not(:occup))
