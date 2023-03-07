@@ -23,9 +23,8 @@ function calc_l_dists(qualsdirname::String, exh_min::Float64, exh_max::Float64, 
 end
 
 function diff_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
-    excess_pty = exh_max < 1.0 ? (exh_min - 0.4) / (1.0 - exh_max) : 1.0
     dist_df = DataFrame(p_row = sims[:, :p_row])
-    dist_df[!, :exh_d] = accept_range.(sims[!, :exh], exh_min, exh_max, excess_pty)
+    dist_df[!, :exh_d] = accept_range.(sims[!, :exh], exh_min, exh_max)
     dist_df[!, :incid_d] = max.(incidm .- sims[!, :incid], 0.0)
     dist_df[!, :cor_d] = max.(corm .- sims[!, :prod_clr], 0.0)
     dist_df[!, :frusts] = sims[:, :frusts]
@@ -33,13 +32,13 @@ function diff_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm:
     return dist_df
 end
 
-function accept_range(out::Float64, minv::Float64, maxv::Float64, pty::Float64)
+function accept_range(out::Float64, minv::Float64, maxv::Float64)
     if out < minv
         return minv - out
     elseif out < maxv
         return 0.0
     else
-        return (out - maxv) * pty # dist(1.0, 0.95) = dist(0.4, 0.5)
+        return out - maxv
     end
 end
 
