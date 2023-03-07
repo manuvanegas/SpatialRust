@@ -93,7 +93,7 @@ function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::I
                 cycle = repeat(cycle_n, inner = (max_age + 1)),
                 area = missing, spore = missing,
                 nl = missing, occup = missing,
-                area_sum = meanpctarea)
+                area_sum = meansumarea)
         else
             # nlesions_age = combine(groupby(df_i, :id), :age => maximum => :age, :nl => first => :nl)
             # df_nlesions = combine(groupby(nlesions_age, :age), :nl => median => :nl)
@@ -119,7 +119,7 @@ function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::I
 
             # df_age = outerjoin(df_areas, df_nlesions, on = :age)
             df_age = outerjoin(df_areas, df_nlesions, on = [:age, :cycle])
-            df_age.area_sum .= meanpctarea
+            df_age.area_sum .= meansumarea
 
             return df_age
         end
