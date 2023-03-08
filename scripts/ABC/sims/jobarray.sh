@@ -1,5 +1,6 @@
 #!/bin/bash
 #SBATCH --array=1-80
+#SBATCH --mem=12G
 #SBATCH --ntasks=5
 #SBATCH --ntasks-per-core=1
 #SBATCH -p htc
