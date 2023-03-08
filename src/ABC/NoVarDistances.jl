@@ -94,13 +94,17 @@ function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
 
     sumdists = combine(groupby(dists, :p_row), Not(:p_row) .=> sum, renamecols = false)
 
-    # misrow = subset(sumdists, :p_row => r -> ismissing.(r))[!, 2:end]
-    # if !isempty(misrow)
-    #     dropmissing!(sumdists)
-    #     sumdists[!, 2:end] = sumdists[!, 2:end] .+ misrow
-    # end
-    
-    return sumdists
+    globs = select(sims, :p_row, :plot, :dayn, :ar_sum, :nl_mn)
+    globsun = subset(globs, :dayn => ByRow(==(196)), :plot => ByRow(==(:sun)))
+    globsh = subset(globs, :dayn => ByRow(==(196)), :plot => ByRow(==(:shade)))
+    globsun[!,[:ar_sum, :nl_mn]] = globsun[!,[:ar_sum, :nl_mn]] .- globsh[!,[:ar_sum, :nl_mn]]
+    globsun[!, :ar_sum_d] = globsun[!, :ar_sum] .> -0.1
+    globsun[!, :nl_mn_d] = globsun[!, :nl_mn] .< 0.1
+    coalesce.(globsun, false)
+
+    sds = leftjoin(sumdists, select(globsun, :p_row, :ar_sum_d, :nl_mn_d), on = :p_row)
+
+    return sds
 end
 
 absdiff(dat::Float64, sim::Float64) = dat == 0.0 ? sim : abs(sim / dat - 1.0)
