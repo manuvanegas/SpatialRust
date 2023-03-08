@@ -1,4 +1,4 @@
-export totprod, maxA, incidence, n_coffees, justcofs, justrusts
+export totprod, maxA, incidence, n_coffees, justcofs, justrusts, active, emean
 
 totprod(model::SpatialRustABM) = model.current.prod
 
@@ -30,7 +30,8 @@ emedian(arr) = isempty(arr) ? 0.0 : median(arr)
 
 emean(v) = isempty(v) ? 0.0 : mean(v)
 
-active(c::Coffee) = c.exh_countdown > 0
+active(c::Coffee) = c.exh_countdown == 0
+# active(g) = (c.exh_countdown == 0 for c in g)
 
 filter_mean_prop(model::SpatialRustABM, prop::Symbol) = emean(getproperty.(filter(active, model.agents), prop))
 
