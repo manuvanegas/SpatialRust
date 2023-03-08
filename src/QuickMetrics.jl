@@ -28,10 +28,12 @@ emedian(arr) = isempty(arr) ? 0.0 : median(arr)
 
 #####
 
-emean(v) = isempty(v) ? 0.0 : mean(v)
-
 active(c::Coffee) = c.exh_countdown == 0
 # active(g) = (c.exh_countdown == 0 for c in g)
+
+activeRust(c::Coffee) = c.n_lesions > 0
+
+emean(v) = isempty(v) ? 0.0 : mean(v)
 
 filter_mean_prop(model::SpatialRustABM, prop::Symbol) = emean(getproperty.(filter(active, model.agents), prop))
 
