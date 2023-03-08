@@ -16,17 +16,28 @@ function calc_l_dists(qualsdirname::String, exh_min::Float64, exh_max::Float64, 
     end
     rowdists = combine(
         groupby(dists_l, :p_row),
-        Not(:p_row) .=> sum,
+        Not(:p_row) .=> missum,
         renamecols = false
     )
     return rowdists
+end
+
+function missum(v)
+    nmis = sum(ismissing.(v))
+    if nmis == 0
+        return sum(v)
+    elseif nmis == 1
+        return sum(skipmissing(v))
+    else
+        return 2.8
+    end
 end
 
 function diff_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
     dist_df = DataFrame(p_row = sims[:, :p_row])
     dist_df[!, :exh_d] = accept_range.(sims[!, :exh], exh_min, exh_max)
     dist_df[!, :incid_d] = max.(incidm .- sims[!, :incid], 0.0)
-    dist_df[!, :cor_d] = max.(corm .- sims[!, :prod_clr], 0.0)
+    dist_df[!, :cor_d] = cor_diff.(corm, sims[!, :prod_clr])
     dist_df[!, :frusts] = sims[:, :frusts]
 
     return dist_df
@@ -41,6 +52,16 @@ function accept_range(out::Float64, minv::Float64, maxv::Float64)
         return out - maxv
     end
 end
+
+function cor_diff(corm::Float64, sim::Float64)
+    if isnan(sim)
+        missing
+    else
+        return max.(corm - sims, 0.0)
+    end
+end
+
+cor_diff(corm::Float64, sim::Missing) = missing
 
 ## Quantitative variables
 function calc_nt_dists(quantsdirname::String, empdata::DataFrame)::NTuple{2, DataFrame}
