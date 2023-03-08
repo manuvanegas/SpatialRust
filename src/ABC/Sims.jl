@@ -181,7 +181,6 @@ function abc_run_2017!(model::SpatialRustABM,
             prod_clr_cor = corspearman(prod_clr_df[!, :FtL], prod_clr_df[!, :clr_area])
         end
     end
-    println(prod_clr_cor)
 
     return per_age, exh_incid_percent..., prod_clr_cor
 end
