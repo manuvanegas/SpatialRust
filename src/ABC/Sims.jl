@@ -71,9 +71,11 @@ function simulate_plots(p_row::DataFrameRow,
         wind_data = wind_data,
         temp_data = temp_data,
         ini_rusts = 0.02,
+        prune_sch = [15,166,-1],
+        inspect_period = 460,
+        fungicide_sch = Int[],
         target_shade = 0.15,
-        shade_g_rate = 0.008,
-        fungicide_sch = Int[];
+        shade_g_rate = 0.008;
         p_row[2:end]...
 
         # temp_cooling = p_row[:temp_cooling],
@@ -94,9 +96,11 @@ function simulate_plots(p_row::DataFrameRow,
         wind_data = wind_data,
         temp_data = temp_data,
         ini_rusts = 0.02,
+        prune_sch = [15,166,-1],
+        inspect_period = 460,
+        fungicide_sch = Int[],
         target_shade = 0.15,
-        shade_g_rate = 0.008,
-        fungicide_sch = Int[];
+        shade_g_rate = 0.008;
         p_row[2:end]...
 
         # temp_cooling = p_row[:temp_cooling],
