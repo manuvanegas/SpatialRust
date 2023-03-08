@@ -26,7 +26,8 @@ include(srcdir("ABM/CGrowerSteps.jl"))
 include(srcdir("QuickRuns.jl"))
 include(srcdir("QuickMetrics.jl"))
 
-include(srcdir("ABC", "Sims.jl"))
+# include(srcdir("ABC", "Sims.jl"))
+export SpatialRustABM
 
 # precompile(dummyrun_spatialrust, (Int, Int, Int))
 end

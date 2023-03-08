@@ -35,7 +35,7 @@ end
 
     # ABC
     # sample_cycle::Int # cycles where coffee should be sampled
-    sentinel::Sentinel
+    # sentinel::Sentinel
 end
 
 # Coffee constructor

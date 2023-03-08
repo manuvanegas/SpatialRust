@@ -77,7 +77,7 @@ function custom_run!(model::SpatialRustABM, steps::Int, n::Int)
     s = 0
     while Agents.until(s, steps, model)
         step!(model, dummystep, step_model!, 1)
-        sumareas = filter(>(0.0), sum.(getproperty.(model.agents, :area)))
+        sumareas = filter(>(0.0), sum.(getproperty.(model.agents, :areas)))
         if !isempty(sumareas)
             if (currentarea = mean(sumareas)) > max_area
                 max_area = currentarea
