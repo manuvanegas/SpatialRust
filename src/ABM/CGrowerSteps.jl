@@ -2,13 +2,13 @@ function harvest!(model::SpatialRustABM)
     # model.current.net_rev += (model.pars.coffee_price * harvest) - model.current.costs
     # model.current.gains += model.coffee_price * harvest * model.pars.p_density
     # model.current.prod += harvest
-    model.current.prod += sum(map(get_production, allagents(model)))
+    model.current.prod += sum(getproperty.(model.agents, :production))
         # getproperty.(allagents(model), :production))
     model.current.fung_count = 0
-    new_harvest_cycle!.(allagents(model), model.mngpars.lesion_survive, model.rustpars.max_lesions, model.rustpars.reset_age)
+    new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive, model.rustpars.max_lesions, model.rustpars.reset_age)
 end
 
-get_production(c::Coffee) = c.production
+# get_production(c::Coffee) = c.production
 
 function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::Int)
     c.production = 0.0
@@ -51,7 +51,7 @@ end
 
 function inspect!(model::SpatialRustABM)
     # exhausted coffees can be inspected in this version. They have a 100% chance of being regarded as infected.
-    inspected = sample(model.rng, collect(allagents(model)), model.mngpars.n_inspected, replace = false)
+    inspected = sample(model.rng, model.agents, model.mngpars.n_inspected, replace = false)
     n_infected = 0
 
     for c in inspected
