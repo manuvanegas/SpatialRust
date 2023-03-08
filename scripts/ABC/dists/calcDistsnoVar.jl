@@ -29,7 +29,8 @@ time_joinwrite = @elapsed begin
     # join quant and qual dists
     dists = leftjoin(nt_dists, l_dists, on = :p_row)
     # write
-    CSV.write("results/ABC/dists/novar/squareddists.csv", dists)
-    CSV.write("results/ABC/dists/novar/nmissings.csv", nmissings)
+    # CSV.write("results/ABC/dists/sents/novar/squareddists.csv", dists)
+    CSV.write("results/ABC/dists/sents/novar/scaleddists.csv", dists)
+    CSV.write("results/ABC/dists/sents/novar/nmissings.csv", nmissings)
 end
 println("Join+write: $time_joinwrite")

@@ -11,9 +11,9 @@ function calc_l_dists(qualsdirname::String, exh_min::Float64, exh_max::Float64, 
         l_file_tree)
     dists_l = exec(reducevalues(vcat, lazy_dists))
 
-    replace!(dists_l[!, :cor_d]) do cor
-        isnan(cor) ? 1.0 : cor
-    end
+    # replace!(dists_l[!, :cor_d]) do cor
+    #     isnan(cor) ? 1.0 : cor
+    # end
     rowdists = combine(
         groupby(dists_l, :p_row),
         Not(:p_row) .=> missum,
@@ -55,9 +55,9 @@ end
 
 function cor_diff(corm::Float64, sim::Float64)
     if isnan(sim)
-        missing
+        return missing
     else
-        return max.(corm - sims, 0.0)
+        return max.(corm - sim, 0.0)
     end
 end
 
@@ -104,7 +104,7 @@ function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
 end
 
 absdiff(dat::Float64, sim::Float64) = dat == 0.0 ? sim : abs(sim / dat - 1.0)
-absdiff(dat::Float64, sim::Missing) = 1.0
+absdiff(dat::Float64, sim::Missing) = dat == 0.0 ? 10.0 : 1.0 / dat
 absdiff(dat::Missing, sim::Float64) = 0.0
 absdiff(dat::Missing, sim::Missing) = 0.0
 
