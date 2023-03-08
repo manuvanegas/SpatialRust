@@ -87,24 +87,35 @@ function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
         dists[!, Symbol(name, :_n)] .= findmissing.(joined[!, Symbol(name, :_dat)], joined[!, name])
     end
 
-    # if 1 in sims.p_row
-    #     CSV.write("results/ABC/dists/novar/samplerawjoined.csv", joined)
-    #     CSV.write("results/ABC/dists/novar/samplerawdists.csv", dists)
-    # end
+    if 1 in sims.p_row
+        CSV.write("results/ABC/dists/novar/samplerawjoined.csv", joined)
+        CSV.write("results/ABC/dists/novar/samplerawdists.csv", dists)
+    end
 
     sumdists = combine(groupby(dists, :p_row), Not(:p_row) .=> sum, renamecols = false)
-
-    globs = select(sims, :p_row, :plot, :dayn, :ar_sum, :nl_mn)
-    globsun = subset(globs, :dayn => ByRow(==(196)), :plot => ByRow(==(:sun)))
-    globsh = subset(globs, :dayn => ByRow(==(196)), :plot => ByRow(==(:shade)))
+    
+    globs = sims[(sims.dayn .== 196) .&& (sims.age .== 0), [:p_row, :plot, :dayn, :ar_sum, :nl_mn]]
+    globsun = subset(globs, :plot => ByRow(==(:sun)))
+    globsh = subset(globs, :plot => ByRow(==(:shade)))
     globsun[!,[:ar_sum, :nl_mn]] = globsun[!,[:ar_sum, :nl_mn]] .- globsh[!,[:ar_sum, :nl_mn]]
     globsun[!, :ar_sum_d] = globsun[!, :ar_sum] .> -0.1
     globsun[!, :nl_mn_d] = globsun[!, :nl_mn] .< 0.1
     coalesce.(globsun, false)
 
-    sds = leftjoin(sumdists, select(globsun, :p_row, :ar_sum_d, :nl_mn_d), on = :p_row)
+    leftjoin!(sumdists, select(globsun, :p_row, :ar_sum_d, :nl_mn_d), on = :p_row)
 
-    return sds
+    return sumdists
+end
+
+function tglobs(sims::DataFrame)
+    globs = sims[(sims.dayn .== 196) .&& (sims.age .== 0), [:p_row, :plot, :dayn, :ar_sum, :nl_mn]]
+    globsun = subset(globs, :plot => ByRow(==(:sun)))
+    globsh = subset(globs, :plot => ByRow(==(:shade)))
+    globsun[!,[:ar_sum, :nl_mn]] = globsun[!,[:ar_sum, :nl_mn]] .- globsh[!,[:ar_sum, :nl_mn]]
+    globsun[!, :ar_sum_d] = globsun[!, :ar_sum] .> -0.1
+    globsun[!, :nl_mn_d] = globsun[!, :nl_mn] .< 0.1
+    coalesce.(globsun, false)
+    return globsun
 end
 
 absdiff(dat::Float64, sim::Float64) = dat == 0.0 ? sim : abs(sim / dat - 1.0)
