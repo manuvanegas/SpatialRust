@@ -25,3 +25,13 @@ medsum_s(x) = (median(sum.(x[3,:])))
 rusted(a) = a.n_lesions > 0
 
 emedian(arr) = isempty(arr) ? 0.0 : median(arr)
+
+#####
+
+emean(v) = isempty(v) ? 0.0 : mean(v)
+
+active(c::Coffee) = c.exh_countdown > 0
+
+filter_mean_prop(model::SpatialRustABM, prop::Symbol) = emean(getproperty.(filter(active, model.agents), prop))
+
+mean_prop(cofs::Vector{Coffee}, prop::Symbol) = emean(getproperty.(cofs, prop))
