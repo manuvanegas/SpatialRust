@@ -26,12 +26,13 @@ function sim_abc(p_row::DataFrameRow,
         p_row, temp_data, rain_data, wind_data, when_2017, when_2018, :regshaded
     )
 
-    # if p_row[:p_row] % 200 == 0
+    if p_row[:p_row] % 500 == 0
+        GC.gc()
     #     println("Row $(p_row[:p_row])")
     #     println("Time $simtime")
     #     println("")
     #     flush(stdout)
-    # end
+    end
 
     per_age_df = vcat(sun_per_age_df, shade_per_age_df, source = :plot => [:sun, :shade])
     # if isempty(per_age_df)
