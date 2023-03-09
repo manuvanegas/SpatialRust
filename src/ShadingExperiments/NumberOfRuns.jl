@@ -68,8 +68,11 @@ function one_cv_sim(fmap::Array{Int,2}, pars::DataFrame, mtemp::Float64, rainp::
     ss = 1461
     model = init_spatialrust(
         steps = ss,
+        inspect_period = 460,
+        fungicide_sch = Int[],
         prune_sch = [182,-1,-1], 
         target_shade = 0.1,
+        shade_g_rate = 0.008,
         farm_map = copy(fmap),
         rain_prob = rainp,
         mean_temp = mtemp;

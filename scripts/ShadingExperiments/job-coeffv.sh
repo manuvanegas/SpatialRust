@@ -18,4 +18,4 @@ module load julia/1.8.2
 
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/ShadingExperiments/calcRepCVs.jl 900 23.0 0.8
+~/SpatialRust/scripts/ShadingExperiments/calcRepCVs.jl 600 23.0 0.8
