@@ -2,18 +2,21 @@
 
 function coeff_vars(n::Int, mtemp::Float64, rainp::Float64,
     pars::DataFrame = DataFrame())
-    ns = vcat(collect(25:25:75), collect(100:100:600), 800, 1000)
-    if n == 100
-       ns = collect(20:20:100)
-    end
+
+    ns = [25; 50; 75; 100:100:1000]
+    # if n == 100
+    #    ns = collect(20:20:100)
+    # end
     a_ns = filter(x -> x .<= n, ns)
     # coeff_vars = DataFrame(n = Int[], prod = Float64[], area = Float64[])
     df = cv_n_sims(a_ns, pars, mtemp, rainp)
 
     coeff_vars = combine(groupby(df, :n), [:totprod, :maxA] =>
-        ((p, a) -> (prod = (std(p) / mean(p)),
-            area = (std(a) / mean(a)),
-            corrprod = (std(log10.(p)) / mean(log10.(p))))) => AsTable)
+        ((p, a) -> (
+            prod = (std(p) / mean(p)),
+            area = (std(a) / mean(a)))
+            # corrprod = (std(log10.(p)) / mean(log10.(p))))
+        ) => AsTable)
 
     # for run in run_ns
 # "should try sequential instead of samples"
@@ -29,12 +32,12 @@ function coeff_vars(n::Int, mtemp::Float64, rainp::Float64,
     return coeff_vars
 end
 
-function cv_n_sims(a_ns::Vector{Int}, mtemp::Float64, rainp::Float64, pars::DataFrame)::DataFrame
+function cv_n_sims(a_ns::Vector{Int}, pars::DataFrame, mtemp::Float64, rainp::Float64)::DataFrame
     run_ns = reduce(vcat, fill.(a_ns, a_ns))
     fmap = create_farm_map(100, 2, 1, 9, :regular, 1, (0,0))
 
     if isempty(pars)
-        pars = CSV.read("results/ABC/params/sents/novar/byaroccexhincid_pointestimate.csv", DataFrame)
+        pars = CSV.read("results/ABC/params/sents/novar/byaroccincid_pointestimate.csv", DataFrame)
     end
 
     # df = DataFrame(run = Int[], totprod = Float64[], maxA = Float64[])
@@ -42,9 +45,14 @@ function cv_n_sims(a_ns::Vector{Int}, mtemp::Float64, rainp::Float64, pars::Data
     #     push!(df, one_cv_sim(pars, map))
     # end
 
-    wp = CachingPool(workers())
-    dfs = pmap(x -> one_cv_sim(fmap, abcpars, mtemp, rainp, x), wp, run_ns)
+    rtime = @elapsed begin
+        wp = CachingPool(workers())
+        dfs = pmap(x -> one_cv_sim(fmap, pars, mtemp, rainp, x), wp, run_ns)
+    end
 
+    println("took $rtime to run $(length(run_ns))")
+    flush(stdout)
+    
     df = reduce(vcat, dfs)
 
     # if length(df.totprod) != n
@@ -62,9 +70,9 @@ function one_cv_sim(fmap::Array{Int,2}, pars::DataFrame, mtemp::Float64, rainp::
         steps = ss,
         prune_sch = [182,-1,-1], 
         target_shade = 0.1,
-        farm_map = fmap,
+        farm_map = copy(fmap),
         rain_prob = rainp,
-        mean_temp = mtemp,
+        mean_temp = mtemp;
         # from ABC
         pars[1,:]...)
 
