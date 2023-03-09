@@ -35,7 +35,7 @@ function r_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                         nl = rust.n_lesions += 1
                         @inbounds rust.ages[nl] = -1
                         @inbounds rust.areas[nl] = 0.001# 0.00014
-                        rust.sentinel.active && track_lesion!(rust.sentinel)
+                        # rust.sentinel.active && track_lesion!(rust.sentinel)
                     end
                 end
             else
@@ -80,7 +80,7 @@ function nr_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float6
                         nl = rust.n_lesions += 1
                         @inbounds rust.ages[nl] = -1
                         @inbounds rust.areas[nl] = 0.001 #0.00014
-                        rust.sentinel.active && track_lesion!(rust.sentinel)
+                        # rust.sentinel.active && track_lesion!(rust.sentinel)
                     end
                 end
             else
@@ -127,17 +127,17 @@ function grow_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, 
                 area_gro = max(0.0, 1.0 - sum(areas) / 5.0)
                 areas .+= areas .* (1.0 .- areas) .* (growth_mod .* area_gro)
 
-                if rust.sentinel.active
-                    rust.sentinel.ages .+= 1
-                    sent_areas = rust.sentinel.areas
-                    for (nl, spo) in enumerate(rust.sentinel.spores)
-                        if !spo && rand(rng) < @inbounds sent_areas[nl] * spor_mod
-                            @inbounds rust.sentinel.spores[nl] = true
-                        end
-                    end
-                    sent_area_gro = max(0.0, 1.0 - sum(sent_areas) / 5.0)
-                    @fastmath sent_areas .+= sent_areas .* (1.0 .- sent_areas) .* (growth_mod .* sent_area_gro)
-                end
+                # if rust.sentinel.active
+                #     rust.sentinel.ages .+= 1
+                #     sent_areas = rust.sentinel.areas
+                #     for (nl, spo) in enumerate(rust.sentinel.spores)
+                #         if !spo && rand(rng) < @inbounds sent_areas[nl] * spor_mod
+                #             @inbounds rust.sentinel.spores[nl] = true
+                #         end
+                #     end
+                #     sent_area_gro = max(0.0, 1.0 - sum(sent_areas) / 5.0)
+                #     @fastmath sent_areas .+= sent_areas .* (1.0 .- sent_areas) .* (growth_mod .* sent_area_gro)
+                # end
             end
         end
     # end
@@ -182,20 +182,20 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                 # update sporulated area
                 # rust.spores .= rust.spores .* rust.areas .* rustpars.spore_pct
 
-                if rust.sentinel.active
-                    rust.sentinel.ages .+= 1
-                    sent_areas = rust.sentinel.areas
-                    sprev_cur = @inbounds(rust.ages[1:nls]) .< fday
-                    sspor_probs = sent_areas .* spor_mod .* ifelse.(sprev_cur, rustpars.fung_spor_prev, rustpars.fung_spor_cur)
-                    sgro_mods = growth_mod .* ifelse.(sprev_cur, rustpars.fung_gro_prev, rustpars.fung_gro_cur)
-                    for (nl, spo) in enumerate(rust.sentinel.spores)
-                        if !spo && rand(rng) < @inbounds sspor_probs[nl] * spor_mod
-                            @inbounds rust.sentinel.spores[nl] = true
-                        end
-                    end
-                    sent_area_gro = max(0.0, 1.0 - sum(sent_areas) / 5.0)
-                    @fastmath sent_areas .+= sent_areas .* (1.0 .- sent_areas) .* (sgro_mods .* sent_area_gro)
-                end
+                # if rust.sentinel.active
+                #     rust.sentinel.ages .+= 1
+                #     sent_areas = rust.sentinel.areas
+                #     sprev_cur = @inbounds(rust.ages[1:nls]) .< fday
+                #     sspor_probs = sent_areas .* spor_mod .* ifelse.(sprev_cur, rustpars.fung_spor_prev, rustpars.fung_spor_cur)
+                #     sgro_mods = growth_mod .* ifelse.(sprev_cur, rustpars.fung_gro_prev, rustpars.fung_gro_cur)
+                #     for (nl, spo) in enumerate(rust.sentinel.spores)
+                #         if !spo && rand(rng) < @inbounds sspor_probs[nl] * spor_mod
+                #             @inbounds rust.sentinel.spores[nl] = true
+                #         end
+                #     end
+                #     sent_area_gro = max(0.0, 1.0 - sum(sent_areas) / 5.0)
+                #     @fastmath sent_areas .+= sent_areas .* (1.0 .- sent_areas) .* (sgro_mods .* sent_area_gro)
+                # end
             end
         end
     # end
@@ -230,10 +230,10 @@ function update_deposited!(rust::Coffee, rusts::Set{Coffee})
     # else
     if rust.exh_countdown > 0
         delete!(rusts, rust)
-        rust.sentinel.active = false
-        empty!(rust.sentinel.ages)
-        empty!(rust.sentinel.areas)
-        empty!(rust.sentinel.spores)
+        # rust.sentinel.active = false
+        # empty!(rust.sentinel.ages)
+        # empty!(rust.sentinel.areas)
+        # empty!(rust.sentinel.spores)
     elseif rust.deposited < 0.05
         rust.deposited = 0.0
         if rust.n_lesions == 0

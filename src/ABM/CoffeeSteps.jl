@@ -10,8 +10,8 @@ function vegetative_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}
         coffee.veg = 1.0
         coffee.storage = init_storage(coffee.sunlight)
         coffee.exh_countdown = 0
-        fill!(rust.areas, 0.0)
-        farm_map[coffee.pos...] = 1
+        fill!(coffee.areas, 0.0)
+        map[coffee.pos...] = 1
     end
 end
 
@@ -27,8 +27,8 @@ function commit_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, in
         coffee.veg = 1.0
         coffee.storage = init_storage(coffee.sunlight)
         coffee.exh_countdown = 0
-        fill!(rust.areas, 0.0)
-        farm_map[coffee.pos...] = 1
+        fill!(coffee.areas, 0.0)
+        map[coffee.pos...] = 1
     end
 end
 
@@ -43,32 +43,13 @@ function reproductive_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float6
         coffee.veg = 1.0
         coffee.storage = init_storage(coffee.sunlight)
         coffee.exh_countdown = 0
-        fill!(rust.areas, 0.0)
-        farm_map[coffee.pos...] = 1
+        fill!(coffee.areas, 0.0)
+        map[coffee.pos...] = 1
     end
 end
 
 function update_sunlight!(cof::Coffee, map::Matrix{Float64}, ind_shade::Float64)
-    # shade = 0.0
-    # for sh in cof.shade_neighbors
-    #     shade += model[sh].shade
-    # end
-    # shades::Array{Float64} = getproperty.(model[cof.shade_neighbors],:shade)
-    # shade = sum(shades)
-
-    # @inbounds cof.sunlight = 1.0 - sum(getproperty.((model[s] for s in cof.shade_neighbors), :shade)) / (((model.pars.shade_r * 2.0) + 1.0)^2.0 - 1.0)
-    # cof.sunlight = exp(-(sum(cof.shade_neighbors.shade) / 8))
-
-    # cof.sunlight = 1.0 - cof.shade_neighbors * ind_shade
     cof.sunlight = 1.0 - @inbounds map[cof.pos...] * ind_shade
-
-    # # Shift contents of the deposited vector (older spores are lost) 1 space to the "right"
-    # @inbounds rust.deposited[2:end] .= rust.deposited[1:end-1]
-    # # unsafe_copyto!(rust.deposited, 2, rust.deposited, 1, 4)
-    # @inbounds rust.deposited[1] = 0
-    # this would actually be better, if I came back to this:
-    # rust.deposited = [0; rust.deposited[1:end-1]]
-    # cof.deposited *= 0.65 # Nutman et al, 1963 # Moved to update_deposited
 end
 
 function veg_growth!(coffee::Coffee, pars::CoffeePars)
