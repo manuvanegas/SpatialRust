@@ -32,14 +32,7 @@ abcpars = CSV.read("results/ABC/params/sents/novar/byaroccincid_pointestimate.cs
 
 steps = 1461
 
-if shade_placemnt == 1
-    barriers = (0,0)
-    shade_d = 100
-    conds = hcat(DataFrame(
-        shade_d = shade_d,
-        barriers = barriers,
-        target_shade = 0.0,
-        prune_sch = [[-1]],
+singlevals = hcat(DataFrame(
         common_map = :none,
         inspect_period = steps,
         fungicide_sch = [[-1]],
@@ -49,25 +42,25 @@ if shade_placemnt == 1
         rain_prob = rain_prob,
     ),
     abcpars
-    )
-    repeat!(conds, reps)
-    conds[!, :rep] = collect(1:reps)
-else
-    shade_d = 3 * shade_placemnt
+)
 
-    singlevals = hcat(DataFrame(
-        shade_d = shade_d,
-        # barriers = barriers,
-        common_map = :none,
-        inspect_period = steps,
-        fungicide_sch = [[-1]],
-        shade_g_rate = 0.008,
-        steps = steps,
-        mean_temp = mean_temp,
-        rain_prob = rain_prob,
-    ),
-    abcpars
+if shade_placemnt == 1
+    singlevals[!, :shade_d] .= 100
+    
+    crossed = crossjoin(
+        DataFrame(target_shade = 0.15:0.15:0.75),
+        DataFrame(prune_sch = [[15,196], [74, 196, 319]]),
+        DataFrame(rep = 1:reps)
     )
+    crossed[!, :barriers] .= [(1,1)]
+    append!(crossed, DataFrame(
+        barriers = repeat([(1,1), (0,0)], inner = reps),
+        target_shade = repeat([0.8, 0.0], inner = reps),
+        prune_sch = repeat([[-1]], reps * 2),
+        rep = repeat(1:reps, 2)
+    ))
+else
+    singlevals[!, :shade_d] .= 3 * shade_placemnt
 
     crossed = crossjoin(
         DataFrame(target_shade = 0.15:0.15:0.75),
@@ -76,18 +69,14 @@ else
     )
     append!(crossed, DataFrame(
         target_shade = 0.8,
-        prune_sche = [[-1], [-1]],
+        prune_sch = [[-1], [-1]],
         barriers = [(1,1), (0,0)]
         )
     )
-
     crossed = crossjoin(crossed, DataFrame(rep = 1:reps))
-
-    conds = hcat(crossed, repeat(singlevals, nrow(crossed)))
 end
 
-# frag_distg = groupby(combsdf, [:barriers, :shade_d])
-# describe(frag_distg[1])
+conds = hcat(crossed, repeat(singlevals, nrow(crossed)))
 
 printinfo = """
         Temp: $mean_temp,
