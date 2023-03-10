@@ -1,26 +1,44 @@
+function custom_run!(model::SpatialRustABM, steps::Int, n::Int)
+    max_area = 0
 
-function run_par_combination(combination::Dict{Symbol, Any})
-    pop!(combination, :reps)
-    frags = pop!(combination, :fragments)
-    combination[:barriers] = ifelse(frags == 1, (0,0), ifelse(
-        frags == 4, (1,0), (2,0)))
+    s = 0
+    while Agents.until(s, steps, model)
+        step!(model, dummystep, step_model!, 1)
+        sumareas = filter(>(0.0), sum.(getproperty.(model.agents, :areas)))
+        if !isempty(sumareas)
+            if (currentarea = mean(sumareas)) > max_area
+                max_area = currentarea
+            end
+        end
+        s += 1
+    end
 
-    pars = Parameters(; combination...)
-    model = init_spatialrust(pars) # farm_map may change for each iteration
-    _ , mdf = run!(model, dummystep, step_model!, pars.steps;
-        when_model = [pars.steps],
-        mdata = [totprod, maxA, n_coffees])
-    pop!(combination, :steps)
-    combination[:fragments] = frags
-    mdf = hcat(DataFrame(combination), mdf[:, [:totprod, :maxA, :n_coffees]])
-
-    return mdf
+    return DataFrame(
+        totprod = model.current.prod,
+        maxA = max_area,
+        n_coffees = sum(active.(model.agents)),
+        n = n
+    )
 end
 
-function shading_experiment(conds::Dict{Symbol, Any})
-    combinations = DrWatson.dict_list(conds)
-    runtime = @elapsed dfs = pmap(run_par_combination, combinations)
+function run_par_combination(pars::DataFrameRow)
+
+    model = init_spatialrust(; pars[Not(:rep)]...) # farm_map may change for each iteration
+    mdf = custom_run!(model, pars[:steps], pars[:rep])
+
+    return hcat(
+        DataFrame(pars[[:rep, :barriers, :shade_d, :target_shade, :prune_sch, :mean_temp, :rain_prob]]),
+        mdf[:, [:totprod, :maxA, :n_coffees]]
+        )
+end
+
+function shading_experiment(conds::DataFrame)
+    # combinations = dict_list(conds)
+    wp = CachingPool(workers())
+    runtime = @elapsed dfs = pmap(run_par_combination, wp, eachrow(conds))
     reducetime = @elapsed df = reduce(vcat, dfs)
     println("Run: $runtime, Reduce: $reducetime")
+    df[!, :barriers] .= df[!, :barriers] .== Ref((1,1))
+    df[!, :prunes_year] = length.(df[!, :prune_sch])
     return df
 end
