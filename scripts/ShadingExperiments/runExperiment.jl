@@ -21,8 +21,8 @@ mean_temp = parse(Float64, ARGS[2])
 rain_prob = parse(Float64, ARGS[3])
 shade_placemnt = parse(Int, ARGS[4])
 
-mkpath("results/Shading/exp-$mean_temp-$rain_prob")
-filename = "results/Shading/exp-$mean_temp-$rain_prob/r-$reps-$shade_placemnt.csv"
+mkpath("results/Shading/ABCests/exp-$mean_temp-$rain_prob")
+filename = "results/Shading/ABCests/exp-$mean_temp-$rain_prob/r-$reps-$shade_placemnt.csv"
 
 abcpars = CSV.read("results/ABC/params/sents/novar/byaroccincid_pointestimate.csv", DataFrame)
 

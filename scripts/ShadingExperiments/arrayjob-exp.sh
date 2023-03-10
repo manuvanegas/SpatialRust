@@ -9,7 +9,7 @@
 #SBATCH -t 0-00:15:00
 # #SBATCH --ntasks=5
 # #SBATCH -J shadeexp
-# #SBATCH -t 0-00:55:00
+# #SBATCH -t 0-04:00:00
 
 #SBATCH -o logs/shading/o-%A-%a.o
 #SBATCH -e logs/shading/o-%A-%a.e
