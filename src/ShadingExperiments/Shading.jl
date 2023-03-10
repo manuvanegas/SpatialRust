@@ -1,4 +1,4 @@
-function custom_run!(model::SpatialRustABM, steps::Int, n::Int)
+function custom_run!(model::SpatialRustABM, steps::Int)
     max_area = 0
 
     s = 0
@@ -16,19 +16,19 @@ function custom_run!(model::SpatialRustABM, steps::Int, n::Int)
     return DataFrame(
         totprod = model.current.prod,
         maxA = max_area,
-        n_coffees = sum(active.(model.agents)),
-        n = n
+        n_coffees = model.mngpars.n_cofs,
+        n_shades = model.mngpars.n_shades
     )
 end
 
 function run_par_combination(pars::DataFrameRow)
 
     model = init_spatialrust(; pars[Not(:rep)]...) # farm_map may change for each iteration
-    mdf = custom_run!(model, pars[:steps], pars[:rep])
+    mdf = custom_run!(model, pars[:steps])
 
     return hcat(
         DataFrame(pars[[:rep, :barriers, :shade_d, :target_shade, :prune_sch, :mean_temp, :rain_prob]]),
-        mdf[:, [:totprod, :maxA, :n_coffees]]
+        mdf
         )
 end
 
