@@ -39,7 +39,7 @@ if shade_placemnt == 1
         shade_d = shade_d,
         barriers = barriers,
         target_shade = 0.0,
-        prune_sch = [[1,-1]],
+        prune_sch = [[-1]],
         common_map = :none,
         inspect_period = steps,
         fungicide_sch = [[-1]],
@@ -53,12 +53,11 @@ if shade_placemnt == 1
     repeat!(conds, reps)
     conds[!, :rep] = collect(1:reps)
 else
-    barriers = shade_placemnt > 4 ? (1,1) : (0,0)
-    shade_d = (shade_placemnt == 5) ? 100 : 3 * mod1(shade_placemnt, 4)
+    shade_d = 3 * shade_placemnt
 
     singlevals = hcat(DataFrame(
         shade_d = shade_d,
-        barriers = barriers,
+        # barriers = barriers,
         common_map = :none,
         inspect_period = steps,
         fungicide_sch = [[-1]],
@@ -70,10 +69,12 @@ else
     abcpars
     )
 
-    trgs = DataFrame(target_shade = 0.15:0.15:0.75)
-    prunes = DataFrame(prune_sch = [[-1], [15,196], [74, 196, 319]])
-
-    crossed = crossjoin(trgs, prunes)
+    crossed = crossjoin(
+        DataFrame(target_shade = 0.15:0.15:0.75),
+        DataFrame(prune_sch = [[-1], [15,196], [74, 196, 319]]),
+        DataFrame(barriers = [(1,1), (0,0)]),
+        DataFrame(rep = 1:reps)
+    )
 
     conds = hcat(crossed, repeat(singlevals, nrow(crossed)))
 end
@@ -86,12 +87,13 @@ printinfo = """
         Rain: $rain_prob,
         Reps: $reps,
         Array #: $shade_placemnt,
-        Shade d: $shade_d,
-        Barriers: $barriers
+        Shade d: $shade_d
     """
 println(printinfo)
 flush(stdout)
 
 results = shading_experiment(conds)
+
+println("Total sims: $(nrow(results))")
 
 CSV.write(filename, results)
