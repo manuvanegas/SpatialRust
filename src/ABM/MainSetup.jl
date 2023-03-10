@@ -135,7 +135,7 @@ function init_spatialrust(;
     fung_effect::Int = 30,                  # length of fungicide effect
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
     # shade parameters
-    shade_g_rate::Float64 = 0.05,           # shade growth rate
+    shade_g_rate::Float64 = 0.008,           # shade growth rate
     shade_r::Int = 3,                       # radius of influence of shades
 
     # farm map
@@ -357,16 +357,20 @@ function ind_shade_i(
     start_day_at::Int,
     prune_sch::NTuple{N, Int}) where N
 
-    day = start_day_at > 0 ? start_day_at : 1
-    # calculate elapsed days since last prune
-    prune_diff = filter(>(0), day .- prune_sch)
-    if isempty(prune_diff)
-        last_prune = 365 + day - maximum(prune_sch)
+    if isempty(prune_sch)
+        return 0.8
     else
-        last_prune = minimum(prune_diff)
+        day = start_day_at > 0 ? start_day_at : 1
+        # calculate elapsed days since last prune
+        prune_diff = filter(>(0), day .- prune_sch)
+        if isempty(prune_diff)
+            last_prune = 365 + day - maximum(prune_sch)
+        else
+            last_prune = minimum(prune_diff)
+        end
+        # logistic equation to determine starting shade level
+        return (0.8 * target_shade) / (target_shade + (0.8 - target_shade) * exp(-(shade_g_rate * last_prune)))
     end
-    # logistic equation to determine starting shade level
-    return (target_shade * 0.7) / (target_shade + (0.7 - target_shade) * exp(-(shade_g_rate * last_prune)))
 end
 
 
