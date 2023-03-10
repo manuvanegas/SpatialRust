@@ -71,10 +71,17 @@ else
 
     crossed = crossjoin(
         DataFrame(target_shade = 0.15:0.15:0.75),
-        DataFrame(prune_sch = [[-1], [15,196], [74, 196, 319]]),
-        DataFrame(barriers = [(1,1), (0,0)]),
-        DataFrame(rep = 1:reps)
+        DataFrame(prune_sch = [[15,196], [74, 196, 319]]),
+        DataFrame(barriers = [(1,1), (0,0)])
     )
+    append!(crossed, DataFrame(
+        target_shade = 0.8,
+        prune_sche = [[-1], [-1]],
+        barriers = [(1,1), (0,0)]
+        )
+    )
+
+    crossed = crossjoin(crossed, DataFrame(rep = 1:reps))
 
     conds = hcat(crossed, repeat(singlevals, nrow(crossed)))
 end
