@@ -93,13 +93,13 @@ function create_farm_map(map_side::Int = 100, row_d::Int = 2, plant_d::Int = 1, 
     end
 
     if arr[2] == 1
-        if barrier_rows == 1
+        # if barrier_rows == 1
             @inbounds farm_map[[1, side], :] .= 2
             @inbounds farm_map[:, [1, side]] .= 2
-        else
-            @inbounds farm_map[[1, 2, side - 1, side], :] .= 2
-            @inbounds farm_map[:, [1, 2, side - 1, side]] .= 2
-        end
+        # else
+        #     @inbounds farm_map[[1, 2, side - 1, side], :] .= 2
+        #     @inbounds farm_map[:, [1, 2, side - 1, side]] .= 2
+        # end
     end
 
     return farm_map
