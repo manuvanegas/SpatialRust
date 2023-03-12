@@ -1,18 +1,20 @@
 using CairoMakie
 
-cvs = CSV.read(projectdir("results/Shading/CVs-22.5-0.8.csv"), DataFrame)
-cvs2 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8.csv"), DataFrame)
-cvs22 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r100.csv"), DataFrame)
-append!(cvs22, CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1000.csv"), DataFrame))
+# cvs = CSV.read(projectdir("results/Shading/CVs-22.5-0.8.csv"), DataFrame)
+# cvs2 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8.csv"), DataFrame)
+# cvs22 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r100.csv"), DataFrame)
+# append!(cvs22, CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1000.csv"), DataFrame))
 
-cvs3 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1001.csv"), DataFrame)
-cvs4 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1002.csv"), DataFrame)
-cvs5 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-1003.csv"), DataFrame)
+# cvs3 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1001.csv"), DataFrame)
+# cvs4 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1002.csv"), DataFrame)
+# cvs5 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-1003.csv"), DataFrame)
 
-fig = Figure()
-ax = Axis(fig[1,1], xlabel = "Number of runs", ylabel = "CV")
-lines!(ax, cvs.n, cvs.prod, label = "Coffee Production CV")
-lines!(ax, cvs.n, cvs.area, label = "Max Rust Area CV")
+cvs = CSV.read("results/Shading/ABCests/CVs-byaroccincid-23.0-0.8-600.csv", DataFrame)
+
+fig = Figure();
+ax = Axis(fig[1,1], xlabel = "Number of runs", ylabel = "CV");
+lines!(ax, cvs.n, cvs.prod, label = "Coffee Production CV");
+lines!(ax, cvs.n, cvs.area, label = "Max Rust Area CV");
 axislegend()
 fig
 

@@ -1,11 +1,13 @@
-Pkg.activate("src/ShadingExperiments/.")
+# Pkg.activate("src/ShadingExperiments/.")
 using CairoMakie, CSV, DataFrames
 using Statistics
-include("Plots.jl")
+include("../../src/ShadingExperiments/Plots.jl")
 
 
 ## base scenario: 22.5 T, 0.8 rain
-bfiles = filter(f -> occursin("/r2", f), readdir(projectdir("../../results/Shading/r-22.5-0.8/"), join = true))
+temp = 23.0
+rain = 0.8
+bfiles = readdir(string("results/Shading/ABCests/exp-$temp-$rain/"), join = true)
 basedf = reduce(vcat, [CSV.read(f, DataFrame) for f in bfiles])
 add_useful_cols!(basedf)
 # describe(res)
@@ -13,12 +15,13 @@ describe(basedf)
 hist(basedf.maxA)
 hist(basedf.totprod)
 scatter(basedf.maxA, basedf.totprod)
+scatter(basedf.maxA, basedf.prod_cof)
 
 w_b_areas, w_b_prod, w_b_prod_c = wide_plot_dfs(basedf)
 
-f_base_a = pa_plot(w_b_areas, "Maximum Median Rust Area")
-f_base_p = pa_plot(w_b_prod, "Median Total Coffee Production")
-f_base_p_c = pa_plot(w_b_prod_c, "Median Production per Coffee", 22.5, 0.8)
+f_base_a = pa_plot(w_b_areas, "Maximum Median Rust Area", temp, rain)
+f_base_p = pa_plot(w_b_prod, "Median Total Coffee Production", temp, rain)
+f_base_p_c = pa_plot(w_b_prod_c, "Median Production per Coffee", temp, rain)
 
 # save("plots/Shading/RelativeProd_Base.png", f_base_p_c)
 
