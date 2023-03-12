@@ -25,7 +25,8 @@ filter.format.correct.add <-  function(d, SunOrShade, firstday, maxnl){
     count.leaves() %>%
     keep.infected() %>%
     lesion.age() %>%
-    select(fdate,dayn,Plant:Infected,Lesion:cycle)
+    per.leaf.aggs() %>% 
+    select(fdate,dayn,Plant:Infected,Lesion:leaf.nl)
 }
 
 drop.vars <- function(d) {
@@ -112,11 +113,20 @@ lesion.age <- function(d) {
   d <- d %>%
     group_by(rust.id) %>%
     mutate(firstfound = min(fdate),
+           ffday = min (dayn),
            age = round(difftime(fdate, firstfound, units = "weeks"))) %>%
     ungroup()
   cycledates <- unique(d$first.samp)
   mutate(d,
          cycle = findInterval(first.samp, cycledates))
+}
+
+per.leaf.aggs <- function(d) {
+  d %>% 
+    group_by(dayn, leaf.id) %>% 
+    mutate(leaf.area = sum(num.area),
+           leaf.nl = max(Lesion),
+           .groups = "drop")
 }
 
 #################################################################
