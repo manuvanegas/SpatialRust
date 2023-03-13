@@ -33,8 +33,13 @@ end
 
 ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
 
-function prune_shades!(model::SpatialRustABM)
-    model.current.ind_shade = model.mngpars.target_shade
+function prune_shades!(model::SpatialRustABM, prune_i::Vector{Int})
+    prune_to = minimum(model.mngpars.target_shade[prune_i])
+    if model.current.ind_shade > prune_to
+        model.current.ind_shade .= prune_to
+    else
+        model.current.ind_shade .*= 0.9
+    end
     model.current.costs += model.mngpars.tot_prune_cost
 end
 

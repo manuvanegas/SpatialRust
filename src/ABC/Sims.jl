@@ -75,7 +75,7 @@ function simulate_plots(p_row::DataFrameRow,
         prune_sch = [15,166,-1],
         inspect_period = 460,
         fungicide_sch = Int[],
-        target_shade = 0.15,
+        target_shade = [0.15, 0.25],
         shade_g_rate = 0.008;
         p_row[2:end]...
 
@@ -100,7 +100,7 @@ function simulate_plots(p_row::DataFrameRow,
         prune_sch = [15,166,-1],
         inspect_period = 460,
         fungicide_sch = Int[],
-        target_shade = 0.15,
+        target_shade = [0.15, 0.25],
         shade_g_rate = 0.008;
         p_row[2:end]...
 
@@ -590,7 +590,7 @@ function dummy_abc()
         rust_gr = [0.15, 0.9, 0.179],
         rep_gro = [2.0, 3.0, 1.062],
         shade_g_rate = [0.008, 0.008, 0.008],
-        target_shade = [0.15, 0.15, 0.15]
+        target_shade = [[0.15, 0.25], [0.15, 0.25], [0.15, 0.25]]
     )
 
     touts = map(p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018), eachrow(tdf))

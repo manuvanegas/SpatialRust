@@ -55,6 +55,10 @@ function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # htt
 end
 
 # Main abm initialization function
+function init_spatialrust(; target_shade::Float64 = 0.3, kwargs...)
+    init_spatialrust(; fill(target_shade, 3), kwargs...)
+end
+
 function init_spatialrust(;
     start_days_at::Int = 0,
     ini_rusts::Float64 = 0.01,              # % of initial rusts (# of initial clusters, if > 1)
@@ -130,7 +134,7 @@ function init_spatialrust(;
     coffee_price::Float64 = 1.0,
 
     lesion_survive::Float64 = 0.1,
-    target_shade::Float64 = 0.3,            # individual shade level after pruning
+    target_shade::Vector{Float64} = [0.3, 0.5, 0.0],            # individual shade level after pruning
     inspect_effort::Float64 = 0.01,         # % coffees inspected each time
     fung_effect::Int = 30,                  # length of fungicide effect
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
@@ -191,7 +195,9 @@ function init_spatialrust(;
 
     n_shades = count(farm_map .== 2)
     n_coffees = count(farm_map .== 1)
+    pruneskept = prune_sch .> 0
     prune_sch = Tuple(sort!(filter!(>(0), prune_sch)))
+    target_shade = Tuple(filter!(>(0.0), target_shade[pruneskept]))
     fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
     n_inspect = trunc(Int, inspect_effort * n_coffees)
 
@@ -212,7 +218,7 @@ function init_spatialrust(;
 
     b = Books(
         # doy, 0, Set{Coffee}(), ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
-        doy, 0, ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
+        doy, 0, ind_shade_i(target_shade, shade_g_rate, doy, prune_sch),
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0
     )
 
@@ -289,7 +295,7 @@ struct RustPars
     shade_block::Float64
 end
 
-struct MngPars{N,M}
+struct MngPars{N,M,Ñ}
     # action scheduling
     harvest_day::Int
     prune_sch::NTuple{N,Int}
@@ -307,7 +313,7 @@ struct MngPars{N,M}
     coffee_price::Float64
     # others
     lesion_survive::Float64
-    target_shade::Float64
+    target_shade::NTuple{Ñ, Float64}
     n_inspected::Int
     fung_effect::Int
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
@@ -352,10 +358,10 @@ end
 
 # Calculate initial ind_shade
 function ind_shade_i(
-    target_shade::Float64,
     shade_g_rate::Float64,
     start_day_at::Int,
-    prune_sch::NTuple{N, Int}) where N
+    target_shade::NTuple{M, Float64},
+    prune_sch::NTuple{N, Int}) where {M::Int, N::Int}
 
     if isempty(prune_sch)
         return 0.8
@@ -364,12 +370,16 @@ function ind_shade_i(
         # calculate elapsed days since last prune
         prune_diff = filter(>(0), day .- prune_sch)
         if isempty(prune_diff)
-            last_prune = 365 + day - maximum(prune_sch)
+            lastprune, prune_i = findmax(prune_sch)
+            last_prune = 365 + day - lastprune
+            pruned_to = target_shade[prune_i]
         else
+            lastprune, prune_i = findmin(prune_diff)
             last_prune = minimum(prune_diff)
+            pruned_to = target_shade[prune_i]
         end
         # logistic equation to determine starting shade level
-        return (0.8 * target_shade) / (target_shade + (0.8 - target_shade) * exp(-(shade_g_rate * last_prune)))
+        return (0.8 * pruned_to) / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune)))
     end
 end
 

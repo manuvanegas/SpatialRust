@@ -29,10 +29,9 @@ function pre_step!(model::SpatialRustABM)
     model.current.ticks += 1
 
     # update weather conditions from Weather data
-    # TODO add @inbounds after tests
     model.current.rain = model.weather.rain_data[model.current.ticks]
-    model.current.wind = model.weather.wind_data[model.current.ticks]
-    model.current.temperature = model.weather.temp_data[model.current.ticks]
+    @inbounds model.current.wind = model.weather.wind_data[model.current.ticks]
+    @inbounds model.current.temperature = model.weather.temp_data[model.current.ticks]
 
     # spore outpour decay, then outpour can return spores to the farm if windy
     model.outpour .*= 0.9
@@ -176,8 +175,8 @@ function farmer_step!(model)
             harvest!(model)
         end
 
-        if doy in model.mngpars.prune_sch
-            prune_shades!(model)
+        if !isempty((prune_i = findall(==(doy), model.mngpars.prune_sch)))
+            prune_shades!(model, prune_i)
         end
 
         # the following is commented out for ABC. TODO: uncomment it when calibration is done
