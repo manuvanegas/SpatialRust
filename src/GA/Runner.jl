@@ -30,8 +30,8 @@ function GA(lnths::Vector{Int}, parnames::Vector{Symbol}, n::Int, gs::Int, reps:
 end
 
 function sptlrust_fitness(pars::DataFrameRow, f::Function, reps::Int, n::Int)
-    models = fill(init_spatialrust(; pars), reps)
-    # models = fill(pars[[1:3;5;8;9]], reps)
+    models = [init_spatialrust(; pars) for _ in 1:reps]
+    # models = [pars[[1:3;5;8;9]] for _ in 1:reps]
 
     return mapreduce(f, +, models) ./ n
 end
