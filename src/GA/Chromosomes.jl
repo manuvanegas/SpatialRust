@@ -24,19 +24,19 @@ function gen_phenotypes(popchrs::BitMatrix, parnames::Vector{Symbol}, genes::Fun
     #     decode_chromosome(chr, genes, add1)
     # end
     popgenes = mapreduce(vcat, eachcol(popchrs)) do chr
-        permutedims(decode_chromosome(chr, genes))
+        permutedims(bits_to_ints(chr, genes))
     end
     popdf = DataFrame(popgenes, :auto)
     popdf[!, [1:3; 5]] .+= 1
     popdf[!, 4] = ifelse.(Bool.(popdf[!, 4]), [(1,1)], [(0,0)])
     select!(popdf, 1:5,
-        6:8 => ByRow(sch_vec) => :a,
-        9:11 => ByRow(proports_vec) => :b,
+        6:8 => ByRow(DoY) => :a,
+        9:11 => ByRow(propto08) => :b,
         12 => ByRow(perioddays) => :c,
-        13 => ByRow(portion) => :d,
-        14:16 => ByRow(sch_vec) => :e,
+        13 => ByRow(proportion) => :d,
+        14:16 => ByRow(DoY) => :e,
         17 => ByRow(Bool) => :f,
-        18 => ByRow(portion) => :g,
+        18 => ByRow(proportion) => :g,
     )
     rename!(popdf, parnames)
     return popdf
@@ -68,18 +68,16 @@ Fungicide:
 lnths = [2, 1, 2, 1, 1, 5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 1, 5]
 =#
 
-function decode_chromosome(chr, genes)
+function bits_to_ints(chr, genes)
     raws = map(genes(chr)) do t
         sum(t .* 2 .^ (eachindex(t) .- 1))
     end
     return raws
 end
 
-sch_vec(d1, d2, d3) = [DoY(d1), DoY(d2), DoY(d3)]
-proports_vec(p1, p2, p3) = [portion(p1), portion(p2), portion(p3)]
-
-DoY(x::Int) = round(Int, 365 * x * inv(32))
-portion(x::Int) = (x + 1) * inv(32)
+DoY(x::Vararg{Int}) = collect(@. round(Int, 365 * x * inv(32)))
+proportion(x::Vararg{Int}) = collect(@. (x + 1) * inv(32))
+propto08(x::Vararg{Int}) = collect(@. (x + 1) * 0.8 * inv(32))
 perioddays(x::Int) = (x + 1) * 4
 
 
