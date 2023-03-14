@@ -39,7 +39,7 @@ end
 function farm_profit(steps::Int, price::Float64)
     function sim(model::SpatialRustABM)
         s = 0
-        while Agents.until(s, steps, model)
+        while Agents.until(s, steps, model) && model.current.inbusiness
             step!(model, dummystep, step_model!, 1)
             # sumareas = filter(>(0.0), sum.(getproperty.(model.agents, :areas)))
             if !isempty(sumareas)
@@ -61,7 +61,7 @@ function yearly_spores(steps::Int)
 
         s = 0
         myaupc = 0.0
-        while Agents.until(s, steps, model)
+        while Agents.until(s, steps, model) && model.current.inbusiness
             step!(model, dummystep, step_model!, 1)
             myaupc += sum(sum.(getproperty.(model.agents, :areas)))
             if s % model.mngpars.harvest_day == 0
@@ -73,7 +73,14 @@ function yearly_spores(steps::Int)
             s += 1
         end
 
-        return maxspores
+        if model.current.inbusiness
+            score = -maxspores
+        else
+            y_lost = 1.0 - s * inv(steps)
+            score = -(1.0 + y_lost) * maxspores
+        end
+
+        return score
     end
     return sim
 end

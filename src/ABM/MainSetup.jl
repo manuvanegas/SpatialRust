@@ -217,9 +217,8 @@ function init_spatialrust(;
     doy = start_days_at == 0 ? veg_d - 1 : start_days_at
 
     b = Books(
-        # doy, 0, Set{Coffee}(), ind_shade_i(target_shade, shade_g_rate, doy, mp.prune_sch),
         doy, 0, ind_shade_i(target_shade, shade_g_rate, doy, prune_sch),
-        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0
+        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true
     )
 
     if ini_rusts > 0.0
@@ -336,6 +335,7 @@ mutable struct Books
     obs_incidence::Float64
     costs::Float64
     prod::Float64
+    inbusiness::Bool
     # net_rev::Float64
     # max_rust::Float64
 end
