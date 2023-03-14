@@ -15,21 +15,21 @@ function GA(lnths::Vector{Int}, parnames::Vector{Symbol}, n::Int, gs::Int, reps:
     g = 1
     while g < gs
         phenos = gen_phenotypes(pop, parnames, gnfun)
-        fitn_history[:, g] .= fitnesses = map(r -> sptlrust_fitness(r, f, reps, n), eachrow(phenos))
-        # fitn_history[:, g] .= fitnesses = pmap(r -> sptlrust_fitness(r, f, reps, n), wp, eachrow(phenos), retry_delays = [0.1, 0.1, 0.1])
+        fitn_history[:, g] .= fitnesses = map(r -> sptlrust_fitness(r, f, reps, n), Tables.namedtupleiterator(phenos))
+        # fitn_history[:, g] .= fitnesses = pmap(r -> sptlrust_fitness(r, f, reps, n), wp, Tables.namedtupleiterator(phenos), retry_delays = [0.1, 0.1, 0.1])
         push!(best_inds, phenos[argmax(fitnesses), :])
         progeny!(pop, fitnesses, n, p_c, p_m, rng)
         g += 1
     end
     phenos = gen_phenotypes(pop, parnames, gnfun)
-    fitn_history[:, g] .= fitnesses = map(r -> sptlrust_fitness(r, f, reps, n), eachrow(phenos))
-    # fitn_history[:, g] .= fitnesses = pmap(r -> sptlrust_fitness(r, f, reps, n, wp, eachrow(phenos), retry_delays = [0.1, 0.1, 0.1])
+    fitn_history[:, g] .= fitnesses = map(r -> sptlrust_fitness(r, f, reps, n), Tables.namedtupleiterator(phenos))
+    # fitn_history[:, g] .= fitnesses = pmap(r -> sptlrust_fitness(r, f, reps, n, wp, Tables.namedtupleiterator(phenos), retry_delays = [0.1, 0.1, 0.1])
     push!(best_inds, phenos[argmax(fitnesses), :])
 
     return phenos, best_inds, fitn_history
 end
 
-function sptlrust_fitness(pars::DataFrameRow, f::Function, reps::Int, n::Int)
+function sptlrust_fitness(pars::NamedTuple, f::Function, reps::Int, n::Int)
     models = [init_spatialrust(; pars) for _ in 1:reps]
     # models = [pars[[1:3;5;8;9]] for _ in 1:reps]
 
@@ -77,3 +77,4 @@ function yearly_spores(steps::Int)
     end
     return sim
 end
+
