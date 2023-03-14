@@ -63,7 +63,7 @@ function inspect!(model::SpatialRustABM)
         if c.exh_countdown > 0
             n_infected += 1
         # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
-        elseif any(c.areas .> 0.1) && rand(model.rng) < maximum(c.areas) 
+        elseif any(c.areas .> 0.1) && (rand(model.rng) < maximum(c.areas))
             n_infected += 1
             spotted = unique!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas[1:c.n_lesions])), 5))
             fill_n = length(spotted)
@@ -71,7 +71,7 @@ function inspect!(model::SpatialRustABM)
             c.ages = append!(c.ages[Not(spotted)], fill(model.rustpars.reset_age, fill_n))
             c.areas = append!(c.areas[Not(spotted)], zeros(fill_n))
             c.spores = append!(c.spores[Not(spotted)], fill(false, fill_n))
-            if c.n_lesions == 0 && c.deposited < 0.1 
+            if c.n_lesions == 0 && (c.deposited < 0.1 )
                 c.deposited == 0.0
                 delete!(model.rusts, c)
             end

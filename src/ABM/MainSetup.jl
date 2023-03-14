@@ -144,7 +144,7 @@ function init_spatialrust(;
 
     # farm map
     farm_map::Array{Int} = Int[],              # if provided, parameters below are ignored
-    common_map::Symbol = :none,             # :fullsun or :regshade
+    common_map::Symbol = :none,             # :fullsun or :regshaded
     row_d::Int = 2,                         # distance between rows (options: 1, 2, 3)
     plant_d::Int = 1,                       # distance between plants (options: 1, 2)
     shade_d::Int = 6,                       # distance between shades (only considered when :regular)
@@ -167,9 +167,9 @@ function init_spatialrust(;
         if common_map == :none
             farm_map = create_farm_map(map_side, row_d, plant_d, shade_d, shade_pattern, barrier_rows, barriers)
         elseif common_map == :fullsun
-            farm_map = create_fullsun_farm_map(map_side)
+            farm_map = create_fullsun_farm_map(map_side, row_d, plant_d)
         elseif common_map == :regshaded
-            farm_map = create_regshaded_farm_map(map_side, shade_d)
+            farm_map = create_regshaded_farm_map(map_side, row_d, plant_d, shade_d)
         end
     else
         map_side = size(farm_map)[1]
