@@ -15,19 +15,29 @@ reps = 3
 pcross = 0.5
 pmut = 0.1
 
+parnames = [
+    :row_d, :plant_d, :shade_d, :barriers, :barrier_rows, :prune_sch, :target_shade,
+    :inspect_period, :inspect_effort, :fungicide_sch, :incidence_as_thr, :incidence_thr
+]
+lnths = [2; 1; 2; 1; 1; fill(5, 3); fill(5,3); 4; 5; fill(5, 3); 1; 5]
+
 popsize = parse(Int, ARGS[1])
 gens = parse(Int, ARGS[2])
 reps = parse(Int, ARGS[3])
 pcross = parse(Float64, ARGS[4])
 pmut = parse(Float64, ARGS[5])
+steps = parse(Int, ARGS[6])
+coffee_price = parse(Float64, ARGS[7])
 
-obj_fun = farm_profit(2191, 1.0)
-# obj_fun = yearly_spores(2191)
+obj = ARGS[8]
 
-pdir = mkpath("results/GA/longtprofit")
+# obj = "longtprofit"
+# obj = "shorttprofit"
+# obj = "minrustspores"
+pdir = mkpath(string("results/GA/", obj))
 ftail = string(popsize, "-", gens, "-", pcross, "-", pmut, ".csv")
 
-finalpop, histbest, histfitm = GA(lnths, tparnames, popsize, gens, reps, pcross, pmut, obj_fun)
+finalpop, histbest, histfitm = GA(lnths, parnames, popsize, gens, reps, pcross, pmut, steps, coffee_price, obj)
 histfit = DataFrame(histfitm, :auto)
 
 CSV.write(string(pdir, "/finalpop", ftail), finalpop)

@@ -17,7 +17,7 @@ end
 # finalpop, histbest, histfit = GA(lnths, tparnames, 10, 20, 3, 0.5, 0.1, sum);
 # tphenos =  gen_phenotypes(bitrand(68,10), tparnames, gnfun)
 
-function gen_phenotypes(popchrs::BitMatrix, parnames::Vector{Symbol}, genes::Function) 
+function gen_phenotypes(popchrs::BitMatrix, parnames::Vector{Symbol}, steps::Int, coffee_price::Float64, genes::Function) 
     # mapreduce(extrema, vcat,eachcol([1 0;2 0]))
     # pop_genes = map(genes, eachcol(popchrs))
     # pop_pars = map(eachcol(popchrs)) do chr
@@ -39,6 +39,8 @@ function gen_phenotypes(popchrs::BitMatrix, parnames::Vector{Symbol}, genes::Fun
         18 => ByRow(proportion) => :g,
     )
     rename!(popdf, parnames)
+    popdf[!, :steps] = steps
+    popdf[!, :coffee_price] = coffee_price
     return popdf
 end
 
