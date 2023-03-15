@@ -309,6 +309,7 @@ struct MngPars{N,M,Ñ}
     n_cofs::Int
     tot_inspect_cost::Float64
     tot_fung_cost::Float64
+    other_costs::Float64
     coffee_price::Float64
     # others
     lesion_survive::Float64
