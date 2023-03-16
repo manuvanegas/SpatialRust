@@ -77,7 +77,7 @@ function simulate_plots(p_row::DataFrameRow,
         fungicide_sch = Int[],
         target_shade = [0.15, 0.25],
         shade_g_rate = 0.008;
-        p_row[2:end]...
+        p_row...
 
         # temp_cooling = p_row[:temp_cooling],
         # light_inh = p_row[:light_inh],
@@ -102,7 +102,7 @@ function simulate_plots(p_row::DataFrameRow,
         fungicide_sch = Int[],
         target_shade = [0.15, 0.25],
         shade_g_rate = 0.008;
-        p_row[2:end]...
+        p_row...
 
         # temp_cooling = p_row[:temp_cooling],
         # light_inh = p_row[:light_inh],

@@ -175,7 +175,8 @@ function farmer_step!(model)
             harvest!(model)
         end
 
-        if !isempty((prune_i = findall(==(doy), model.mngpars.prune_sch)))
+        prune_i = findall(==(doy), model.mngpars.prune_sch)
+        if !isempty(prune_i)
             prune_shades!(model, prune_i)
         end
 

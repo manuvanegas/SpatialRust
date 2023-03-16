@@ -55,15 +55,12 @@ function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # htt
 end
 
 # Main abm initialization function
-function init_spatialrust(; target_shade::Float64 = 0.3, kwargs...)
-    init_spatialrust(; fill(target_shade, 3), kwargs...)
-end
 
 function init_spatialrust(;
     start_days_at::Int = 0,
     ini_rusts::Float64 = 0.01,              # % of initial rusts (# of initial clusters, if > 1)
-    #par_row::Int = 0,                      # parameter combination number (for ABC)
-    switch_cycles::Tuple = (),
+    p_row::Int = 0,                         # parameter combination number (for ABC)
+    rep::Int = 0,                           # repetition number (for other exps)
 
     # weather parameters
     rain_prob::Float64 = 0.6,
@@ -131,6 +128,7 @@ function init_spatialrust(;
     prune_cost::Float64 = 1.0,              # per shade
     inspect_cost::Float64 = 1.0,            # per coffee inspected
     fung_cost::Float64 = 1.0,               # per coffee
+    other_costs::Float64 = 1.0,             # other costs considered
     coffee_price::Float64 = 1.0,
 
     lesion_survive::Float64 = 0.1,
@@ -208,7 +206,7 @@ function init_spatialrust(;
         #
         n_shades, prune_cost * n_shades,
         n_coffees, inspect_cost * n_inspect, fung_cost * n_coffees,
-        coffee_price,
+        other_costs, coffee_price,
         #
         lesion_survive, target_shade, n_inspect, fung_effect,
         shade_g_rate, shade_r
@@ -217,7 +215,7 @@ function init_spatialrust(;
     doy = start_days_at == 0 ? veg_d - 1 : start_days_at
 
     b = Books(
-        doy, 0, ind_shade_i(target_shade, shade_g_rate, doy, prune_sch),
+        doy, 0, ind_shade_i(shade_g_rate, doy, target_shade, prune_sch),
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true
     )
 
@@ -294,7 +292,7 @@ struct RustPars
     shade_block::Float64
 end
 
-struct MngPars{N,M,Ñ}
+struct MngPars{N,M}
     # action scheduling
     harvest_day::Int
     prune_sch::NTuple{N,Int}
@@ -313,7 +311,7 @@ struct MngPars{N,M,Ñ}
     coffee_price::Float64
     # others
     lesion_survive::Float64
-    target_shade::NTuple{Ñ, Float64}
+    target_shade::NTuple{N, Float64}
     n_inspected::Int
     fung_effect::Int
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
@@ -361,8 +359,8 @@ end
 function ind_shade_i(
     shade_g_rate::Float64,
     start_day_at::Int,
-    target_shade::NTuple{M, Float64},
-    prune_sch::NTuple{N, Int}) where {M::Int, N::Int}
+    target_shade::NTuple{N, Float64},
+    prune_sch::NTuple{N, Int}) where {N}
 
     if isempty(prune_sch)
         return 0.8

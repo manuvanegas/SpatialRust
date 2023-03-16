@@ -22,8 +22,8 @@ function custom_run!(model::SpatialRustABM, steps::Int)
 end
 
 function run_par_combination(pars::DataFrameRow)
-
-    model = init_spatialrust(; pars[Not(:rep)]...) # farm_map may change for each iteration
+    pars[:target_shade] = fill(pars[:target_shade], 3)
+    model = init_spatialrust(; pars...) # farm_map may change for each iteration
     mdf = custom_run!(model, pars[:steps])
 
     return hcat(
