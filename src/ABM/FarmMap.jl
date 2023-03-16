@@ -109,7 +109,7 @@ function barr_places(side::Int, num::Int, singledouble::Int)::Vector{Int}
     # spacing = fld(side, (num + 1))
     # placements = spacing .* collect(1:num)
     if num == 1
-        placements = [52]
+        placements = [fld(side, (num + 1))]
     elseif num ==2
         placements = [33, 70]
     end
