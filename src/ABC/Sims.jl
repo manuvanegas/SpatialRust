@@ -10,7 +10,7 @@ include(srcdir("ABC","Metrics.jl"))
 include(srcdir("ABC","PrepforABC.jl"))
 include(srcdir("ABC","Sentinels.jl"))
 
-function sim_abc(p_row::DataFrameRow,
+function sim_abc(p_row::NamedTuple,
     temp_data::NTuple{455, Float64},
     rain_data::NTuple{455, Bool},
     wind_data::NTuple{455, Bool},
@@ -51,7 +51,7 @@ function sim_abc(p_row::DataFrameRow,
     return per_age_df, qual_patterns_df
 end
 
-function simulate_plots(p_row::DataFrameRow,
+function simulate_plots(p_row::NamedTuple,
         temp_data::NTuple{455, Float64},
         rain_data::NTuple{455, Bool},
         wind_data::NTuple{455, Bool},
