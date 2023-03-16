@@ -46,7 +46,7 @@ function runsimple!(model::SpatialRustABM, steps::Int)
         veg = Float64[], storage = Float64[], production = Float64[],
         indshade = Float64[], mapshade = Float64[],
         nl = Float64[], sumarea = Float64[], sumspore = Float64[],
-        active = Float64[]
+        active = Float64[], nrusts = Int[]
     )
     for c in eachcol(df)
         sizehint!(c, steps)
@@ -56,14 +56,16 @@ function runsimple!(model::SpatialRustABM, steps::Int)
     while s < steps
         indshade = model.current.ind_shade
 
-        sumareas = filter(>(0.0), sum.(getproperty.(model.agents, :areas)))
+        sumareas = sum.(getproperty.(model.agents, :areas))
+        # sumareas = filter(>(-10.0), sum.(getproperty.(model.agents, :areas)))
         if isempty(sumareas)
             msuma = 0.0
             msumsp = 0.0
         else
             msuma = mean(sumareas)
-            sumspores = filter(>(0.0), sum.(getproperty.(model.agents, :spores)))
-            isempty(sumareas) ? (msumsp = 0.0) : (msumsp = mean(sumspores))
+            sumspores = sum.(getproperty.(model.agents, :spores))
+            # sumspores = filter(>(-10.0), sum.(getproperty.(model.agents, :spores)))
+            msumsp = isempty(sumareas) ? 0.0 : mean(sumspores)
         end
 
         push!(df, [
@@ -76,7 +78,8 @@ function runsimple!(model::SpatialRustABM, steps::Int)
             mean(getproperty.(model.agents, :n_lesions)),
             msuma,
             msumsp,
-        sum(active.(model.agents)) / ncofs
+            sum(active.(model.agents)) / ncofs,
+            length(model.rusts)
         ])
         step!(model, dummystep, step_model!, 1)
         s += 1
@@ -104,7 +107,8 @@ function runsimple!(model::SpatialRustABM, steps::Int)
         mean(getproperty.(model.agents, :n_lesions)),
         msuma,
         msumsp,
-    sum(active.(model.agents)) / ncofs
+        sum(active.(model.agents)) / ncofs,
+        length(model.rusts)
     ])
     return df
 end
