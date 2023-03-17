@@ -45,7 +45,8 @@ singlevals = hcat(DataFrame(
 )
 
 if shade_placemnt == 1
-    singlevals[!, :shade_d] .= 100
+    shade_d = 100
+    singlevals[!, :shade_d] .= shade_d
     
     crossed = crossjoin(
         DataFrame(target_shade = 0.15:0.15:0.75),
@@ -60,7 +61,8 @@ if shade_placemnt == 1
         rep = repeat(1:reps, 2)
     ))
 else
-    singlevals[!, :shade_d] .= 3 * shade_placemnt
+    shade_d = 3 * shade_placemnt
+    singlevals[!, :shade_d] .= shade_d
 
     crossed = crossjoin(
         DataFrame(target_shade = 0.15:0.15:0.75),
