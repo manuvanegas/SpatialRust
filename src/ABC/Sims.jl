@@ -11,9 +11,9 @@ include(srcdir("ABC","PrepforABC.jl"))
 include(srcdir("ABC","Sentinels.jl"))
 
 function sim_abc(p_row::NamedTuple,
-    temp_data::NTuple{455, Float64},
-    rain_data::NTuple{455, Bool},
-    wind_data::NTuple{455, Bool},
+    temp_data::NTuple{618, Float64},
+    rain_data::NTuple{618, Bool},
+    wind_data::NTuple{618, Bool},
     when::Vector{Int}
     )
 
@@ -59,18 +59,19 @@ end
 
 function simulate_single_plot(
     p_row::NamedTuple,
-    temp_data::NTuple{455, Float64},
-    rain_data::NTuple{455, Bool},
-    wind_data::NTuple{455, Bool},
+    temp_data::NTuple{618, Float64},
+    rain_data::NTuple{618, Bool},
+    wind_data::NTuple{618, Bool},
     when::Vector{Int},
     type::Symbol
 )
-    steps = 455
+    steps = 618
+    iday = 115
     sampled_blocks = 100
 
     model1 = init_spatialrust(
         steps = steps,
-        start_days_at = 115, 
+        start_days_at = iday, 
         common_map = type,
         rain_data = rain_data,
         wind_data = wind_data,
@@ -83,11 +84,11 @@ function simulate_single_plot(
         shade_g_rate = 0.008;
         p_row...
     )
-    Psa = abc_att_run!(model1, steps)
+    Psa = abc_att_run!(model1, steps, iday)
 
     model2 = init_spatialrust(
         steps = steps,
-        start_days_at = 115, 
+        start_days_at = iday, 
         common_map = type,
         rain_data = rain_data,
         wind_data = wind_data,
@@ -103,8 +104,6 @@ function simulate_single_plot(
     setup_plant_sampling!(model2, 9, sampled_blocks)
     per_age, prod_clr_cor, areas, nls, Ps, incidiff, anyrusts = abc_run_2y!(model2, steps, when)
     per_age[!, :plot] .= ifelse(type == :fullsun, :sun, :shade)
-    # globs = [Psa; Ps; prod_clr_cor; areas; nls; incidiff]
-    # println([Psa; Ps; prod_clr_cor; areas; nls; incidiff])
     globdf = DataFrame(
         P1att = Psa[1],
         P12att = Psa[2],
@@ -122,10 +121,11 @@ function simulate_single_plot(
     return per_age, globdf
 end
 
-function abc_att_run!(model::SpatialRustABM, n::Int)
+function abc_att_run!(model::SpatialRustABM, n::Int, d::Int)
     Ps = zeros(2)
-    s = 0
-    while s < n
+    s = d
+    steps = d + n
+    while s < steps
         if s == 366
             Ps[1] = model.current.prod
         elseif s == 731
@@ -176,24 +176,23 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
                 df[!, :dayn] .= s
                 append!(per_age, df)
             end
-        elseif s == 25
+        elseif s == 21
             get_prod_df!(prod_clr_df, model)
-        elseif s == 136
             incid_comm = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
         elseif s == 135
             areas, nls = get_areas_nl(model)
-        elseif s == 346
+            
             if length(model.rusts) < 3 && sum(map(c -> c.exh_countdown > 0, model.agents)) / ncofs < 0.1
                 prod_clr_cor = missing
             else
                 prod_clr_cor = prod_clr_corr(prod_clr_df, model)
             end
-        elseif s == 366
+        elseif s == 251
             Ps[1] = model.current.prod
             incid_harv = (sum(map(c -> c.exh_countdown > 0, model.agents)) + sum(getproperty.(model.agents, :n_lesions) .> 0)) / ncofs
         # elseif s == 501
         #     incids2[1] = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
-        elseif s == 731
+        elseif s == 617
             Ps[2] = model.current.prod
             # incids2[2] = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
         end
