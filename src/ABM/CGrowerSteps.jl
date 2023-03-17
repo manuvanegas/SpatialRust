@@ -1,12 +1,12 @@
 function harvest!(model::SpatialRustABM)
     model.current.prod += sum(getproperty.(model.agents, :production))
 
-    if (years = div(model.current.days, model.mngpars.harvest_day)) > 1
-        tot_in = model.current.prod * model.mngpars.coffee_price
-        if (sum(active.(model.agents))/length(model.agents) < 0.1) || (model.current.costs - tot_in) > (0.5 * tot_in * inv(years)) # if deficit is more than half the av revenue
-            model.current.inbusiness = false
-        end
-    end
+    # if (years = div(model.current.days, model.mngpars.harvest_day)) > 1
+    #     tot_in = model.current.prod * model.mngpars.coffee_price
+    #     if (sum(active.(model.agents))/length(model.agents) < 0.1) || (model.current.costs - tot_in) > (0.5 * tot_in * inv(years)) # if deficit is more than half the av revenue
+    #         model.current.inbusiness = false
+    #     end
+    # end
 
     model.current.fung_count = 0
     new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive, model.rustpars.max_lesions, model.rustpars.reset_age)

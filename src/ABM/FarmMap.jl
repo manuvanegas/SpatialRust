@@ -40,10 +40,10 @@ function create_farm_map(map_side::Int = 100, row_d::Int = 2, plant_d::Int = 1, 
                 if plant_d == 2
                     # if suggested placement is odd, change it to even to place
                     # shades between coffee plants instead of replacing them
-                    barrow[isodd.(barrow)] .+= 1
+                    @inbounds barrow[isodd.(barrow)] .+= 1
                 end
                 if row_d > 1 # again, farm rows are array cols here
-                    barrcol[findall(x -> (x % row_d == 1), barrcol)] .+= 1
+                    @inbounds barrcol[findall(x -> (x % row_d == 1), barrcol)] .+= 1
                 end
             else
                 if row_d > 2
@@ -54,17 +54,17 @@ function create_farm_map(map_side::Int = 100, row_d::Int = 2, plant_d::Int = 1, 
                         # 2nd half -> extra x's because barrier_rows is 2
                         # eg, barr_places(100,2,1) = [33,66]; barr_places(100,2,2) = [33,66,34,67]
                         @inbounds if cn <= (length(barrcol) / 2)
-                            barrcol[[cn, (cn + midbarrs)]] .+= 1
+                            @inbounds barrcol[[cn, (cn + midbarrs)]] .+= 1
                         else
-                            barrcol[[cn, (cn - midbarrs)]] .-= 1
+                            @inbounds barrcol[[cn, (cn - midbarrs)]] .-= 1
                         end
                     end
                 end
             end
         end
 
-        farm_map[barrow, :] .= 2
-        farm_map[:, barrcol] .= 2
+        @inbounds farm_map[barrow, :] .= 2
+        @inbounds farm_map[:, barrcol] .= 2
     end
 
     if barriers[2] == 1
