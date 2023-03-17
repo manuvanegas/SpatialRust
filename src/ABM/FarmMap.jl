@@ -89,7 +89,7 @@ function create_regshaded_farm_map(side::Int, row_d::Int, plant_d::Int, shade_d:
     farm_map = create_fullsun_farm_map(side, row_d, plant_d)
     for si in 1:shade_d:side
         for sj in 1:shade_d:side
-            @inbounds farm_map[sj, si] .= 2
+            @inbounds farm_map[sj, si] = 2
         end
     end
     return farm_map
