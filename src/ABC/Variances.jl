@@ -28,7 +28,7 @@ function σ2_ls(files::Vector{String})
         # df = DataFrame(Arrow.Table(f))
         # select!(df, Not(:prod_clr_cor), [:prod_clr_sun, :prod_clr_shade] => ByRow(meannan) => :prod_clr_cor)
         qualseries = Series(3 * FilterTransform(Variance(), Union{Float64, Missing}, filter = !isnan),
-        3 * FilterTransform(Counter(), Union{Float64, Missing}, filter = !isnan))
+        3 * FilterTransform(Counter(), Union{Float64, Missing}, filter = nomisnan))
         fit!(qualseries, global_itr(DataFrame(Arrow.Table(f)), 3, 5))
     end
     
@@ -60,14 +60,14 @@ end
 
 @inline grouped_itr(df) = (
     (r.plot, r.dayn, r.age, r.cycle) => (r.area, r.spore, r.nl, r.occup)
-    for r in eachrow(df))
+    for r in Tables.namedtupleiterator(df))
 
 # @inline grouped_itr8(df) = ((r.dayn, r.age) => (
 #     r.med_area_sun, r.med_spore_sun, r.med_nl_sun, r.occup_sun,
 #     r.med_area_shade, r.med_spore_shade, r.med_nl_shade, r.occup_shade
 # ) for r in eachrow(df))
 
-@inline global_itr(df, fromcol::Int, tocol::Int) = (Tuple(r) for r in eachrow(df[!, fromcol:tocol]))
+@inline global_itr(df, fromcol::Int, tocol::Int) = (Tuple(r) for r in Tables.namedtupleiterator(df[!, fromcol:tocol]))
 
 Base.merge(t1::NTuple{2,OnlineStatsBase.StatCollection}, t2::NTuple{2,OnlineStatsBase.StatCollection}) = merge(t1[1], t2[1]), merge(t1[2], t2[2])
 
