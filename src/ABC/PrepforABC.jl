@@ -26,7 +26,7 @@ function setup_plant_sampling!(model::SpatialRustABM, ncycles::Int, nblocks::Int
         sample(model.rng, 181:324, nblocks, replace = false)][shuffle!([1,2])]
     end
 
-    for p in plots, b in blocks[p]
+    for p in 1:plots, b in blocks[p]
         nadd = nadds[p]
         init = inits[p]
         # find last row and column before the block begins
@@ -48,6 +48,7 @@ function setup_plant_sampling!(model::SpatialRustABM, ncycles::Int, nblocks::Int
         for (cycle, cof) in enumerate(cofs)
             model[cof].sentinel.cycle = cycle + init
         end
+    # end
     end
 end
 
