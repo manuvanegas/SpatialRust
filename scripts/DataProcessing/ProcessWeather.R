@@ -24,7 +24,7 @@ extrarows <- filter(wSelected, fDate > as.Date("2017-07-24"), fDate < as.Date("2
 extrarows$fDate <- extrarows$fDate + difftime("2018-01-01", "2017-01-01", units = "days")
 longerwSelected <- bind_rows(wSelected, extrarows)
 longerwSelected$dayN <- longerwSelected$fDate - firstday + 1
-longerwInput <- select(wSelected, dayN, MeanTa, Rainy, Windy)
+longerwInput <- select(longerwSelected, dayN, MeanTa, Rainy, Windy)
 
 # write data files
 if (writefiles) {
