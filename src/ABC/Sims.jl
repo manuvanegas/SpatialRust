@@ -102,7 +102,7 @@ function simulate_single_plot(
     )
     setup_plant_sampling!(model2, 9, sampled_blocks)
     per_age, prod_clr_cor, areas, nls, Ps, incidiff, anyrusts = abc_run_2y!(model2, steps, when)
-    per_age[!, :plot] .= type
+    per_age[!, :plot] .= ifelse(type == :fullsun, :sun, :shade)
     # globs = [Psa; Ps; prod_clr_cor; areas; nls; incidiff]
     # println([Psa; Ps; prod_clr_cor; areas; nls; incidiff])
     globdf = DataFrame(
@@ -115,7 +115,7 @@ function simulate_single_plot(
         nls = nls,
         incidiff = incidiff,
         anyrusts = anyrusts,
-        plot = type
+        plot = ifelse(type == :fullsun, :sun, :shade)
     )
 
     
