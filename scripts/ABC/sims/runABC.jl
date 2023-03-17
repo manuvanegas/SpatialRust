@@ -11,7 +11,7 @@ usings_time = @elapsed begin
     end
 end
 
-# ARGS: params file, slurm job array id, # cores, # sims per core
+# ARGS: params file #, slurm job array id, # cores, # sims per core
 println(ARGS)
 println("Init: $usings_time")
 flush(stdout)
@@ -33,7 +33,7 @@ load_time = @elapsed begin
     # const when_rust = sort!(union(when_plant, when_rust))
 
     # read climate data
-    w_table = Arrow.Table("data/exp_pro/input/weather.arrow")
+    w_table = Arrow.Table("data/exp_pro/input/rep_weather.arrow")
     const temp_data = Tuple(w_table[2])
     const rain_data = Tuple(w_table[3])
     const wind_data = Tuple(w_table[4])
