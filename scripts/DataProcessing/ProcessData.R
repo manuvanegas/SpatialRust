@@ -42,6 +42,7 @@ cycle_dates <- filter(PlantDB, Plant %in% c(1:36, 76:111)) %>%
 # shade_treatm <- filter.format.correct.add(RustDB, "Shade", firstday, maxnl)
 
 lesions_data <- preprocess_info(RustDB, firstday, maxnl)
+lesions_data <- filter(lesions_data, cycle < 10)
 
 ###########################################################
 # Lesion-level metrics
@@ -103,10 +104,10 @@ if (writefiles) {
             row.names = F)
   # Joined data frame
   write.csv(rustdata,
-            file.path(fuller_data_path, "fuller_perdate_age_long.csv"),
+            file.path(fuller_data_path, "fuller_perdate_age_long_10.csv"),
             row.names = F)
   write.csv(select(rustdata, plot, dayn, age, cycle, area_dat, spore_dat, nl_dat, occup_dat),
-            file.path(compare_data_path, "perdate_age_long.csv"),
+            file.path(compare_data_path, "perdate_age_long_10.csv"),
             row.names = F)
   ## Cycle dates (for future reference)
   write.csv(cycle_dates, file.path(fuller_data_path, "cycle_dates.csv"), row.names = F)
