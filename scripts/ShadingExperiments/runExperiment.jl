@@ -61,7 +61,7 @@ if shade_placemnt == 1
     ))
 else
     singlevals[!, :shade_d] .= 3 * shade_placemnt
-
+ 
     crossed = crossjoin(
         DataFrame(target_shade = 0.15:0.15:0.75),
         DataFrame(prune_sch = [[15,196], [74, 196, 319]]),
