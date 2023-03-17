@@ -16,11 +16,11 @@ function create_shade_map(farm_map::Matrix{Int}, shade_r::Int, side::Int)
         for n in neighs
             diff = n - sh
             if n in shades
-                shade_map[n] = 1.0
-                influence_map[n] = 1.0
+                @inbounds shade_map[n] = 1.0
+                @inbounds influence_map[n] = 1.0
             else
-                shade_map[n] += 1.0 / (shade_dist(diff) ^ 2)
-                influence_map[n] += 1.0 / cmax(diff) 
+                @inbounds shade_map[n] += 1.0 / (shade_dist(diff) ^ 2)
+                @inbounds influence_map[n] += 1.0 / cmax(diff) 
             end
         end
     end
@@ -29,24 +29,24 @@ function create_shade_map(farm_map::Matrix{Int}, shade_r::Int, side::Int)
     clamp!(shade_map, 0.0, 1.0)
 
     if farm_map[50, 1] == 2
-        shade_map[50, :] .= 1.0
-        shade_map[49, :] .= max.(1.0 / (shade_dist(1) ^ 2), shade_map[49, :])
-        shade_map[48, :] .= max.(1.0 / (shade_dist(2) ^ 2), shade_map[48, :])
-        shade_map[:, 50] .= 1.0
-        shade_map[:, 49] .= max.(1.0 / (shade_dist(1) ^ 2), shade_map[:, 49])
-        shade_map[:, 48] .= max.(1.0 / (shade_dist(2) ^ 2), shade_map[:, 49])
+        @inbounds shade_map[50, :] .= 1.0
+        @inbounds shade_map[49, :] .= max.(1.0 / (shade_dist(1) ^ 2), @inbounds shade_map[49, :])
+        @inbounds shade_map[48, :] .= max.(1.0 / (shade_dist(2) ^ 2), @inbounds shade_map[48, :])
+        @inbounds shade_map[:, 50] .= 1.0
+        @inbounds shade_map[:, 49] .= max.(1.0 / (shade_dist(1) ^ 2), @inbounds shade_map[:, 49])
+        @inbounds shade_map[:, 48] .= max.(1.0 / (shade_dist(2) ^ 2), @inbounds shade_map[:, 49])
         if farm_map[51, 1] == 2
-            shade_map[51, :] .= 1.0
-            shade_map[52, :] .= max.(1.0 / (shade_dist(1) ^ 2), shade_map[52, :])
-            shade_map[53, :] .= max.(1.0 / (shade_dist(2) ^ 2), shade_map[53, :])
-            shade_map[:, 51] .= 1.0
-            shade_map[:, 52] .= max.(1.0 / (shade_dist(1) ^ 2), shade_map[:, 52])
-            shade_map[:, 53] .= max.(1.0 / (shade_dist(2) ^ 2), shade_map[:, 53])
+            @inbounds shade_map[51, :] .= 1.0
+            @inbounds shade_map[52, :] .= max.(1.0 / (shade_dist(1) ^ 2), @inbounds shade_map[52, :])
+            @inbounds shade_map[53, :] .= max.(1.0 / (shade_dist(2) ^ 2), @inbounds shade_map[53, :])
+            @inbounds shade_map[:, 51] .= 1.0
+            @inbounds shade_map[:, 52] .= max.(1.0 / (shade_dist(1) ^ 2), @inbounds shade_map[:, 52])
+            @inbounds shade_map[:, 53] .= max.(1.0 / (shade_dist(2) ^ 2), @inbounds shade_map[:, 53])
         else
-            shade_map[51, :] .= max.(1.0 / (shade_dist(1) ^ 2), shade_map[51, :])
-            shade_map[52, :] .= max.(1.0 / (shade_dist(2) ^ 2), shade_map[52, :])
-            shade_map[:, 51] .= max.(1.0 / (shade_dist(1) ^ 2), shade_map[:, 51])
-            shade_map[:, 52] .= max.(1.0 / (shade_dist(2) ^ 2), shade_map[:, 52])
+            @inbounds shade_map[51, :] .= max.(1.0 / (shade_dist(1) ^ 2), @inbounds shade_map[51, :])
+            @inbounds shade_map[52, :] .= max.(1.0 / (shade_dist(2) ^ 2), @inbounds shade_map[52, :])
+            @inbounds shade_map[:, 51] .= max.(1.0 / (shade_dist(1) ^ 2), @inbounds shade_map[:, 51])
+            @inbounds shade_map[:, 52] .= max.(1.0 / (shade_dist(2) ^ 2), @inbounds shade_map[:, 52])
         end
     end
 
