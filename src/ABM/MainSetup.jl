@@ -8,7 +8,7 @@ mutable struct Sentinel
     n_lesions::Int
     ages::Vector{Int}
     areas::Vector{Float64}
-    spores::Vector{Bool}
+    spores::BitVector
 end
 
 # Coffee agent type
@@ -31,7 +31,7 @@ end
     n_lesions::Int
     ages::Vector{Int}
     areas::Vector{Float64}
-    spores::Vector{Bool}
+    spores::BitVector
 
     # ABC
     # sample_cycle::Int # cycles where coffee should be sampled
@@ -49,7 +49,8 @@ function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # htt
     # append!(spores, fill(false, fill_n))) 
     Coffee(
         id, pos, sunlight, veg, storage, 0.0, 0, rust_gr,
-        0.0, 0.0, 0, fill(max_age, max_lesions), fill(0.0, max_lesions), fill(false, max_lesions),
+        0.0, 0.0, 0,
+        fill(max_age, max_lesions), fill(0.0, max_lesions), falses(max_lesions),
         # sentinel(id)
     ) 
 end
