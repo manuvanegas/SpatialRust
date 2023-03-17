@@ -1,24 +1,37 @@
 ## Plant sampling setup
 
 function setup_plant_sampling!(model::SpatialRustABM, ncycles::Int, nblocks::Int)
-    # draw 5x5 sampling blocks
-    blocks = sample(model.rng, 1:324, nblocks, replace = false)
     # create matrix with block position coordinates from 1 to 5
     blockcoords = [(i,j) for i in 1:5, j in 1:5]
     middlecoords = [(i,j) for i in 2:4, j in 2:4]
 
     if ncycles == 3
-        nadd = 2 # n of additional coffees to sample (after 1st is sampled from central 3x3 block)
-        init = 1 # id of initial cycle
+        nadds = [2] # n of additional coffees to sample (after 1st is sampled from central 3x3 block)
+        inits = [1] # id of initial cycle
+        plots = 1
+        # draw 5x5 sampling blocks
+        blocks = [sample(model.rng, 1:324, nblocks, replace = false)]
     elseif ncycles == 6
-        nadd = 6
-        init = 4
+        nadds = [6]
+        inits = [4]
+        plots = 1
+        # draw 5x5 sampling blocks
+        blocks = [sample(model.rng, 1:324, nblocks, replace = false)]
+    elseif ncycles == 9
+        nadds = [2, 5]
+        inits = [1, 4]
+        plots = 2
+        # draw 5x5 sampling blocks
+        blocks = [sample(model.rng, 1:144, nblocks, replace = false),
+        sample(model.rng, 181:324, nblocks, replace = false)][shuffle!([1,2])]
     end
 
-    for b in blocks
+    for p in plots, b in blocks[p]
+        nadd = nadds[p]
+        init = inits[p]
         # find last row and column before the block begins
         r = mod1(b, 18) * 5
-        c = (div(b, 18) + 1) * 5
+        c = (div(b - 1, 18) + 1) * 5
         # get 5x5 section of matrix storing coffee ids
         idsinblock = model.space.stored_ids[(r + 1):(r + 5), (c + 1):(c + 5)]
 
@@ -54,7 +67,7 @@ function add_abc_trees!(model::SpatialRustABM)
 
     cof_pos = findall(x -> x == 1, farm_map)
     for pos in cof_pos
-        let sunlight = clamp(1.0 - shade_map[pos] * ind_shade + rand(model.rng, light_noise), 0.0, 1.0)
+        let sunlight = max(1.0 - shade_map[pos] * ind_shade + rand(model.rng, light_noise), 0.0)
             add_agent!(
                 Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
                 sunlight = sunlight, 
@@ -63,6 +76,9 @@ function add_abc_trees!(model::SpatialRustABM)
             )
         end
     end
+    # println(getproperty.(model.agents[1:10], :sunlight))
+    # println(getproperty.(model.agents[1:10], :veg))
+    # println(getproperty.(model.agents[1:10], :storage))
 end
 
 function init_veg_116(sunlight::Float64)
@@ -70,5 +86,6 @@ function init_veg_116(sunlight::Float64)
 end
 
 function init_storage_116(sunlight::Float64)
-    return 80.0 * exp(-5.8 * sunlight) + 7.8
+    # return 80.0 * exp(-5.8 * sunlight) + 7.8
+    return 100.0 * exp(-7.1 * sunlight) + 7.8
 end

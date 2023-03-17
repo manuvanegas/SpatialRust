@@ -2,9 +2,11 @@
 
 function get_prod_df!(df::DataFrame, model::SpatialRustABM)
     # df[!, :id] = map(c -> c.id, values(model.agents))
-    df[!, :production] = getproperty.(model.agents, :production)
-    df[!, :veg] = getproperty.(model.agents, :veg)
-    select!(df, [:veg, :production] => ByRow(fruittoleaf) => :FtL)
+    # df[!, :production] = getproperty.(model.agents, :production)
+    # df[!, :veg] = getproperty.(model.agents, :veg)
+    # select!(df, [:veg, :production] => ByRow(fruittoleaf) => :FtL)
+    df[!, :FtL] = getproperty.(model.agents, :production) ./ max.(getproperty.(model.agents, :veg), 0.001)
+    df[!, :nl_c] = getproperty.(model.agents, :n_lesions)
 end
 
 fruittoleaf(v::Float64, p::Float64) = p / (v + p)
@@ -18,6 +20,33 @@ function meanareas(a)
         return 0.0
     else
         return mean(filter(>(0.0), a.areas))
+    end
+end
+
+function prod_clr_corr(df::DataFrame, model::SpatialRustABM)
+    df[!, :clr_cat] = clr_cat.(model.agents)
+    subset!(df, :nl_c => ByRow(==(0)), :clr_cat => ByRow(>(0)))
+    
+    if isempty(df)
+        prod_clr_cor = missing
+    else
+        prod_clr_cor = corkendall(df[!, :FtL], df[!, :clr_cat])
+    end
+
+    return prod_clr_cor
+end
+
+function clr_cat(c::Coffee)
+    if c.exh_countdown > 0
+        return 4
+    elseif c.n_lesions == 0
+        return 0
+    elseif (sps = sum(c.spores)) == 0
+        return 1
+    elseif sps < 3
+        return 2
+    else
+        return 3
     end
 end
 
@@ -54,8 +83,6 @@ end
 
 # surveyed_today(c::Coffee, cycle::Vector{Int})::Bool = c.sample_cycle ∈ cycle && c.exh_countdown == 0
 
-area_sum(c::Coffee) = c.exh_countdown > 0 ? -1.0 : sum(c.areas)
-
 function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::Int, cycle_last::Bool)
     # survey_cofs = Iterators.filter(c -> surveyed_today(c, cycle_n), model.agents)
     active_sents = filter!(s -> s.active, model.sentinels)
@@ -82,23 +109,23 @@ function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::I
         end
 
         # pctareas = filter(:area => <=(0.75), combine(groupby(df_i, :id), :area => a -> sum(a)/max_les, renamecols = false))
-        # meanpctarea = isempty(pctareas) ? missing : mean(pctareas[!, :area])
-        areasums = filter!(>(0.0), area_sum.(model.agents))
-        meansumarea = isempty(areasums) ? missing : mean(areasums)
+        # # meanpctarea = isempty(pctareas) ? missing : mean(pctareas[!, :area])
+        # areasums = filter!(>(0.0), area_sum.(model.agents))
+        # meansumarea = isempty(areasums) ? missing : mean(areasums)
 
-        areameans = filter!(>(0.0), meanareas.(model.agents))
-        meanarea = isempty(areameans) ? missing : mean(areameans)
+        # areameans = filter!(>(0.0), meanareas.(model.agents))
+        # meanarea = isempty(areameans) ? missing : mean(areameans)
 
-        nlmeans = filter!(>(0), getproperty.(model.agents, :n_lesions))
-        meannl = isempty(nlmeans) ? missing : mean(nlmeans)
+        # nlmeans = filter!(>(0), getproperty.(model.agents, :n_lesions))
+        # meannl = isempty(nlmeans) ? missing : mean(nlmeans)
 
         filter!(:age => <=(max_age), df_i)
         if isempty(df_i)
             return DataFrame(
                 age = repeat(0:max_age, length(cycle_n)), 
                 cycle = repeat(cycle_n, inner = (max_age + 1)),
-                area = missing, spore = missing, nl = missing, occup = missing,
-                ar_sum = meansumarea, ar_mn = meanarea, nl_mn = meannl)
+                area = missing, spore = missing, nl = missing, occup = missing,)
+                # ar_sum = meansumarea, ar_mn = meanarea, nl_mn = meannl)
         else
             # nlesions_age = combine(groupby(df_i, :id), :age => maximum => :age, :nl => first => :nl)
             # df_nlesions = combine(groupby(nlesions_age, :age), :nl => median => :nl)
@@ -128,14 +155,30 @@ function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::I
                 age = repeat(0:max_age, length(cycle_n)),
                 cycle = repeat(cycle_n, inner = (max_age + 1))
                 ), df_age, on = [:age, :cycle])
-            df_age.ar_sum .= meansumarea
-            df_age.ar_mn .= meanarea
-            df_age.nl_mn .= meannl
+            # df_age.ar_sum .= meansumarea
+            # df_age.ar_mn .= meanarea
+            # df_age.nl_mn .= meannl
 
             return df_age
         end
     end
 end
+
+function get_areas_nl(model::SpatialRustABM)
+    areasums = filter!(>(0.0), area_sum.(model.agents))
+    meansumarea = isempty(areasums) ? missing : mean(areasums)
+
+    # areameans = filter!(>(0.0), meanareas.(model.agents))
+    # meanarea = isempty(areameans) ? missing : mean(areameans)
+
+    nlmeans = filter!(>(0), getproperty.(model.agents, :n_lesions))
+    meannl = isempty(nlmeans) ? missing : mean(nlmeans)
+
+    return meansumarea, meannl
+end
+
+
+area_sum(c::Coffee) = c.exh_countdown > 0 ? -1.0 : sum(c.areas)
 
 # # prob wont work
 # function get_weekly_data_2017_2(model::SpatialRustABM, s::Int)
