@@ -126,8 +126,8 @@ function init_abm_obj(props::Props)::SpatialRustABM
     model = UnkillableABM(Coffee, space; properties = props, rng = Random.Xoshiro())
 
     # TODO: comment out ABC coffee initialization
-    add_trees!(model)
-    # add_abc_trees!(model)
+    # add_trees!(model)
+    add_abc_trees!(model)
 
     return model
 end
