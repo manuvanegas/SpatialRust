@@ -69,7 +69,7 @@ function runsimple!(model::SpatialRustABM, steps::Int)
         end
 
         push!(df, [
-            s,
+            model.current.days,
             mean(getproperty.(model.agents, :veg)),
             mean(getproperty.(model.agents, :storage)),
             mean(getproperty.(model.agents, :production)),
@@ -87,18 +87,20 @@ function runsimple!(model::SpatialRustABM, steps::Int)
 
     indshade = model.current.ind_shade
 
-    sumareas = filter(>(0.0), sum.(getproperty.(model.agents, :areas)))
+    sumareas = sum.(getproperty.(model.agents, :areas))
+    # sumareas = filter(>(0.0), sum.(getproperty.(model.agents, :areas)))
     if isempty(sumareas)
         msuma = 0.0
         msumsp = 0.0
     else
         msuma = mean(sumareas)
-        sumspores = filter(>(0.0), sum.(getproperty.(model.agents, :spores)))
-        isempty(sumareas) ? (msumsp = 0.0) : (msumsp = mean(sumspores))
+        sumspores = sum.(getproperty.(model.agents, :spores))
+        # sumspores = filter(>(0.0), sum.(getproperty.(model.agents, :spores)))
+        msumsp = isempty(sumareas) ? 0.0 : mean(sumspores)
     end
 
     push!(df, [
-        s,
+        model.current.days,
         mean(getproperty.(model.agents, :veg)),
         mean(getproperty.(model.agents, :storage)),
         mean(getproperty.(model.agents, :production)),
