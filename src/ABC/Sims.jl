@@ -195,10 +195,43 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
         if !isempty(cycleday)
             newcycles = cycleday[1, :cycle]
             cycle_sentinels(model, minimum(newcycles) - 1, maximum(newcycles))
+            if s ∈ when_weekly
+                cycle_n, max_age, week8 = current_cycle_ages(s)
+                let df = get_weekly_data(model, cycle_n, max_age, week8)
+                    df[!, :dayn] .= s
+                    if any(outofbounds.(skipmissing(df[!, :area])))
+                        areas = missing
+                        nls = missing
+                        prod_clr_cor = missing
+                        Ps = [missing, missing]
+                        incid_harv = missing
+                        per_age = pull_empdates()
+                        per_age[!, :area] .= missing
+                        per_age[!, :spore] .= missing
+                        per_age[!, :nl] .= missing
+                        per_age[!, :occup] .= missing
+                        break
+                    end
+                    append!(per_age, df)
+                end
+            end
         elseif s ∈ when_weekly
             cycle_n, max_age, week8 = current_cycle_ages(s)
             let df = get_weekly_data(model, cycle_n, max_age, week8)
                 df[!, :dayn] .= s
+                if any(outofbounds.(skipmissing(df[!, :area])))
+                    areas = missing
+                    nls = missing
+                    prod_clr_cor = missing
+                    Ps = [missing, missing]
+                    incid_harv = missing
+                    per_age = pull_empdates()
+                    per_age[!, :area] .= missing
+                    per_age[!, :spore] .= missing
+                    per_age[!, :nl] .= missing
+                    per_age[!, :occup] .= missing
+                    break
+                end
                 append!(per_age, df)
             end
         elseif s == 21
@@ -227,6 +260,8 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
 
     return per_age, prod_clr_cor, areas, nls, Ps, (incid_harv - incid_comm), (length(model.rusts) > 0)
 end
+
+outofbounds(a) = a > 10.0 || a < -0.01
 
 function cat_dfs(Ti::Tuple{DataFrame, DataFrame}, Tj::Tuple{DataFrame, DataFrame})
     return vcat(Ti[1], Tj[1]), vcat(Ti[2], Tj[2])
