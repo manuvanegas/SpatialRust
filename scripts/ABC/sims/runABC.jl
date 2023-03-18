@@ -25,18 +25,27 @@ load_time = @elapsed begin
     const n_rows = parse(Int, ARGS[3]) * parse(Int, ARGS[4])
     const startat = (parse(Int, ARGS[2]) - 1) * n_rows + 1
 
-    when_rust = Vector(Arrow.Table("data/exp_pro/input/whentocollect.arrow")[1])
-    const when_2017 = filter(d -> d < 200, when_rust)
-    const when_2018 = filter(d -> d > 200, when_rust)
-    # const when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
+    # when_rust = collect_days()
+    # # when_rust = Vector(Arrow.Table("data/exp_pro/input/whentocollect.arrow")[1])
+    # # const when_2017 = filter(d -> d < 200, when_rust)
+    # # const when_2018 = filter(d -> d > 200, when_rust)
+    # # const when_plant = Vector(Arrow.Table("data/exp_pro/inputs/sun_whentocollect_plant.arrow")[1])
 
-    # const when_rust = sort!(union(when_plant, when_rust))
+    # # const when_rust = sort!(union(when_plant, when_rust))
 
-    # read climate data
-    w_table = Arrow.Table("data/exp_pro/input/rep_weather.arrow")
-    const temp_data = Tuple(w_table[2])
-    const rain_data = Tuple(w_table[3])
-    const wind_data = Tuple(w_table[4])
+    # # read climate data
+    # # w_table = Arrow.Table("data/exp_pro/input/weather.arrow")
+    # # wdata = horriblefuntogetdata()
+    # # const temp_data = Vector(w_table[2])
+    # const temp_data = tempdata()
+    # const rain_data = raindata()
+    # const wind_data = winddata()
+    
+    # const weather = Weather{455}(
+    #     Tuple(rain_data[1:455]),
+    #     Tuple(wind_data[1:455]),
+    #     Tuple(temp_data[1:455]),
+    # )
 
     const parameters = DataFrame(Arrow.Table(string("data/ABC/parameters_", ARGS[1], ".arrow")))[startat : (startat + n_rows - 1),:]
 end
@@ -55,9 +64,11 @@ flush(stdout)
 
 run_time = @elapsed begin
     wp = CachingPool(workers())
-    outputs = pmap(p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018),
-                    wp,
-                    Tables.namedtupleiterator(parameters); retry_delays = fill(0.1, 3))
+    outputs = abc_pmap(Tables.namedtupleiterator(parameters), wp)
+    
+    # outputs = pmap(p -> sim_abc(p, temp_data, rain_data, wind_data, when_rust),
+    #                 wp,
+    #                 Tables.namedtupleiterator(parameters); retry_delays = fill(0.1, 3))
     # outputs = pmap(p -> sim_abc(p),
     #                 Tables.namedtupleiterator(parameters); retry_delays = fill(0.1, 3), batch_size = 20)
     println("total: ", length(outputs))
