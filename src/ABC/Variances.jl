@@ -27,9 +27,9 @@ function σ2_ls(files::Vector{String})
     vars = @distributed merge for f in files
         # df = DataFrame(Arrow.Table(f))
         # select!(df, Not(:prod_clr_cor), [:prod_clr_sun, :prod_clr_shade] => ByRow(meannan) => :prod_clr_cor)
-        qualseries = Series(3 * FilterTransform(Variance(), Union{Float64, Missing}, filter = !isnan),
-        3 * FilterTransform(Counter(), Union{Float64, Missing}, filter = nomisnan))
-        fit!(qualseries, global_itr(DataFrame(Arrow.Table(f)), 3, 5))
+        qualseries = Series(8 * FilterTransform(Variance(), Union{Float64, Missing}, filter = nomisnan),
+        8 * FilterTransform(Counter(), Union{Float64, Missing}, filter = nomisnan))
+        fit!(qualseries, global_itr(DataFrame(Arrow.Table(f)), 1, 8))
     end
     
     return dfize(vars)
@@ -133,14 +133,24 @@ end
 
 function dfize(ostats::Series) # "dataframe-ize" quals
     var_df = DataFrame(
-        exh_var = Float64[],
-        incid_var = Float64[],
-        cor_var = Float64[]
+        P1att = Float64[],
+        P12att = Float64[],
+        P1obs = Float64[],
+        P12obs = Float64[],
+        cor = Float64[],
+        areas = Float64[],
+        nls = Float64[],
+        incidiff = Float64[]
     )
     n_df = DataFrame(
-        exh_n = Int[],
-        incid_n = Int[],
-        cor_n = Int[]
+        P1att = Int[],
+        P12att = Int[],
+        P1obs = Int[],
+        P12obs = Int[],
+        cor = Int[],
+        areas = Int[],
+        nls = Int[],
+        incidiff = Int[]
     )
             
     push!(var_df, value.(value(ostats.stats[1])))

@@ -10,7 +10,7 @@ time_load = @elapsed begin
 end
 println("Load: $time_load")
 
-mkpath("results/ABC/variances/sents/")
+mkpath("results/ABC/variances/sents/q7")
 
 # read relevant files
 time_read = @elapsed begin
@@ -19,7 +19,7 @@ time_read = @elapsed begin
     # else
     #     quantdata = rearrange_datafile()
     # end
-    quantdata = DataFrame(Arrow.Table("data/exp_pro/compare/perdate_age_long.arrow"))
+    quantdata = DataFrame(Arrow.Table("data/exp_pro/compare/perdate_age_long_10.arrow"))
     firstn = parse(Int, ARGS[3])
     if firstn == 0
         quantfiles = readdir(string("/scratch/mvanega1/ABC/sims/", ARGS[1]), join = true, sort = false)
@@ -50,11 +50,11 @@ flush(stdout)
 
 time_write = @elapsed begin
     # write csvs
-    CSV.write("results/ABC/variances/sents/v_quants.csv", σ2_quants)
-    CSV.write("results/ABC/variances/sents/v_gquants.csv", g_σ2_quants)
-    CSV.write("results/ABC/variances/sents/v_quals.csv", σ2_quals)
-    CSV.write("results/ABC/variances/sents/n_quants.csv", n_quants)
-    CSV.write("results/ABC/variances/sents/n_gquants.csv", g_n_quants)
-    CSV.write("results/ABC/variances/sents/n_quals.csv", n_quals)
+    CSV.write("results/ABC/variances/sents/q7/v_quants.csv", σ2_quants)
+    CSV.write("results/ABC/variances/sents/q7/v_gquants.csv", g_σ2_quants)
+    CSV.write("results/ABC/variances/sents/q7/v_quals.csv", σ2_quals)
+    CSV.write("results/ABC/variances/sents/q7/n_quants.csv", n_quants)
+    CSV.write("results/ABC/variances/sents/q7/n_gquants.csv", g_n_quants)
+    CSV.write("results/ABC/variances/sents/q7/n_quals.csv", n_quals)
 end
 println("Write: $time_write")
