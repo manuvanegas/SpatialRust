@@ -1,4 +1,5 @@
 export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, create_regshaded_farm_map
+# , Weather
 
 
 mutable struct Sentinel
@@ -67,9 +68,9 @@ function init_spatialrust(;
     rain_prob::Float64 = 0.6,
     wind_prob::Float64 = 0.5,
     mean_temp::Float64 = 22.5,
-    rain_data::Tuple = (),                  # if provided, rain_prob is ignored
-    wind_data::Tuple = (),                  # if provided, wind_prob is ignored
-    temp_data::Tuple = (),                  # if provided, mean_temp is ignored
+    rain_data::Vector{Bool} = Bool[],       # if provided, rain_prob is ignored
+    wind_data::Vector{Bool} = Bool[],       # if provided, wind_prob is ignored
+    temp_data::Vector{Float64} = Float64[], # if provided, mean_temp is ignored
 
     # coffee parameters
     veg_d::Int = 1,                         # start of vegetative growth   
@@ -157,9 +158,9 @@ function init_spatialrust(;
     )
 
     w = Weather{steps}(
-        isempty(rain_data) ? Tuple(rand(steps) .< rain_prob) : rain_data[1:steps],
-        isempty(wind_data) ? Tuple(rand(steps) .< wind_prob) : wind_data[1:steps],
-        isempty(temp_data) ? Tuple(fill(mean_temp, steps) .+ randn() .* 2) : temp_data[1:steps]
+        isempty(rain_data) ? Tuple(rand(steps) .< rain_prob) : Tuple(rain_data[1:steps]),
+        isempty(wind_data) ? Tuple(rand(steps) .< wind_prob) : Tuple(wind_data[1:steps]),
+        isempty(temp_data) ? Tuple(fill(mean_temp, steps) .+ randn() .* 2) : Tuple(temp_data[1:steps])
     )
 
     if isempty(farm_map)
@@ -382,111 +383,3 @@ function ind_shade_i(
         return (0.8 * pruned_to) / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune)))
     end
 end
-
-
-
-# function init_spatialrust(parameters::Parameters, farm_map::Array{Int,2}, weather::Weather)
-#     # parameters.steps == length(Weather.rain_data) || error(
-#     #     "number of steps is different from length of rain data")
-#     model = init_abm_obj(parameters, farm_map, weather)
-#     return model
-# end
-
-# function init_spatialrust(parameters::Parameters, farm_map::Array{Int,2})
-#     init_spatialrust(parameters, farm_map, create_weather(parameters.rain_prob, parameters.wind_prob, parameters.mean_temp, parameters.steps))
-# end
-
-# function init_spatialrust(parameters::Parameters, weather::Weather)
-#     init_spatialrust(parameters, create_farm_map(parameters), weather)
-# end
-
-# function init_spatialrust(parameters::Parameters)
-#     init_spatialrust(parameters, create_farm_map(parameters), create_weather(parameters.rain_prob, parameters.wind_prob, parameters.mean_temp, parameters.steps))
-# end
-
-# function init_spatialrust()
-#     pars = Parameters()
-#     # farm_map = create_farm_map(pars)
-#     # weather = create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp)
-
-#     return init_spatialrust(pars, create_farm_map(pars), create_weather(pars.rain_prob, pars.wind_prob, pars.mean_temp, pars.steps))
-# end
-
-
-# function create_weather(
-#     rain_prob::Float64,
-#     wind_prob::Float64,
-#     mean_temp::Float64,
-#     steps::Int,
-#     )
-#     #println("Check data! This has not been validated!")
-#     return Weather{steps}(
-#         rand(steps) .< rain_prob,
-#         rand(steps) .< wind_prob,
-#         fill(mean_temp, steps) .+ randn() .* 2
-#         # rand(steps) .< rain_prob,
-#         # rand(steps) .< wind_prob,
-#         # fill(mean_temp, steps) .+ randn() .* 2
-#     )
-# end
-
-# function create_weather(
-#     rain_data::AbstractVector{Bool},
-#     wind_prob::Float64,
-#     temp_data::Vector{Float64},
-#     steps::Int,
-#     )
-#     return Weather{steps}(
-#         rain_data,
-#         rand(steps) .< wind_prob,
-#         temp_data
-#         # rain_data,
-#         # rand(steps) .< wind_prob,
-#         # temp_data
-#     )
-# end
-
-# function create_weather(
-#     rain_data::AbstractVector{Bool},
-#     wind_data::AbstractVector{Bool},
-#     temp_data::Vector{Float64},
-#     )
-#     return Weather{steps}(
-#         rain_data,
-#         wind_data,
-#         temp_data
-#         # rain_data,
-#         # rand(steps) .< wind_prob,
-#         # temp_data
-#     )
-# end
-
-# function create_weather(
-#     rain_prob::Float64,
-#     mean_temp::Float64,
-#     steps::Int,
-#     )
-#     return Weather{steps}(
-#         rand(steps) .< rain_prob,
-#         # rand(steps) .* 360.0,
-#         fill(mean_temp, steps) .+ randn() .* 2
-#         # rain_data,
-#         # rand(steps) .< wind_prob,
-#         # temp_data
-#     )
-# end
-# function create_weather(
-#     rain_data::AbstractVector{Bool},
-#     temp_data::Vector{Float64},
-#     steps::Int,
-#     )
-#     return Weather{steps}(
-#         rain_data,
-#         # rand(steps) .* 360.0,
-#         temp_data
-#         # rain_data,
-#         # rand(steps) .< wind_prob,
-#         # temp_data
-#     )
-# end
-
