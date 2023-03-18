@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=1-80
+#SBATCH --array=1-2 #50 #80
 #SBATCH --mem=12G
 #SBATCH --ntasks=5
 #SBATCH --ntasks-per-core=1
@@ -28,4 +28,4 @@ export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 cp $SLURM_NODEFILE logs/ABC/nodefiles/nodes_${SLURM_ARRAY_TASK_ID}
 # ARGS: params file #, slurm job array id, # cores, # sims per core
 julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl \
-6 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 2500 # 250 #500
+7 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 4000 #2500 # 250 #500
