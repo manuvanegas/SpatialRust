@@ -23,6 +23,8 @@ export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 # echo "pkg should be loaded"
 # julia --project=. --machine-file $SLURM_NODEFILE -e "using Pkg;println(Pkg.status())"
 
+echo `date +%F-%T`
+# ulimit -s 262144
 julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl 6 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 200 #500
 # ARGS: params file, slurm job array id, # cores, # sims per core
 
