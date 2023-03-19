@@ -24,6 +24,8 @@ module load julia/1.8.2
 # [] every file has been saved!
 
 echo `date +%F-%T`
+echo $SLURM_JOB_ID
+echo $SLURM_JOB_NODELIST
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 cp $SLURM_NODEFILE logs/ABC/nodefiles/nodes_${SLURM_ARRAY_TASK_ID}
 # ARGS: params file #, slurm job array id, # cores, # sims per core
