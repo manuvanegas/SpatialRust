@@ -29,6 +29,10 @@ obj = ARGS[8]
 # obj = "shorttprofit"
 # obj = "minrustspores"
 pdir = mkpath(string("results/GA/", obj))
+
+sdirpop = mkpath(string("/scratch/mvanega1/GA/", obj, "/pops/"))
+sdirfit = mkpath(string("/scratch/mvanega1/GA/", obj, "/fitns/"))
+
 ftail = string(popsize, "-", gens, "-", pcross, "-", pmut, ".csv")
 
 finalpop, histbest, histfitm = GA(lnths, parnames, popsize, gens, reps, pcross, pmut, steps, coffee_price, obj)
