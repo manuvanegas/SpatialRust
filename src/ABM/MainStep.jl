@@ -131,17 +131,10 @@ function rust_step!(model::SpatialRustABM)
             end
         end
     end
-    if (sum(c -> losttrack(c.areas), model.agents)) > 0
-        model.current.withinbounds = false
-    end
     # Update happens in a second loop because first all rusts have had to (try to) disperse
     for rust in model.rusts
         update_deposited!(rust, model.rusts)
     end
-end
-
-function losttrack(as)
-    any(a -> (!isfinite(a) || a < -0.1 || a > 1.5), as)
 end
 
 function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, germinate_f::Function, grow_f::Function,
@@ -182,9 +175,11 @@ function farmer_step!(model)
             harvest!(model)
         end
 
-        prune_i = findall(==(doy), model.mngpars.prune_sch)
-        if !isempty(prune_i)
-            prune_shades!(model, prune_i)
+        prune_i = findfirst(==(doy), model.mngpars.prune_sch)
+        # if !isempty(prune_i)
+        if !isnothing(prune_i)
+            prune_shades!(model, model.mngpars.target_shade[prune_i])
+            # prune_shades!(model)
         end
 
         # the following is commented out for ABC. TODO: uncomment it when calibration is done

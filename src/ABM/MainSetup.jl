@@ -134,6 +134,7 @@ function init_spatialrust(;
     coffee_price::Float64 = 1.0,
 
     lesion_survive::Float64 = 0.1,
+    # target_shade::Float64 = 0.15,            # individual shade level after pruning
     target_shade::Vector{Float64} = [0.3, 0.5, 0.0],            # individual shade level after pruning
     inspect_effort::Float64 = 0.01,         # % coffees inspected each time
     fung_effect::Int = 30,                  # length of fungicide effect
@@ -195,9 +196,27 @@ function init_spatialrust(;
 
     n_shades = count(farm_map .== 2)
     n_coffees = count(farm_map .== 1)
+
     pruneskept = prune_sch .> 0
+    sortsched = sortperm(filter!(>(0), prune_sch))
+    sort!(prune_sch)
+    if !allunique(prune_sch)
+        if prune_sch[1] == prune_sch[3]
+            prune_sch = prune_sch[1]
+            target_shade = minimum(target_shade)
+        elseif prune_sch[2] == prune_sch[3]
+            pop!(prune_sch)
+            ts = popat!(target_shade, 3)
+            target_shade[2] = min(target_shade[2], ts)
+        elseif prune_sch[1] == prune_sch[2]
+            popat!(prune_sch, 2)
+            ts = popat!(target_shade, 2)
+            target_shade[1] = min(target_shade[1], ts)
+        end
+    end
     prune_sch = Tuple(sort!(filter!(>(0), prune_sch)))
-    target_shade = Tuple(filter!(>(0.0), target_shade[pruneskept]))
+    target_shade = Tuple(filter!(>(0.0), target_shade[sortsched]))
+
     fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
     n_inspect = trunc(Int, inspect_effort * n_coffees)
 
@@ -218,7 +237,7 @@ function init_spatialrust(;
 
     b = Books(
         doy, 0, ind_shade_i(shade_g_rate, doy, target_shade, prune_sch),
-        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true
+        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true
     )
 
     if ini_rusts > 0.0
@@ -313,6 +332,7 @@ struct MngPars{N,M}
     coffee_price::Float64
     # others
     lesion_survive::Float64
+    # target_shade::Float64
     target_shade::NTuple{N, Float64}
     n_inspected::Int
     fung_effect::Int
@@ -337,7 +357,6 @@ mutable struct Books
     costs::Float64
     prod::Float64
     inbusiness::Bool
-    withinbounds::Bool
     # net_rev::Float64
     # max_rust::Float64
 end
@@ -384,3 +403,27 @@ function ind_shade_i(
         return (0.8 * pruned_to) / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune)))
     end
 end
+
+
+# # Calculate initial ind_shade
+# function ind_shade_i(
+#     shade_g_rate::Float64,
+#     start_day_at::Int,
+#     target_shade::Float64,
+#     prune_sch::NTuple{N, Int}) where N
+
+#     if isempty(prune_sch)
+#         return 0.8
+#     else
+#         day = start_day_at > 0 ? start_day_at : 1
+#         # calculate elapsed days since last prune
+#         prune_diff = filter(>(0), day .- prune_sch)
+#         if isempty(prune_diff)
+#             last_prune = 365 + day - maximum(prune_sch)
+#         else
+#             last_prune = minimum(prune_diff)
+#         end
+#         # logistic equation to determine starting shade level
+#         return (0.8 * target_shade) / (target_shade + (0.8 - target_shade) * exp(-(shade_g_rate * last_prune)))
+#     end
+# end
