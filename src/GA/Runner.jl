@@ -34,7 +34,7 @@ function profit_GA(lnths::Vector{Int}, parnames::Vector{Symbol}, n::Int, gs::Int
     end
     phenos = gen_phenotypes(pop, parnames, steps, cofprice, gnfun)
     # fitn_history[:, g] .= fitnesses = map(r -> sptlrust_profit_fitness(r, reps, n), Tables.namedtupleiterator(phenos))
-    fitn_history[:, g] .= fitnesses = pmap(r -> sptlrust_profit_fitness(r, reps, n, wp, Tables.namedtupleiterator(phenos), retry_delays = [0.1, 0.1, 0.1])
+    fitn_history[:, g] .= fitnesses = pmap(r -> sptlrust_profit_fitness(r, reps, n), wp, Tables.namedtupleiterator(phenos), retry_delays = [0.1, 0.1, 0.1])
     push!(best_inds, phenos[argmax(fitnesses), :])
 
     return phenos, best_inds, fitn_history
