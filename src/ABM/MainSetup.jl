@@ -218,7 +218,7 @@ function init_spatialrust(;
 
     b = Books(
         doy, 0, ind_shade_i(shade_g_rate, doy, target_shade, prune_sch),
-        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true
+        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true
     )
 
     if ini_rusts > 0.0
@@ -337,6 +337,7 @@ mutable struct Books
     costs::Float64
     prod::Float64
     inbusiness::Bool
+    withinbounds::Bool
     # net_rev::Float64
     # max_rust::Float64
 end

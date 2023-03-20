@@ -131,10 +131,17 @@ function rust_step!(model::SpatialRustABM)
             end
         end
     end
+    if (sum(c -> losttrack(c.areas), model.agents)) > 0
+        model.current.withinbounds = false
+    end
     # Update happens in a second loop because first all rusts have had to (try to) disperse
     for rust in model.rusts
         update_deposited!(rust, model.rusts)
     end
+end
+
+function losttrack(as)
+    any(a -> (!isfinite(a) || a < -0.1 || a > 1.5), as)
 end
 
 function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, germinate_f::Function, grow_f::Function,

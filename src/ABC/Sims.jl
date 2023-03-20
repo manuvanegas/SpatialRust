@@ -190,7 +190,7 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
     end
 
     s = 0
-    while s < n
+    while s < n && model.current.withinbounds
         cycleday = filter(:day => ==(s), cycledays)
         if !isempty(cycleday)
             newcycles = cycleday[1, :cycle]
@@ -199,19 +199,19 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
                 cycle_n, max_age, week8 = current_cycle_ages(s)
                 let df = get_weekly_data(model, cycle_n, max_age, week8)
                     df[!, :dayn] .= s
-                    if any(outofbounds.(skipmissing(df[!, :area])))
-                        areas = missing
-                        nls = missing
-                        prod_clr_cor = missing
-                        Ps = [missing, missing]
-                        incid_harv = missing
-                        per_age = pull_empdates()
-                        per_age[!, :area] .= missing
-                        per_age[!, :spore] .= missing
-                        per_age[!, :nl] .= missing
-                        per_age[!, :occup] .= missing
-                        break
-                    end
+                    # if any(outofbounds, df[!, :area])
+                    #     areas = missing
+                    #     nls = missing
+                    #     prod_clr_cor = missing
+                    #     Ps = [missing, missing]
+                    #     incid_harv = missing
+                    #     per_age = pull_empdates()
+                    #     per_age[!, :area] .= missing
+                    #     per_age[!, :spore] .= missing
+                    #     per_age[!, :nl] .= missing
+                    #     per_age[!, :occup] .= missing
+                    #     break
+                    # end
                     append!(per_age, df)
                 end
             end
@@ -219,19 +219,33 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
             cycle_n, max_age, week8 = current_cycle_ages(s)
             let df = get_weekly_data(model, cycle_n, max_age, week8)
                 df[!, :dayn] .= s
-                if any(outofbounds.(skipmissing(df[!, :area])))
-                    areas = missing
-                    nls = missing
-                    prod_clr_cor = missing
-                    Ps = [missing, missing]
-                    incid_harv = missing
-                    per_age = pull_empdates()
-                    per_age[!, :area] .= missing
-                    per_age[!, :spore] .= missing
-                    per_age[!, :nl] .= missing
-                    per_age[!, :occup] .= missing
-                    break
-                end
+                # if any(outofbounds, df[!, :area])
+                #     areas = missing
+                #     nls = missing
+                #     prod_clr_cor = missing
+                #     Ps = [missing, missing]
+                #     incid_harv = missing
+                #     per_age = pull_empdates()
+                #     per_age[!, :area] .= missing
+                #     per_age[!, :spore] .= missing
+                #     per_age[!, :nl] .= missing
+                #     per_age[!, :occup] .= missing
+                #     break
+                # elseif !isfinite(sum(getproperty.(model.agents, :storage)))
+                #     nancofs = filter(c -> !isfinite(c.storage), model.agents)
+                #     println("Step $s")
+                #     println("res_commit = $(model.coffeepars.res_commit)")
+                #     println("μ_prod = $(model.coffeepars.μ_prod)")
+                #     println("rust_paras = $(model.rustpars.rust_paras)")
+                #     println("NaN prod at:")
+                #     for c in nancofs
+                #         println("ID: $(c.id)")
+                #         println("$(c.veg), $(c.storage), $(c.production)")
+                #         println("$(c.areas)") #, $(c.spores), $(c.n_lesions)")
+                #     end
+                #     flush(stdout)
+                #     break
+                # end
                 append!(per_age, df)
             end
         elseif s == 21
@@ -258,10 +272,24 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
         s += 1
     end
 
+    if !model.current.withinbounds
+        areas = missing
+        nls = missing
+        prod_clr_cor = missing
+        Ps = [missing, missing]
+        incid_harv = missing
+        per_age = pull_empdates()
+        per_age[!, :area] .= missing
+        per_age[!, :spore] .= missing
+        per_age[!, :nl] .= missing
+        per_age[!, :occup] .= missing
+    end
+
     return per_age, prod_clr_cor, areas, nls, Ps, (incid_harv - incid_comm), (length(model.rusts) > 0)
 end
 
-outofbounds(a) = a > 10.0 || a < -0.01
+outofbounds(a)::Bool = !ismissing(a) && (!isfinite(a) || a > 10.0 || a < -0.01)
+# outofbounds(a::Vector)::Bool = (!ismissing(a) && (!isfinite(a) || a > 10.0 || a < -0.01))
 
 function cat_dfs(Ti::Tuple{DataFrame, DataFrame}, Tj::Tuple{DataFrame, DataFrame})
     return vcat(Ti[1], Tj[1]), vcat(Ti[2], Tj[2])
