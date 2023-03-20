@@ -22,5 +22,5 @@ module load julia/1.8.2
 echo `date +%F-%T`
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/GA/runGA.jl 100 20 10 0.7 0.1 365 1.0 shortprofit
+~/SpatialRust/scripts/GA/runGA.jl 5 10 3 0.7 0.1 365 1.0 shortprofit
 # popsize, gens, reps, p cross, p mut, steps, coffeeprice, obj
