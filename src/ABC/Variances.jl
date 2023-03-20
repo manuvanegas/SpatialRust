@@ -27,12 +27,30 @@ function σ2_ls(files::Vector{String})
     vars = @distributed merge for f in files
         # df = DataFrame(Arrow.Table(f))
         # select!(df, Not(:prod_clr_cor), [:prod_clr_sun, :prod_clr_shade] => ByRow(meannan) => :prod_clr_cor)
-        qualseries = Series(8 * FilterTransform(Variance(), Union{Float64, Missing}, filter = nomisnan),
-        8 * FilterTransform(Counter(), Union{Float64, Missing}, filter = nomisnan))
-        fit!(qualseries, global_itr(DataFrame(Arrow.Table(f)), 1, 8))
+        qualseries = Series(9 * FilterTransform(Variance(), Union{Float64, Missing}, filter = nomisnan),
+        9 * FilterTransform(Counter(), Union{Float64, Missing}, filter = nomisnan))
+
+        itr = global_itr(addyieldcalcs(DataFrame(Arrow.Table(f))), 2, 10)
+        fit!(qualseries, itr)
     end
     
     return dfize(vars)
+end
+
+function addyieldcalcs(df::DataFrame)
+    select(df, :p_row, :incidiff, :cor,
+        [:P1att, :P1obs, :P12att, :P12obs] => ByRow(yieldloss) => [:P1loss, :P12loss],
+        [:P1att, :P12att] => ByRow(bienniality) => [:P1att, :P12att, :bienniality],
+        :areas, :nls
+    )
+end
+
+function yieldloss(y1att, y1obs, y12att, y12obs)
+    return (y1att - y1obs) / y1att, ((y12att - y12obs) / y12att)
+end
+
+function bienniality(Y1, Y12)
+    return Y1, Y12, ((2.0 * Y1 - Y12) / Y1)
 end
 
 function run_two_onlines(df)::NTuple{2,OnlineStatsBase.StatCollection}
@@ -132,25 +150,31 @@ function dfize(statstup::NTuple{2,OnlineStatsBase.StatCollection}) # "dataframe-
 end
 
 function dfize(ostats::Series) # "dataframe-ize" quals
+    :incidiff, :cor,
+        [:P1att, :P1obs, :P12att, :P12obs] => ByRow(yieldloss) => [:P1loss, :P12loss],
+        [:P1att, :P12att] => ByRow(bienniality) => [:P1att, :P12att, :bienniality],
+        :areas, :nls
     var_df = DataFrame(
+        incidiff = Float64[],
+        cor = Float64[],
+        P1loss = Float64[],
+        P12loss = Float64[],
         P1att = Float64[],
         P12att = Float64[],
-        P1obs = Float64[],
-        P12obs = Float64[],
-        cor = Float64[],
+        bienniality = Float64[],
         areas = Float64[],
-        nls = Float64[],
-        incidiff = Float64[]
+        nls = Float64[]
     )
     n_df = DataFrame(
+        incidiff =Int[],
+        cor = Int[],
+        P1loss = Int[],
+        P12loss =  Int[],
         P1att = Int[],
         P12att = Int[],
-        P1obs = Int[],
-        P12obs = Int[],
-        cor = Int[],
+        bienniality = Int[],
         areas = Int[],
-        nls = Int[],
-        incidiff = Int[]
+        nls = Int[]
     )
             
     push!(var_df, value.(value(ostats.stats[1])))
