@@ -4,7 +4,7 @@ function r_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
     # There is substantial code duplication, but it was put in place to minimize innecessary
     # checks of global conditions (eg, rain will be true for all rusts on a given day)
     # See if deposited spores are inhibited/washed off, if not, see if they germinate+penetrate tissue
-    if rust.deposited >= 1.0
+    if (deps = rust.deposited) >= 1.0
         # let 
             inhib = rust.sunlight * rustpars.light_inh
             washed = rust.sunlight * rustpars.rain_washoff
@@ -30,7 +30,7 @@ function r_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                 # end
                 # for sp in 1.0:rust.deposited
                 sp = 0.0
-                while sp <= rust.deposited
+                while sp <= deps
                     if rand(rng) < inhib || rand(rng) < washed
                         rust.deposited -= 1.0
                     elseif rust.n_lesions < max_nl && rand(rng) < infection_p
@@ -49,7 +49,7 @@ function r_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
             else
                 # for sp in 1.0:rust.deposited
                 sp = 0.0
-                while sp <= rust.deposited
+                while sp <= deps
                     if rand(rng) < inhib || rand(rng) < washed
                         rust.deposited -= 1.0
                     end
@@ -63,7 +63,7 @@ end
 function nr_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, fung::Float64)
     # No rain version of germinate!()
     # See r_germinate!() for more details/explanations
-    if rust.deposited >= 1.0
+    if (deps = rust.deposited) >= 1.0
         # let 
             inhib = rust.sunlight * rustpars.light_inh
             max_nl = rustpars.max_lesions
@@ -87,7 +87,7 @@ function nr_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float6
                 # for sp in 1.0:rust.deposited
                 # for sp in 1:trunc(Int,rust.deposited)
                 sp = 0.0
-                while sp <= rust.deposited
+                while sp <= deps
                     if rand(rng) < inhib
                         rust.deposited -= 1.0
                     elseif rust.n_lesions < max_nl && rand(rng) < infection_p
@@ -106,7 +106,7 @@ function nr_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float6
             else
                 # for sp in 1.0:rust.deposited
                 sp = 0.0
-                while sp <= rust.deposited
+                while sp <= deps
                     if rand(rng) < inhib
                         rust.deposited -= 1.0
                     end
@@ -152,14 +152,14 @@ function grow_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, 
                     # if !spo && rand(rng) < @inbounds areas[nl] * spor_mod
                     #     @inbounds spores[nl] = true
                     # end
-                for nl in eachindex(spores)
-                    @inbounds spores[nl] = @inbounds spores[nl] || (rand(rng) < @inbounds areas[nl] * spor_mod)
+                @fastmath @inbounds @simd for nl in eachindex(spores)
+                    spores[nl] = spores[nl] || (rand(rng) < areas[nl] * spor_mod)
                 end
                 # update total lesion areas
                 # @fastmath rust.areas .+= rust.areas .* (1.0 .- rust.areas) .* growth_mod
                 # @views(@inbounds(rust.areas[1:nls] .+= rust.areas[1:nls] .* (1.0 .- rust.areas[1:nls]) .* growth_mod .* area_gro)) 
                 area_gro = max(0.0, 1.0 - sum(areas) / 25.0)
-                areas .+= areas .* (1.0 .- areas) .* (growth_mod .* area_gro)
+                @fastmath areas .+= areas .* (1.0 .- areas) .* (growth_mod * area_gro)
 
                 if rust.sentinel.active
                     rust.sentinel.ages .+= 1
@@ -214,7 +214,7 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                 #     if !spo && rand(rng) < @inbounds spor_probs[nl]
                 #         @inbounds spores[nl] = true
                 #     end
-                for nl in eachindex(spores)
+                @simd for nl in eachindex(spores)
                     @inbounds spores[nl] = @inbounds spores[nl] || (rand(rng) < @inbounds spor_probs[nl])
                 end
                 # @fastmath rust.areas .+= rust.areas .* (1.0 .- rust.areas) .* gro_mods
