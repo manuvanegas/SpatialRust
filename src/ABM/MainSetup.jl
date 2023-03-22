@@ -365,6 +365,7 @@ mutable struct Books
     costs::Float64
     prod::Float64
     inbusiness::Bool
+    withinbounds::Bool
     # net_rev::Float64
     # max_rust::Float64
 end
