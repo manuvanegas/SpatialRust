@@ -168,7 +168,15 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, g
         #         delete!(model.rusts, rust)
         #     end
         # end
+        if losttrack(rust.areas)
+            model.current.withinbounds = false
+        end
+        break
     end
+end
+
+function losttrack(as)
+    any(a -> (!isfinite(a) || a < -0.1 || a > 1.5), as)
 end
 
 function farmer_step!(model)

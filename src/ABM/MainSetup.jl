@@ -205,16 +205,15 @@ function init_spatialrust(;
     n_shades = count(farm_map .== 2)
     n_coffees = count(farm_map .== 1)
 
-    pruneskept = prune_sch .> 0
-    sortsched = sortperm(filter!(>(0), prune_sch))
+    pruneskept = filter!(i -> prune_sch[i] > 0, sortperm(prune_sch))
     sort!(prune_sch)
     if !allunique(prune_sch)
         if prune_sch[1] == prune_sch[3]
-            prune_sch = prune_sch[1]
+            prune_sch = keepat!(prune_sch, 1)
             target_shade = minimum(target_shade)
         elseif prune_sch[2] == prune_sch[3]
             pop!(prune_sch)
-            ts = popat!(target_shade, 3)
+            ts = pop!(target_shade)
             target_shade[2] = min(target_shade[2], ts)
         elseif prune_sch[1] == prune_sch[2]
             popat!(prune_sch, 2)
@@ -222,8 +221,8 @@ function init_spatialrust(;
             target_shade[1] = min(target_shade[1], ts)
         end
     end
-    prune_sch = Tuple(sort!(filter!(>(0), prune_sch)))
-    target_shade = Tuple(filter!(>(0.0), target_shade[sortsched]))
+    prune_sch = Tuple(keepat!(prune_sch, pruneskept))
+    target_shade = Tuple(keepat!(target_shade, pruneskept))
 
     fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
     n_inspect = trunc(Int, inspect_effort * n_coffees)
@@ -245,7 +244,7 @@ function init_spatialrust(;
 
     b = Books(
         doy, 0, ind_shade_i(shade_g_rate, doy, target_shade, prune_sch),
-        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true
+        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true
     )
 
     if ini_rusts > 0.0
