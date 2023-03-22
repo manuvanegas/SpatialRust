@@ -67,6 +67,7 @@ end
 # Main abm initialization function
 
 function init_spatialrust(;
+    seed::Int = 0,
     start_days_at::Int = 0,
     ini_rusts::Float64 = 0.01,              # % of initial rusts (# of initial clusters, if > 1)
     p_row::Int = 0,                         # parameter combination number (for ABC)
@@ -166,10 +167,12 @@ function init_spatialrust(;
     # p_density::Float64 = 1.0
     )
 
+    rng = seed == 0 ? Xoshiro() : Xoshiro(seed)
+
     w = Weather{steps}(
-        isempty(rain_data) ? Tuple(rand(steps) .< rain_prob) : Tuple(rain_data[1:steps]),
-        isempty(wind_data) ? Tuple(rand(steps) .< wind_prob) : Tuple(wind_data[1:steps]),
-        isempty(temp_data) ? Tuple(fill(mean_temp, steps) .+ randn() .* 2) : Tuple(temp_data[1:steps])
+        isempty(rain_data) ? Tuple(rand(rng, steps) .< rain_prob) : Tuple(rain_data[1:steps]),
+        isempty(wind_data) ? Tuple(rand(rng, steps) .< wind_prob) : Tuple(wind_data[1:steps]),
+        isempty(temp_data) ? Tuple(fill(mean_temp, steps) .+ randn(rng) .* 2) : Tuple(temp_data[1:steps])
     )
 
     if isempty(farm_map)
@@ -247,19 +250,12 @@ function init_spatialrust(;
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true
     )
 
-    if ini_rusts > 0.0
-        return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
+    return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
         Set{Coffee}(),
         # ),
-        Set{Sentinel}()),
-        ini_rusts)
-    else
-        return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
-        Set{Coffee}(),
-        # ),
-        Set{Sentinel}()),
-        )
-    end
+        Set{Sentinel}()), rng,
+        ini_rusts
+    )
 end
 
 # Definitions of the different parameter structs

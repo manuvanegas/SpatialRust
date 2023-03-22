@@ -109,7 +109,7 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee 
                 # ages[li] = 0
                 # areas[li] = area
                 # spores[li] = true
-                push!(ages, 0)
+                push!(ages, 7)
                 push!(areas, area)
                 push!(spores, true)
             else
@@ -129,21 +129,16 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee 
     end
 end
 
-function init_abm_obj(props::Props)::SpatialRustABM
+function init_abm_obj(props::Props, rng::Xoshiro, ini_rusts::Float64)::SpatialRustABM
     space = GridSpaceSingle((props.rustpars.map_side, props.rustpars.map_side), periodic = false, metric = :chebyshev)
 
-    model = UnkillableABM(Coffee, space; properties = props, rng = Random.Xoshiro())
+    model = UnkillableABM(Coffee, space; properties = props, rng = rng)
 
     # TODO: comment out ABC coffee initialization
     # add_trees!(model)
     add_abc_trees!(model)
 
-    return model
-end
-
-function init_abm_obj(props::Props, ini_rusts::Float64)::SpatialRustABM
-    model = init_abm_obj(props)
-    init_rusts!(model, ini_rusts)
+    ini_rusts > 0.0 && init_rusts!(model, ini_rusts)
 
     return model
 end
