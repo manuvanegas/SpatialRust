@@ -15,24 +15,34 @@ end
 function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::Int)
     c.production = 0.0
     c.deposited *= surv_p
-    surv_n = c.n_lesions = trunc(Int, c.n_lesions * surv_p)
+    # surv_n = c.n_lesions = trunc(Int, c.n_lesions * surv_p)
+    surv_n = trunc(Int, c.n_lesions * surv_p)
     if surv_n == 0
-        fill!(c.ages, reset_age)
-        fill!(c.areas, 0.0)
-        fill!(c.spores, false)
+        # fill!(c.ages, reset_age)
+        # fill!(c.areas, 0.0)
+        # fill!(c.spores, false)
+        c.n_lesions = 0
+        empty!(c.ages)
+        empty!(c.areas)
+        empty!(c.spores)
         # if c.deposited < 0.1 
         #     c.deposited = 0.0
         #     delete!(rust.rusts, c)
         # end
     else
-        fill_n = max_nl - surv_n
-        surv_sites = sortperm(ifzerothentwo.(c.areas))[1:surv_n]
-        c.ages = append!(c.ages[surv_sites], fill(reset_age, fill_n))
-        c.areas = append!(c.areas[surv_sites], zeros(fill_n))
-        c.spores = append!(c.spores[surv_sites], fill(false, fill_n))
+        # fill_n = max_nl - surv_n
+        # surv_sites = sortperm(ifzerothentwo.(c.areas))[1:surv_n]
+        # c.ages = append!(c.ages[surv_sites], fill(reset_age, fill_n))
+        # c.areas = append!(c.areas[surv_sites], zeros(fill_n))
+        # c.spores = append!(c.spores[surv_sites], fill(false, fill_n))
+        lost = c.n_lesions - surv_n
+        c.n_lesions = surv_n
+        deleteat!(c.ages, 1:lost)
+        deleteat!(c.areas, 1:lost)
+        deleteat!(c.spores, 1:lost)
     end
 end
-
+# 
 ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
 
 # function prune_shades!(model::SpatialRustABM, prune_i::Int)

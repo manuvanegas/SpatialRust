@@ -87,9 +87,12 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee 
         nl = n_lesions = 1 + rand(model.rng, nl_distr)
         # nl = n_lesions = rand(model.rng, 1:model.rustpars.max_lesions)
         # nl = n_lesions = trunc(Int, rand(model.rng, nl_dist))
-        ages = fill((model.rustpars.steps * 2 + 1), max_nl)
-        areas = zeros(max_nl)
-        spores = fill(false, max_nl)
+        # ages = fill((model.rustpars.steps * 2 + 1), max_nl)
+        # areas = zeros(max_nl)
+        # spores = fill(false, max_nl)
+        ages = rusted.ages
+        areas = rusted.areas
+        spores = rusted.spores
 
         for li in 1:nl
             area = rand(model.rng)
@@ -97,25 +100,31 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee 
             # if area < 0.05 then the lesion is just in the "deposited" state,
             # so no changes have to be made to any of its variables
             if 0.05 < area < 0.9
-                ages[li] = 0
-                areas[li] = area
+                # ages[li] = 0
+                # areas[li] = area
+                push!(ages, 0)
+                push!(areas, area)
+                push!(spores, false)
             elseif area > 0.9
-                ages[li] = 0
-                areas[li] = area
-                spores[li] = true
+                # ages[li] = 0
+                # areas[li] = area
+                # spores[li] = true
+                push!(ages, 0)
+                push!(areas, area)
+                push!(spores, true)
             else
                 deposited += 1.0
                 n_lesions -= 1
             end
         end
 
-        sortidx = sortperm(areas; rev = true)
+        # sortidx = sortperm(areas; rev = true)
 
         rusted.deposited = deposited
         rusted.n_lesions = n_lesions
-        rusted.ages = ages[sortidx]
-        rusted.areas = areas[sortidx]
-        rusted.spores = spores[sortidx]
+        # rusted.ages = ages[sortidx]
+        # rusted.areas = areas[sortidx]
+        # rusted.spores = spores[sortidx]
         push!(model.rusts, rusted)
     end
 end

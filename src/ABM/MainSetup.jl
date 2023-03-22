@@ -9,7 +9,8 @@ mutable struct Sentinel
     n_lesions::Int
     ages::Vector{Int}
     areas::Vector{Float64}
-    spores::BitVector
+    # spores::BitVector
+    spores::Vector{Bool}
 end
 
 # Coffee agent type
@@ -32,7 +33,8 @@ end
     n_lesions::Int
     ages::Vector{Int}
     areas::Vector{Float64}
-    spores::BitVector
+    # spores::BitVector
+    spores::Vector{Bool}
 
     # ABC
     # sample_cycle::Int # cycles where coffee should be sampled
@@ -48,12 +50,18 @@ function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # htt
     # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
     # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
     # append!(spores, fill(false, fill_n))) 
+    # Coffee(
+    #     id, pos, sunlight, veg, storage, 0.0, 0, rust_gr,
+    #     0.0, 0.0, 0,
+    #     fill(max_age, max_lesions), fill(0.0, max_lesions), falses(max_lesions),
+    #     sentinel(id)
+    # )
     Coffee(
         id, pos, sunlight, veg, storage, 0.0, 0, rust_gr,
         0.0, 0.0, 0,
-        fill(max_age, max_lesions), fill(0.0, max_lesions), falses(max_lesions),
+        Int[], Float64[], Bool[],
         sentinel(id)
-    ) 
+    )
 end
 
 # Main abm initialization function
