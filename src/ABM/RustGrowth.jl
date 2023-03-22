@@ -28,7 +28,9 @@ function r_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                 #         end
                 #     end
                 # end
-                for sp in 1.0:rust.deposited
+                # for sp in 1.0:rust.deposited
+                sp = 0.0
+                while sp <= rust.deposited
                     if rand(rng) < inhib || rand(rng) < washed
                         rust.deposited -= 1.0
                     elseif rust.n_lesions < max_nl && rand(rng) < infection_p
@@ -42,12 +44,16 @@ function r_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                         push!(rust.spores, false)
                         rust.sentinel.active && track_lesion!(rust.sentinel)
                     end
+                    sp += 1.0
                 end
             else
-                for sp in 1.0:rust.deposited
+                # for sp in 1.0:rust.deposited
+                sp = 0.0
+                while sp <= rust.deposited
                     if rand(rng) < inhib || rand(rng) < washed
                         rust.deposited -= 1.0
                     end
+                    sp += 1.0
                 end
             end
         # end
@@ -78,7 +84,10 @@ function nr_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float6
                 #         end
                 #     end
                 # end
-                for sp in 1.0:rust.deposited
+                # for sp in 1.0:rust.deposited
+                # for sp in 1:trunc(Int,rust.deposited)
+                sp = 0.0
+                while sp <= rust.deposited
                     if rand(rng) < inhib
                         rust.deposited -= 1.0
                     elseif rust.n_lesions < max_nl && rand(rng) < infection_p
@@ -92,12 +101,16 @@ function nr_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float6
                         push!(rust.spores, false)
                         rust.sentinel.active && track_lesion!(rust.sentinel)
                     end
+                    sp += 1.0
                 end
             else
-                for sp in 1.0:rust.deposited
+                # for sp in 1.0:rust.deposited
+                sp = 0.0
+                while sp <= rust.deposited
                     if rand(rng) < inhib
                         rust.deposited -= 1.0
                     end
+                    sp += 1.0
                 end
             end
         # end

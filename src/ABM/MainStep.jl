@@ -93,16 +93,16 @@ function rust_step!(model::SpatialRustABM)
                 outside_spores!(model)
                 # r_w_step(model)
             else
-                rust_step_schedule(model, 1.0, 0, r_germinate!, grow_rust!, disperse_rain!)
+                rust_step_schedule(model, 1.0, 0, r_germinate!, grow_rust!, disperse_rain!, dummy_disp)
                 # r_step(model)
             end
         else
             if model.current.wind
-                rust_step_schedule(model, 1.0, 0, nr_germinate!, grow_rust!, disperse_wind!)
+                rust_step_schedule(model, 1.0, 0, nr_germinate!, grow_rust!, dummy_disp, disperse_wind!)
                 outside_spores!(model)
                 # w_step(model)
             else
-                rust_step_schedule(model, 1.0, 0, nr_germinate!, grow_rust!)
+                rust_step_schedule(model, 1.0, 0, nr_germinate!, grow_rust!, dummy_disp, dummy_disp)
                 # n_step(model)
             end
         end
@@ -116,16 +116,16 @@ function rust_step!(model::SpatialRustABM)
                     # rust_step_schedule(rust, model.rng, local_temp, grow_f_rust!, parasitize!, disperse_rain!, disperse_wind!)
                     # f_r_w_step(model::SpatialRustABM)
                 else
-                    rust_step_schedule(model, fung_inf, f_day, r_germinate!, grow_f_rust!, disperse_rain!)
+                    rust_step_schedule(model, fung_inf, f_day, r_germinate!, grow_f_rust!, disperse_rain!, dummy_disp)
                     # f_r_step(model)
                 end
             else
                 if model.current.wind
-                    rust_step_schedule(model, fung_inf, f_day, nr_germinate!, grow_f_rust!, disperse_wind!)
+                    rust_step_schedule(model, fung_inf, f_day, nr_germinate!, grow_f_rust!, dummy_disp, disperse_wind!)
                     outside_spores!(model)
                     # f_w_step(model)
                 else
-                    rust_step_schedule(model, fung_inf, f_day, nr_germinate!, grow_f_rust!)
+                    rust_step_schedule(model, fung_inf, f_day, nr_germinate!, grow_f_rust!, dummy_disp, dummy_disp)
                     # f_step(model)
                 end
             end
@@ -138,10 +138,11 @@ function rust_step!(model::SpatialRustABM)
 end
 
 function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, germinate_f::Function, grow_f::Function,
+    rain_dispersal::Function, wind_dispersal::Function)
     # rust::Rust, rng::AbstractRNG, local_temp::Float64,
     # # fung_mods::NTuple{5, Float64}, #put fung_mods within rustpars. reason to keep out was if using same fnc and ones(), but not anymore
-    dispersal_fs::Vararg{Function, N}
-    ) where {N}
+    # dispersal_fs::Vararg{Function, N}
+    # ) where {N}
     # for rust in shuffle!(model.rng, collect(values(model.agents))) # shuffle may not be necessary 
     # for rust in shuffle!(filter!(isinfected, collect(allagents(model)))) # or
     # for rust in shuffle!([model.rusts...]) # dispersal pushes, parasitize rm
@@ -156,9 +157,11 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, g
         # end
         # parasitize!(rust, model.rustpars, model.rusts)
         parasitize!(rust, model.rustpars, model.farm_map)
-        for f in dispersal_fs
-            f(model, rust)
-        end
+        # for f in dispersal_fs
+        #     f(model, rust)
+        # end
+        rain_dispersal(model, rust)
+        wind_dispersal(model, rust)
         # if rust.deposited < 0.1
         #     rust.deposited = 0.0
         #     if rust.n_lesions == 0

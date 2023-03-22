@@ -1,16 +1,22 @@
 # Spore dispersal and deposition
 
 function disperse_rain!(model::SpatialRustABM, rust::Coffee)
-    d_mod = (4.0 - 4.0 * model.rustpars.diff_splash) * (rust.sunlight - 0.5)^2.0 + model.rustpars.diff_splash
-    exp_dist = Exponential(model.rustpars.rain_distance)
-    for area in @inbounds rust.areas[rust.spores]
-        if rand(model.rng) < area * model.rustpars.spore_pct
+    map = model.farm_map
+    pars = model.rustpars
+    spore_pct = pars.spore_pct
+    pos = rust.pos
+    d_mod = (4.0 - 4.0 * pars.diff_splash) * (rust.sunlight - 0.5)^2.0 + pars.diff_splash
+    exp_dist = Exponential(pars.rain_distance)
+    for (area, spor) in zip(rust.areas, rust.spores)
+        # if rand(model.rng) < area * model.rustpars.spore_pct
+        if spor && rand(model.rng) < area * spore_pct
             distance = rand(model.rng, exp_dist) * d_mod
             if distance < 1.0 #self-infected
                 rust.newdeps += 1.0
             else
                 # follow splash and return: Tuple > 0 -> Coffee pos, < 0 -> outpour direction (see setup for mappings), 0 -> nothing
-                fin_pos = splash(model.rng, rust.pos, distance,rand(model.rng) * 360.0, model.farm_map, model.rustpars)
+                # fin_pos = splash(model.rng, rust.pos, distance, rand(model.rng) * 360.0, model.farm_map, model.rustpars)
+                fin_pos = splash(model.rng, pos, distance, rand(model.rng) * 360.0, map, pars)
                 if any(fin_pos .> 0) && 
                     (c = (@inbounds model[id_in_position(fin_pos,model)])).exh_countdown == 0
                     c.newdeps += 1.0
@@ -32,22 +38,30 @@ function disperse_rain!(model::SpatialRustABM, rust::Coffee)
     # end
 end
 
-
 function disperse_wind!(model::SpatialRustABM, rust::Coffee)
     shading = @inbounds model.shade_map[rust.pos...]
-    w_distance = rand(model.rng, Exponential(model.rustpars.wind_distance)) * (1 + rust.sunlight * model.rustpars.diff_wind)
+    rustpars = model.rustpars
+    spore_pct = rustpars.spore_pct
+    w_distance = rand(model.rng, Exponential(rustpars.wind_distance)) * (1 + rust.sunlight * rustpars.diff_wind)
     if w_distance < 1.0
-        for area in @inbounds rust.areas[rust.spores]
-            if rand(model.rng) < area * model.rustpars.spore_pct * shading
+        for (area, spor) in zip(rust.areas, rust.spores)
+            if spor && rand(model.rng) < area * spore_pct * shading
                 rust.newdeps += 1.0
             end
         end
     else
-        for area in @inbounds rust.areas[rust.spores]
-            if rand(model.rng) < area * model.rustpars.spore_pct * shading
+        # pos = rust.pos
+        wind_h = model.current.wind_h - 15.0
+        # farm_map = model.farm_map
+        # shade_map = model.shade_map
+        for (area, spor) in zip(rust.areas, rust.spores)
+            if spor && rand(model.rng) < area * spore_pct * shading
+                # fin_pos = gust(rng, rust.pos, w_distance,
+                #     (model.current.wind_h + (rand(rng) * 30.0) - 15.0),
+                #     farm_map, shade_map, rustpars)
                 fin_pos = gust(model.rng, rust.pos, w_distance,
-                    (model.current.wind_h + (rand(model.rng) * 30.0) - 15.0),
-                    model.farm_map, model.shade_map, model.rustpars)
+                (wind_h + (rand(model.rng) * 30.0)),
+                model.farm_map, model.shade_map, rustpars)
                 if any(fin_pos .> 0) && 
                     (c = (@inbounds model[id_in_position(fin_pos,model)])).exh_countdown == 0
                     c.newdeps += 1.0
@@ -72,19 +86,21 @@ function disperse_wind!(model::SpatialRustABM, rust::Coffee)
     # end
 end
 
+dummy_disp(model::SpatialRustABM, rust::Coffee) = nothing
+
 function splash(rng, pos::NTuple{2,Int}, dist::Float64, heading::Float64, farm_map::Array{Int, 2}, rustpars::RustPars)
     let ca = cosd(heading), co = sind(heading), stepx = (1, 0), stepy = (0, 1),
         side = rustpars.map_side, prob_block = rustpars.tree_block, pos = pos
 
         notlanded = true
         infarm = true
-        # traveled = 0.5
+        traveled = 1.0
         onx = 0.0
         ony = 0.0
         advanced = false
 
-        for traveled in 0.5:0.5:dist
-            # traveled += 0.5
+        # for traveled in 0.5:0.5:dist
+        while traveled <= dist
             # if traveled < dist
             newx = floor(ca * traveled)
             newy = floor(co * traveled)
@@ -113,6 +129,7 @@ function splash(rng, pos::NTuple{2,Int}, dist::Float64, heading::Float64, farm_m
                 end
             end
             advanced = false
+            traveled += 0.5
         end
 
         if @inbounds farm_map[pos...] == 1
@@ -130,12 +147,13 @@ function gust(rng, pos::NTuple{2,Int}, dist::Float64, heading::Float64, farm_map
 
         notlanded = true
         notblocked = true
+        traveled = 1.0
         onx = 0.0
         ony = 0.0
         advanced = false
 
-        for traveled in 0.5:0.5:dist
-            # traveled += 0.5
+        # for traveled in 0.5:0.5:dist
+        while traveled <= dist
             # if traveled < dist
             newx = floor(ca * traveled)
             newy = floor(co * traveled)
@@ -168,6 +186,7 @@ function gust(rng, pos::NTuple{2,Int}, dist::Float64, heading::Float64, farm_map
                 end
             end
             advanced = false
+            traveled += 0.5
         end
 
         if @inbounds farm_map[pos...] == 1
@@ -182,7 +201,6 @@ end
 
 function outside_spores!(model::SpatialRustABM)
     heading = model.current.wind_h
-    side = model.rustpars.map_side
     expdist = Exponential(model.rustpars.wind_distance)
     outsp = model.outpour
     deposited = sizehint!(NTuple{2,Int}[], sum(trunc.(Int,outsp)))
