@@ -170,8 +170,8 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, g
         # end
         if losttrack(rust.areas)
             model.current.withinbounds = false
+            break
         end
-        break
     end
 end
 
