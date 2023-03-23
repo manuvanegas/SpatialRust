@@ -28,14 +28,6 @@ function disperse_rain!(model::SpatialRustABM, rust::Coffee)
             end
         end
     end
-
-
-    # for lesion in 1:rust.n_lesions
-    #     if @inbounds rust.spores &&
-    #         @inbounds rand(model.rng) < (rust.state[2, lesion] * model.pars.spore_pct)
-    #         r_rust_dispersal!(model, rust, sunlight)
-    #     end
-    # end
 end
 
 function disperse_wind!(model::SpatialRustABM, rust::Coffee)
@@ -50,10 +42,10 @@ function disperse_wind!(model::SpatialRustABM, rust::Coffee)
             end
         end
     else
-        # pos = rust.pos
         wind_h = model.current.wind_h - 15.0
         # farm_map = model.farm_map
         # shade_map = model.shade_map
+        # stored_ids = model.space.stored_ids
         for (area, spor) in zip(rust.areas, rust.spores)
             if spor && rand(model.rng) < area * spore_pct * shading
                 # fin_pos = gust(rng, rust.pos, w_distance,
@@ -62,7 +54,9 @@ function disperse_wind!(model::SpatialRustABM, rust::Coffee)
                 fin_pos = gust(model.rng, rust.pos, w_distance,
                 (wind_h + (rand(model.rng) * 30.0)),
                 model.farm_map, model.shade_map, rustpars)
+                # stored_ids, shade_map, rustpars)
                 if any(fin_pos .> 0) && 
+                    # (c = (@inbounds model[id])).exh_countdown == 0
                     (c = (@inbounds model[id_in_position(fin_pos,model)])).exh_countdown == 0
                     c.newdeps += 1.0
                     # existing = c in model.rusts
@@ -73,127 +67,110 @@ function disperse_wind!(model::SpatialRustABM, rust::Coffee)
             end
         end
     end
-
-    # if rand(model.rng) < model.pars.wind_disp_prob
-    # if model.current.wind
-    # let wdistance = abs(2.0 * randn(model.rng)) * model.pars.wind_distance * model.pars.diff_wind * sunlight
-    #     for lesion in 1:rust.n_lesions
-    #         if @inbounds rust.state[3, lesion] == 1.0 &&
-    #             @inbounds rand(model.rng) < (rust.state[2, lesion] * model.pars.spore_pct)
-    #             w_rust_dispersal!(model, rust, wdistance)
-    #         end
-    #     end
-    # end
 end
 
 dummy_disp(model::SpatialRustABM, rust::Coffee) = nothing
 
 function splash(rng, pos::NTuple{2,Int}, dist::Float64, heading::Float64, farm_map::Array{Int, 2}, rustpars::RustPars)
-    let ca = cosd(heading), co = sind(heading), stepx = (1, 0), stepy = (0, 1),
-        side = rustpars.map_side, prob_block = rustpars.tree_block, pos = pos
+    ca = cosd(heading)
+    co = sind(heading)
+    side = rustpars.map_side
+    prob_block = rustpars.tree_block
+    px, py = pos
 
-        notlanded = true
-        infarm = true
-        traveled = 1.0
-        onx = 0.0
-        ony = 0.0
-        advanced = false
+    traveled = 1.0
+    onx = 0
+    ony = 0
+    advanced = false
 
-        # for traveled in 0.5:0.5:dist
-        while traveled <= dist
-            # if traveled < dist
-            newx = floor(ca * traveled)
-            newy = floor(co * traveled)
-            if newx != onx
-                onx = newx
-                pos = pos .+ stepx
-                advanced = true
-            end
-            if newy != ony
-                ony = newy
-                pos = pos .+ stepy
-                advanced = true
-            end
-            if advanced
-                withinbounds = (pos .< 1) .* -1 .+ (pos .> side) .* -2
-                if any(withinbounds .< 0)
-                    return withinbounds
-                else
-                # if all(1 .<= pos .<= side)
-                    if @inbounds (id = farm_map[pos...]) == 1 && (rand(rng) < prob_block)
-                        # notlanded = false
-                        return pos
-                    elseif id == 2 && (rand(rng) < prob_block)
-                        return (0,0)
-                    end
+    while traveled <= dist
+        newx = px + floor(Int, ca * traveled)
+        newy = py + floor(Int, co * traveled)
+        if newx != onx
+            onx = newx
+            advanced = true
+        end
+        if newy != ony
+            ony = newy
+            advanced = true
+        end
+        if advanced
+            withinboundsx = ifelse(newx < 1, -1, ifelse(newx > side, -2, 0))
+            withinboundsy = ifelse(newy < 1, -1, ifelse(newy > side, -2, 0))
+            if withinboundsx < 0 || withinboundsy < 0
+                return (withinboundsx, withinboundsy)
+            else
+                if @inbounds (id = farm_map[newx, newy]) == 1 && (rand(rng) < prob_block)
+                    return (newx, newy)
+                elseif id == 2 && (rand(rng) < prob_block)
+                    return (0,0)
                 end
             end
-            advanced = false
-            traveled += 0.5
         end
+        advanced = false
+        traveled += 0.5
+    end
 
-        if @inbounds farm_map[pos...] == 1
-            return pos
-        else
-            return (0,0)
-        end
-
+    if @inbounds farm_map[onx, ony] == 1
+        (onx, ony)
+    else
+        return (0,0)
     end
 end
 
 function gust(rng, pos::NTuple{2,Int}, dist::Float64, heading::Float64, farm_map::Array{Int,2}, shade_map::Array{Float64, 2}, rustpars::RustPars)
-    let ca = cosd(heading), co = sind(heading), stepx = (1, 0), stepy = (0, 1),
-        side = rustpars.map_side, prob_block = rustpars.shade_block, pos = pos
+    ca = cosd(heading)
+    co = sind(heading)
+    side = rustpars.map_side
+    prob_block = rustpars.shade_block
+    px, py = pos
 
-        notlanded = true
-        notblocked = true
-        traveled = 1.0
-        onx = 0.0
-        ony = 0.0
-        advanced = false
+    notblocked = true
+    traveled = 1.0
+    onx = 0
+    ony = 0
+    advanced = false
 
-        # for traveled in 0.5:0.5:dist
-        while traveled <= dist
-            # if traveled < dist
-            newx = floor(ca * traveled)
-            newy = floor(co * traveled)
-            if newx != onx
-                onx = newx
-                pos = pos .+ stepx
-                advanced = true
-            end
-            if newy != ony
-                ony = newy
-                pos = pos .+ stepy
-                advanced = true
-            end
-            if advanced
-                withinbounds = (pos .< 1) .* -1 .+ (pos .> side) .* -2
-                if any(withinbounds .< 0)
-                    return withinbounds
+    while traveled <= dist
+        newx = px + floor(Int, ca * traveled)
+        newy = py + floor(Int, co * traveled)
+        if newx != onx
+            onx = newx
+            advanced = true
+        end
+        if newy != ony
+            ony = newy
+            advanced = true
+        end
+        if advanced
+            withinboundsx = ifelse(newx < 1, -1, ifelse(newx > side, -2, 0))
+            withinboundsy = ifelse(newy < 1, -1, ifelse(newy > side, -2, 0))
+            if withinboundsx < 0 || withinboundsy < 0
+                return (withinboundsx, withinboundsy)
+            else
+                if notblocked
+                    if rand(rng) < @inbounds shade_map[newx, newy] * prob_block
+                        notblocked = false
+                    end
                 else
-                    if notblocked
-                        if rand(rng) < @inbounds shade_map[pos...] * prob_block
-                            notblocked = false
-                        end
+                    # if @inbounds (id = id_map[newx, newy]) != 0
+                    if @inbounds farm_map[newx, newy] == 1
+                        return (newx, newy)#, id
                     else
-                        if @inbounds farm_map[pos...] == 1
-                            return pos
-                        else
-                            return (0,0)
-                        end
+                        return (0,0)#, 0
                     end
                 end
             end
-            advanced = false
-            traveled += 0.5
         end
+        advanced = false
+        traveled += 0.5
+    end
 
-        if @inbounds farm_map[pos...] == 1
-            return pos
-        else
-            return (0,0)
-        end
+    # if @inbounds (id = id_map[onx, ony]) != 0
+    if @inbounds farm_map[onx, ony] == 1
+        (onx, ony)#, id
+    else
+        return (0,0)#, 0
     end
 end
 
@@ -203,54 +180,115 @@ function outside_spores!(model::SpatialRustABM)
     heading = model.current.wind_h
     expdist = Exponential(model.rustpars.wind_distance)
     outsp = model.outpour
-    deposited = sizehint!(NTuple{2,Int}[], sum(trunc.(Int,outsp)))
+
     if isapprox(heading, 360.0; atol = 2.0) || isapprox(heading, 0.0; atol = 2.0)
         # cosd(2) ≈ 0.99939, which is just horizontal for a 100x100 farm
-        for i in 1.0:outsp[1]
-            push!(deposited, try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
-            model.rustpars, expdist, 1))
+        tries = round(Int, outsp[1], RoundDown)
+        deposited = fill((0,0), tries)
+        # deposited = zeros(Int, tries)
+        i = 1
+        while i <= tries
+            deposited[i] = try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
+            model.rustpars, expdist, 1)
+            i += 1
         end
     elseif heading < 90.0
-        for q in (1,7,6), sp in 1.0:outsp[q]
-            push!(deposited, try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
-            model.rustpars, expdist, q))
+        qs = [1,7,6]
+        tries = round.(Int, outsp[qs], RoundDown)
+        # deposited = zeros(Int, sum(tries))
+        deposited = fill((0,0), sum(tries))
+        i = 1
+        ts = 0
+        for (q, t) in zip(qs, tries)
+            ts += t
+            while i <= t
+                deposited[i] = try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
+                model.rustpars, expdist, q)
+                i += 1
+            end
         end
     elseif isapprox(heading, 90.0; atol = 2.0) 
-        for i in 1.0:outsp[6]
-            push!(deposited, try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
-            model.rustpars, expdist, 6))
+        tries = round(Int, outsp[6], RoundDown)
+        # deposited = zeros(Int, tries)
+        deposited = fill((0,0), tries)
+        i = 1
+        while i <= tries
+            deposited[i] = try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
+            model.rustpars, expdist, 6)
+            i += 1
         end
     elseif heading < 180.0
-        for q in (6,8,2), sp in 1.0:outsp[q]
-            push!(deposited, try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
-            model.rustpars, expdist, q))
+        qs = [6,8,2]
+        tries = round.(Int, outsp[qs], RoundDown)
+        # deposited = zeros(Int, sum(tries))
+        deposited = fill((0,0), sum(tries))
+        i = 1
+        ts = 0
+        for (q, t) in zip(qs, tries)
+            ts += t
+            while i <= ts
+                deposited[i] = try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
+                model.rustpars, expdist, q)
+                i += 1
+            end
         end
     elseif isapprox(heading, 180.0; atol = 2.0)
-        for i in 1.0:outsp[2]
-            push!(deposited, try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
-            model.rustpars, expdist, 2))
+        tries = round(Int, outsp[2], RoundDown)
+        # deposited = zeros(Int, tries)
+        deposited = fill((0,0), tries)
+        i = 1
+        while i <= tries
+            deposited[i] = try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
+            model.rustpars, expdist, 2)
+            i += 1
         end
     elseif heading < 270.0
-        for q in (2,5,3), sp in 1.0:outsp[q]
-            push!(deposited, try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
-            model.rustpars, expdist, q))
+        qs = [2,5,3]
+        tries = round.(Int, outsp[qs], RoundDown)
+        # deposited = zeros(Int, sum(tries))
+        deposited = fill((0,0), sum(tries))
+        i = 1
+        ts = 0
+        for (q, t) in zip(qs, tries)
+            ts += t
+            while i <= ts
+                deposited[i] = try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
+                model.rustpars, expdist, q)
+                i += 1
+            end
         end
     elseif isapprox(heading, 270.0; atol = 2.0)
-        for i in 1.0:outsp[3]
-            push!(deposited, try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
-            model.rustpars, expdist, 3))
+        tries = round(Int, outsp[3], RoundDown)
+        # deposited = zeros(Int, tries)
+        deposited = fill((0,0), tries)
+        i = 1
+        while i <= tries
+            deposited[i] = try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
+            model.rustpars, expdist, 3)
+            i += 1
         end
     else
-        for q in (3,4,1), sp in 1.0:outsp[q]
-            push!(deposited, try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
-            model.rustpars, expdist, q))
+        qs = [3,4,1]
+        tries = round.(Int, outsp[qs], RoundDown)
+        # deposited = zeros(Int, sum(tries))
+        deposited = fill((0,0), sum(tries))
+        i = 1
+        ts = 0
+        for (q, t) in zip(qs, tries)
+            ts += t
+            while i <= ts
+                deposited[i] = try_outside_disp!(model.rng, heading, model.farm_map, model.shade_map,
+                model.rustpars, expdist, q)
+                i += 1
+            end
         end
     end
 
     for dep in filter!(t -> any(t .> 0), deposited)
         c = (model[id_in_position(dep, model)])
+    # for dep in filter!(>(0), deposited)
+    #     c = (model[dep])
         if c.exh_countdown == 0
-            # existing = c.id in model.rusts
             c.newdeps += 1.0
             push!(model.rusts, c)
         end
@@ -262,7 +300,7 @@ function try_outside_disp!(rng, heading::Float64, farm_map::Array{Int},
 
     startpos = starting_pos(rng, rp.map_side, q)
     distance = rand(rng, expdist) * (1 + rp.diff_wind)
-    return gust(rng, startpos, distance, (heading + (rand(rng) * 30.0) - 15.0), farm_map, shade_map, rp)
+    return gust(rng, startpos, distance, (heading + (rand(rng) * 30.0) - 15.0), farm_map, shade_map, rp)#[2]
 end
 
 function starting_pos(rng, side::Int, q::Int)
