@@ -1,8 +1,8 @@
 
 function vegetative_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, ind_shade::Float64)
     if coffee.exh_countdown == 0
-        update_sunlight!(coffee, map, ind_shade)
-        veg_growth!(coffee, pars)
+        sl = update_sunlight!(coffee, map, ind_shade)
+        veg_growth!(coffee, pars, sl)
     elseif coffee.exh_countdown > 1
         coffee.exh_countdown -= 1
     else
@@ -17,9 +17,9 @@ end
 
 function commit_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, ind_shade::Float64, commit::Normal, rng)
     if coffee.exh_countdown == 0
-        update_sunlight!(coffee, map, ind_shade)
-        veg_growth!(coffee, pars)
-        coffee.production = max(0.0, rand(rng, commit) * coffee.sunlight * coffee.veg * coffee.storage)
+        sl = update_sunlight!(coffee, map, ind_shade)
+        veg_growth!(coffee, pars, sl)
+        coffee.production = max(0.0, rand(rng, commit) * sl * coffee.veg * coffee.storage)
     elseif coffee.exh_countdown > 1
         coffee.exh_countdown -= 1
     else
@@ -34,8 +34,8 @@ end
 
 function reproductive_step!(coffee::Coffee, pars::CoffeePars, map::Matrix{Float64}, ind_shade::Float64)
     if coffee.exh_countdown == 0
-        update_sunlight!(coffee, map, ind_shade)
-        rep_growth!(coffee, pars)
+        sl = update_sunlight!(coffee, map, ind_shade)
+        rep_growth!(coffee, pars, sl)
     elseif coffee.exh_countdown > 1
         coffee.exh_countdown -= 1
     else
@@ -52,14 +52,13 @@ function update_sunlight!(cof::Coffee, map::Matrix{Float64}, ind_shade::Float64)
     cof.sunlight = 1.0 - @inbounds map[cof.pos...] * ind_shade
 end
 
-function veg_growth!(coffee::Coffee, pars::CoffeePars)
+function veg_growth!(coffee::Coffee, pars::CoffeePars, sl::Float64)
     photo_veg = coffee.veg * pars.photo_frac
-    PhS = pars.photo_const * (coffee.sunlight / (pars.k_sl + coffee.sunlight)) *
-    (photo_veg / (pars.k_v + photo_veg))
+    PhS = pars.photo_const * (sl / (pars.k_sl + sl)) * (photo_veg / (pars.k_v + photo_veg))
     
     coffee.veg += pars.phs_veg * PhS - pars.μ_veg * coffee.veg
     if coffee.veg < 0.0
-        coffee.veg = min(0.0001, pars.exh_threshold)
+        coffee.veg = 0.0
     end
     coffee.storage += pars.phs_sto * PhS 
 end
@@ -80,13 +79,13 @@ end
 
 # estimate_resources(coffee::Coffee) = coffee.sunlight * coffee.veg * coffee.storage
 
-function rep_growth!(coffee::Coffee, pars::CoffeePars)
+function rep_growth!(coffee::Coffee, pars::CoffeePars, sl::Float64)
     veg = coffee.veg
     photo_veg = veg * pars.photo_frac
     μ_v = pars.μ_veg * veg
     prod = coffee.production
     
-    PhS = pars.photo_const * (coffee.sunlight / (pars.k_sl + coffee.sunlight)) *
+    PhS = pars.photo_const * (sl / (pars.k_sl + sl)) *
     (photo_veg / (pars.k_v + photo_veg))
 
     if coffee.storage < 0.0
@@ -113,7 +112,7 @@ function rep_growth!(coffee::Coffee, pars::CoffeePars)
     end
 
     if coffee.veg < 0.0
-        coffee.veg = min(0.0001, pars.exh_threshold)
+        coffee.veg = 0.0
     end
     if coffee.production < 0.0
         coffee.production = 0.0
