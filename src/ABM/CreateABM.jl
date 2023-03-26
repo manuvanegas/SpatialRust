@@ -120,12 +120,13 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee 
 
         # sortidx = sortperm(areas; rev = true)
 
+        rusted.rusted = true
         rusted.deposited = deposited
         rusted.n_lesions = n_lesions
         # rusted.ages = ages[sortidx]
         # rusted.areas = areas[sortidx]
         # rusted.spores = spores[sortidx]
-        push!(model.rusts, rusted)
+        # push!(model.rusts, rusted)
     end
 end
 

@@ -35,7 +35,7 @@ function simplerun(steps::Int = 365; kwargs...)
 
     df = runsimple!(model, steps)
 
-    return df, model
+    return df#, model
 end
 
 function runsimple!(model::SpatialRustABM, steps::Int)
@@ -46,7 +46,7 @@ function runsimple!(model::SpatialRustABM, steps::Int)
         veg = Float64[], storage = Float64[], production = Float64[],
         indshade = Float64[], mapshade = Float64[],
         nl = Float64[], sumarea = Float64[], sumspore = Float64[],
-        active = Float64[], nrusts = Int[]
+        active = Float64[]
     )
     for c in eachcol(df)
         sizehint!(c, steps)
@@ -76,8 +76,7 @@ function runsimple!(model::SpatialRustABM, steps::Int)
             mean(map(a -> a.n_lesions, model.agents)),
             msuma,
             msumsp,
-            sum(active.(model.agents)) / ncofs,
-            length(model.rusts)
+            sum(active.(model.agents)) / ncofs
         ])
         step!(model, dummystep, step_model!, 1)
         s += 1
@@ -105,9 +104,8 @@ function runsimple!(model::SpatialRustABM, steps::Int)
         mean(map(a -> a.n_lesions, model.agents)),
         msuma,
         msumsp,
-        sum(active.(model.agents)) / ncofs,
-        length(model.rusts)
+        sum(active.(model.agents)) / ncofs
     ])
-    
+
     return df
 end

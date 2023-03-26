@@ -1,5 +1,5 @@
 function harvest!(model::SpatialRustABM)
-    model.current.prod += sum(getproperty.(model.agents, :production))
+    model.current.prod += sum(map(c -> c.production, model.agents))
 
     # if (years = div(model.current.days, model.mngpars.harvest_day)) > 1
     #     tot_in = model.current.prod * model.mngpars.coffee_price
@@ -25,10 +25,11 @@ function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::
         empty!(c.ages)
         empty!(c.areas)
         empty!(c.spores)
-        # if c.deposited < 0.1 
-        #     c.deposited = 0.0
-        #     delete!(rust.rusts, c)
-        # end
+        if c.deposited < 0.05
+            c.deposited = 0.0
+            # delete!(rust.rusts, c)
+            c.rusted = false
+        end
     else
         # fill_n = max_nl - surv_n
         # surv_sites = sortperm(ifzerothentwo.(c.areas))[1:surv_n]
@@ -102,9 +103,10 @@ function inspect!(model::SpatialRustABM)
             c.ages = append!(c.ages[Not(spotted)], fill(model.rustpars.reset_age, fill_n))
             c.areas = append!(c.areas[Not(spotted)], zeros(fill_n))
             c.spores = append!(c.spores[Not(spotted)], fill(false, fill_n))
-            if c.n_lesions == 0 && (c.deposited < 0.1 )
+            if c.n_lesions == 0 && (c.deposited < 0.05)
                 c.deposited == 0.0
-                delete!(model.rusts, c)
+                # delete!(model.rusts, c)
+                c.rusted = false
             end
         end
  

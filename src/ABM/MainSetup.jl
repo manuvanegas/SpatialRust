@@ -27,7 +27,7 @@ end
     # fung_countdown::Int
 
     #Rust
-    # infected::Bool
+    rusted::Bool
     newdeps::Float64
     deposited::Float64 
     n_lesions::Int
@@ -59,7 +59,7 @@ function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # htt
     Coffee(
         id, pos, sunlight, veg, storage, 0.0, 0, rust_gr,
         0.0, 0.0, 0,
-        Int[], Float64[], Bool[],
+        false, sizehint!(Int[], max_lesions), sizehint!(Float64[], max_lesions), sizehint!(Bool[], max_lesions),
         sentinel(id)
     )
 end
@@ -251,7 +251,7 @@ function init_spatialrust(;
     )
 
     return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
-        Set{Coffee}(),
+        # Set{Coffee}(),
         # ),
         Set{Sentinel}()), rng,
         ini_rusts
@@ -374,7 +374,7 @@ struct Props
     farm_map::Array{Int, 2}
     shade_map::Array{Float64}
     outpour::Vector{Float64}
-    rusts::Set{Coffee}
+    # rusts::Set{Coffee}
     sentinels::Set{Sentinel}
     # 8 positions, one per direction the spores can leave the farm (from (0,0) which is the farm)
     # indexing is weird (also remember, julia goes column-first): 

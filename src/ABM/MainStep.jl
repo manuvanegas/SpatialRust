@@ -132,43 +132,34 @@ function rust_step!(model::SpatialRustABM)
         end
     end
     # Update happens in a second loop because first all rusts have had to (try to) disperse
-    for rust in model.rusts
-        update_deposited!(rust, model.rusts)
+    for rust in Iterators.filter(r -> r.rusted, model.agents)
+        update_rusts!(rust)
+        # update_deposited!(rust, model.farm_map, model.rustpars)
     end
 end
 
 function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, germinate_f::Function, grow_f::Function,
     rain_dispersal::Function, wind_dispersal::Function)
     # rust::Rust, rng::AbstractRNG, local_temp::Float64,
-    # # fung_mods::NTuple{5, Float64}, #put fung_mods within rustpars. reason to keep out was if using same fnc and ones(), but not anymore
     # dispersal_fs::Vararg{Function, N}
     # ) where {N}
-    # for rust in shuffle!(model.rng, collect(values(model.agents))) # shuffle may not be necessary 
-    # for rust in shuffle!(filter!(isinfected, collect(allagents(model)))) # or
-    # for rust in shuffle!([model.rusts...]) # dispersal pushes, parasitize rm
-    # for rust in values(model.agents) #BENCH 
-    for rust in shuffle!(model.rng, collect(model.rusts)) # using Rust set is faster than looping through agents
-        let local_temp = model.current.temperature - (model.rustpars.temp_cooling * (1.0 - rust.sunlight))
-            germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
+    for rust in Iterators.filter(r -> r.rusted, model.agents)
+        local_temp = model.current.temperature - (model.rustpars.temp_cooling * (1.0 - rust.sunlight))
+
+        germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
+
+        if rust.n_lesions > 0
             grow_f(rust, model.rng, model.rustpars, local_temp, f_day)
+
+            parasitize!(rust, model.rustpars, model.farm_map)
+            
+            if any(rust.spores)
+                spore_area = sum(last(p) for p in pairs(rust.areas) if rust.spores[first(p)]) * model.rustpars.spore_pct
+                rain_dispersal(model, rust, spore_area)
+                wind_dispersal(model, rust, spore_area)
+            end
         end
-        # if any(model.rustpars.steps * 2 .>= rust.ages .> model.current.ticks)
-        #     @error "t $(model.current.ticks), r $(rust.id), $(rust.n_lesions), $(rust.ages), $(rust.deposited)"
-        # end
-        # parasitize!(rust, model.rustpars, model.rusts)
-        parasitize!(rust, model.rustpars, model.farm_map)
-        # for f in dispersal_fs
-        #     f(model, rust)
-        # end
-        rain_dispersal(model, rust)
-        wind_dispersal(model, rust)
-        # if rust.deposited < 0.1
-        #     rust.deposited = 0.0
-        #     if rust.n_lesions == 0
-        #         delete!(model.rusts, rust)
-        #     end
-        # end
-        if losttrack(rust.areas)
+        if losttrack(rust.areas) || !isfinite(rust.storage)
             model.current.withinbounds = false
             break
         end
@@ -176,7 +167,7 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, g
 end
 
 function losttrack(as)
-    any(a -> (!isfinite(a) || a < -0.1 || a > 1.5), as)
+    any(a -> (!isfinite(a) || a < -0.1 || a > 25.5), as)
 end
 
 function farmer_step!(model)
