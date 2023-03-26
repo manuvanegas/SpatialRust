@@ -109,7 +109,7 @@ function simulate_single_plot(
         shade_g_rate = 0.008,
         p_row...
     )
-    Psa = abc_att_run!(model1, steps, iday)
+    P1a, P12a = abc_att_run!(model1, steps, iday)
 
     model2 = init_spatialrust(;
         # w;
@@ -120,7 +120,7 @@ function simulate_single_plot(
         wind_data = wind_data,
         temp_data = temp_data,
         ini_rusts = 0.02,
-        prune_sch = [15,166,-1],
+        prune_sch = [15, 166, -1],
         inspect_period = 460,
         fungicide_sch = Int[],
         target_shade = [0.15, 0.2, -1],
@@ -128,13 +128,13 @@ function simulate_single_plot(
         p_row...
     )
     setup_plant_sampling!(model2, 9, sampled_blocks)
-    per_age, prod_clr_cor, areas, nls, Ps, incidiff, anyrusts = abc_run_2y!(model2, steps, when)
+    per_age, prod_clr_cor, areas, nls, P1o, P12o, incidiff, anyrusts = abc_run_2y!(model2, steps, when)
     per_age[!, :plot] .= ifelse(type == :fullsun, :sun, :shade)
     globdf = DataFrame(
-        P1att = Psa[1],
-        P12att = Psa[2],
-        P1obs = Ps[1],
-        P12obs = Ps[2],
+        P1att = P1a,
+        P12att = P12a,
+        P1obs = P1o,
+        P12obs = P12o,
         cor = prod_clr_cor,
         areas = areas,
         nls = nls,
@@ -147,19 +147,20 @@ function simulate_single_plot(
 end
 
 function abc_att_run!(model::SpatialRustABM, n::Int, d::Int)
-    Ps = zeros(2)
+    P1 = 0.0
+    P12 = 0.0
     s = d
     steps = d + n
     while s < steps
         if s == 366
-            Ps[1] = model.current.prod
+            P1 = model.current.prod
         elseif s == 731
-            Ps[2] = model.current.prod
+            P12 = model.current.prod
         end
         step!(model, dummystep, step_model!, 1)
         s += 1
     end
-    return Ps
+    return P1, P12
 end
 
 function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = Int[])
@@ -180,7 +181,8 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
     prod_clr_cor = 0.0
     areas = 0.0
     nls = 0.0
-    Ps = zeros(2)
+    P1 = 0.0
+    P12 = 0.0
     incid_comm = 0.0
     incid_harv = 0.0
     # incids2 = zeros(2)
@@ -224,14 +226,14 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
                 prod_clr_cor = prod_clr_corr(prod_clr_df, allcofs)
             end
         elseif s == 251
-            Ps[1] = model.current.prod
+            P1 = model.current.prod
             # incid_harv = (sum(map(c -> c.exh_countdown > 0, model.agents)) + sum(getproperty.(model.agents, :n_lesions) .> 0)) / ncofs
             incid_harv = (sum(map(c -> c.exh_countdown > 0 || c.n_lesions > 0, allcofs))) /ncofs 
             # + sum(map(c -> c.n_lesions > 0, allcofs))) / ncofs
             # elseif s == 501
         #     incids2[1] = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
         elseif s == 617
-            Ps[2] = model.current.prod
+            P12 = model.current.prod
             # incids2[2] = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
         end
         step!(model, dummystep, step_model!, 1)
@@ -251,7 +253,7 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
         per_age[!, :occup] .= missing
     end
 
-    return per_age, prod_clr_cor, areas, nls, Ps, (incid_harv - incid_comm), sum(map(c -> c.n_lesions > 0, allcofs)) > 0 #, sum(map(c -> c.exh_countdown > 0, allcofs))
+    return per_age, prod_clr_cor, areas, nls, P1, P12, (incid_harv - incid_comm), sum(map(c -> c.n_lesions > 0, allcofs)) > 0 #, sum(map(c -> c.exh_countdown > 0, allcofs))
 end
 
 n_infected(cofs::Vector{Coffee}) = map(c -> c.n_lesions > 0, cofs)
