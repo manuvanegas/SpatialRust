@@ -200,6 +200,7 @@ end
 #         # delete!(rusts, rust)
 #         rust.rusted = false
 #         rust.sentinel.active = false
+#         rust.sentinel.n_lesions = 0
 #         empty!(rust.sentinel.ages)
 #         empty!(rust.sentinel.areas)
 #         empty!(rust.sentinel.spores)

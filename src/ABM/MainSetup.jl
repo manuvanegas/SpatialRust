@@ -170,9 +170,9 @@ function init_spatialrust(;
     rng = seed == 0 ? Xoshiro() : Xoshiro(seed)
 
     w = Weather{steps}(
-        isempty(rain_data) ? Tuple(rand(rng, steps) .< rain_prob) : Tuple(rain_data[1:steps]),
-        isempty(wind_data) ? Tuple(rand(rng, steps) .< wind_prob) : Tuple(wind_data[1:steps]),
-        isempty(temp_data) ? Tuple(fill(mean_temp, steps) .+ randn(rng) .* 2) : Tuple(temp_data[1:steps])
+        isempty(rain_data) ? Tuple(rand(rng, steps) .< rain_prob) : Tuple(keepat!(rain_data, 1:steps)),
+        isempty(wind_data) ? Tuple(rand(rng, steps) .< wind_prob) : Tuple(keepat!(wind_data, 1:steps)),
+        isempty(temp_data) ? Tuple(rand(rng, Normal(mean_temp, 0.5), steps)) : Tuple(keepat!(temp_data, 1:steps))
     )
 
     if isempty(farm_map)
