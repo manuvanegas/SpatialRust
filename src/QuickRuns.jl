@@ -35,7 +35,7 @@ function simplerun(steps::Int = 365; kwargs...)
 
     df = runsimple!(model, steps)
 
-    return df
+    return df, model
 end
 
 function runsimple!(model::SpatialRustABM, steps::Int)
@@ -56,26 +56,24 @@ function runsimple!(model::SpatialRustABM, steps::Int)
     while s < steps
         indshade = model.current.ind_shade
 
-        sumareas = sum.(getproperty.(model.agents, :areas))
-        # sumareas = filter(>(-10.0), sum.(getproperty.(model.agents, :areas)))
+        sumareas = Iterators.filter(>(0.0), map(r -> sum(r.areas), model.agents))
         if isempty(sumareas)
             msuma = 0.0
             msumsp = 0.0
         else
             msuma = mean(sumareas)
-            sumspores = sum.(getproperty.(model.agents, :spores))
-            # sumspores = filter(>(-10.0), sum.(getproperty.(model.agents, :spores)))
-            msumsp = isempty(sumareas) ? 0.0 : mean(sumspores)
+            sumspores = map(r -> sum(r.spores), model.agents)
+            msumsp = mean(sumspores)
         end
 
         push!(df, [
             model.current.days,
-            mean(getproperty.(model.agents, :veg)),
-            mean(getproperty.(model.agents, :storage)),
-            mean(getproperty.(model.agents, :production)),
+            mean(map(a -> a.veg, model.agents)),
+            mean(map(a -> a.storage, model.agents)),
+            mean(map(a -> a.production, model.agents)),
             indshade,
             indshade * meanshade,
-            mean(getproperty.(model.agents, :n_lesions)),
+            mean(map(a -> a.n_lesions, model.agents)),
             msuma,
             msumsp,
             sum(active.(model.agents)) / ncofs,
@@ -86,31 +84,30 @@ function runsimple!(model::SpatialRustABM, steps::Int)
     end
 
     indshade = model.current.ind_shade
-
-    sumareas = sum.(getproperty.(model.agents, :areas))
-    # sumareas = filter(>(0.0), sum.(getproperty.(model.agents, :areas)))
+    
+    sumareas = Iterators.filter(>(0.0), map(r -> sum(r.areas), model.agents))
     if isempty(sumareas)
         msuma = 0.0
         msumsp = 0.0
     else
         msuma = mean(sumareas)
-        sumspores = sum.(getproperty.(model.agents, :spores))
-        # sumspores = filter(>(0.0), sum.(getproperty.(model.agents, :spores)))
-        msumsp = isempty(sumareas) ? 0.0 : mean(sumspores)
+        sumspores = map(r -> sum(r.spores), model.agents)
+        msumsp = mean(sumspores)
     end
 
     push!(df, [
         model.current.days,
-        mean(getproperty.(model.agents, :veg)),
-        mean(getproperty.(model.agents, :storage)),
-        mean(getproperty.(model.agents, :production)),
+        mean(map(a -> a.veg, model.agents)),
+        mean(map(a -> a.storage, model.agents)),
+        mean(map(a -> a.production, model.agents)),
         indshade,
         indshade * meanshade,
-        mean(getproperty.(model.agents, :n_lesions)),
+        mean(map(a -> a.n_lesions, model.agents)),
         msuma,
         msumsp,
         sum(active.(model.agents)) / ncofs,
         length(model.rusts)
     ])
+    
     return df
 end
