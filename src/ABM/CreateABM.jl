@@ -84,7 +84,7 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee 
 
     for rusted in rusted_cofs
         deposited = 0.0
-        max_nl = model.rustpars.max_lesions
+        # max_nl = model.rustpars.max_lesions
         nl = n_lesions = 1 + rand(model.rng, nl_distr)
         # nl = n_lesions = rand(model.rng, 1:model.rustpars.max_lesions)
         # nl = n_lesions = trunc(Int, rand(model.rng, nl_dist))

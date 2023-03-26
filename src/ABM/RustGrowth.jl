@@ -159,7 +159,7 @@ end
 
 # function parasitize!(rust::Coffee, rustpars::RustPars, rusts::Set{Coffee})
 function parasitize!(rust::Coffee, rustpars::RustPars, farm_map::Array{Int, 2})
-    stor = rust.storage -= (rustpars.rust_paras * sum(rust.areas) * 0.04)
+    stor = rust.storage -= (rustpars.rust_paras * sum(rust.areas))
 
     if stor < -10.0 || (stor < 0.0 && rust.veg <= rustpars.exh_threshold)
         rust.production = 0.0

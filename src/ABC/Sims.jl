@@ -189,6 +189,8 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
         sizehint!(c, 110)
     end
 
+    allcofs = model.agents
+
     s = 0
     while s < n && model.current.withinbounds
         cycleday = filter(:day => ==(s), cycledays)
@@ -199,19 +201,6 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
                 cycle_n, max_age, week8 = current_cycle_ages(s)
                 let df = get_weekly_data(model, cycle_n, max_age, week8)
                     df[!, :dayn] .= s
-                    # if any(outofbounds, df[!, :area])
-                    #     areas = missing
-                    #     nls = missing
-                    #     prod_clr_cor = missing
-                    #     Ps = [missing, missing]
-                    #     incid_harv = missing
-                    #     per_age = pull_empdates()
-                    #     per_age[!, :area] .= missing
-                    #     per_age[!, :spore] .= missing
-                    #     per_age[!, :nl] .= missing
-                    #     per_age[!, :occup] .= missing
-                    #     break
-                    # end
                     append!(per_age, df)
                 end
             end
@@ -219,50 +208,27 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
             cycle_n, max_age, week8 = current_cycle_ages(s)
             let df = get_weekly_data(model, cycle_n, max_age, week8)
                 df[!, :dayn] .= s
-                # if any(outofbounds, df[!, :area])
-                #     areas = missing
-                #     nls = missing
-                #     prod_clr_cor = missing
-                #     Ps = [missing, missing]
-                #     incid_harv = missing
-                #     per_age = pull_empdates()
-                #     per_age[!, :area] .= missing
-                #     per_age[!, :spore] .= missing
-                #     per_age[!, :nl] .= missing
-                #     per_age[!, :occup] .= missing
-                #     break
-                # elseif !isfinite(sum(getproperty.(model.agents, :storage)))
-                #     nancofs = filter(c -> !isfinite(c.storage), model.agents)
-                #     println("Step $s")
-                #     println("res_commit = $(model.coffeepars.res_commit)")
-                #     println("μ_prod = $(model.coffeepars.μ_prod)")
-                #     println("rust_paras = $(model.rustpars.rust_paras)")
-                #     println("NaN prod at:")
-                #     for c in nancofs
-                #         println("ID: $(c.id)")
-                #         println("$(c.veg), $(c.storage), $(c.production)")
-                #         println("$(c.areas)") #, $(c.spores), $(c.n_lesions)")
-                #     end
-                #     flush(stdout)
-                #     break
-                # end
                 append!(per_age, df)
             end
         elseif s == 21
-            get_prod_df!(prod_clr_df, model)
-            incid_comm = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
+            get_prod_df!(prod_clr_df, allcofs)
+            incid_comm = sum(map(c -> c.n_lesions > 0 ||c.exh_countdown > 0, allcofs)) / ncofs
+            # incid_comm = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
         elseif s == 135
-            areas, nls = get_areas_nl(model)
+            areas, nls = get_areas_nl(allcofs)
             
-            if length(model.rusts) < 3 && sum(map(c -> c.exh_countdown > 0, model.agents)) / ncofs < 0.1
+            # if length(model.rusts) < 3 && sum(map(c -> c.exh_countdown > 0, model.agents)) / ncofs < 0.1
+            if sum(map(c -> c.n_lesions > 0, allcofs)) < 3 && sum(map(c -> c.exh_countdown > 0, allcofs)) / ncofs < 0.1
                 prod_clr_cor = missing
             else
-                prod_clr_cor = prod_clr_corr(prod_clr_df, model)
+                prod_clr_cor = prod_clr_corr(prod_clr_df, allcofs)
             end
         elseif s == 251
             Ps[1] = model.current.prod
-            incid_harv = (sum(map(c -> c.exh_countdown > 0, model.agents)) + sum(getproperty.(model.agents, :n_lesions) .> 0)) / ncofs
-        # elseif s == 501
+            # incid_harv = (sum(map(c -> c.exh_countdown > 0, model.agents)) + sum(getproperty.(model.agents, :n_lesions) .> 0)) / ncofs
+            incid_harv = (sum(map(c -> c.exh_countdown > 0 || c.n_lesions > 0, allcofs))) /ncofs 
+            # + sum(map(c -> c.n_lesions > 0, allcofs))) / ncofs
+            # elseif s == 501
         #     incids2[1] = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
         elseif s == 617
             Ps[2] = model.current.prod
@@ -285,11 +251,14 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
         per_age[!, :occup] .= missing
     end
 
-    return per_age, prod_clr_cor, areas, nls, Ps, (incid_harv - incid_comm), (length(model.rusts) > 0)
+    return per_age, prod_clr_cor, areas, nls, Ps, (incid_harv - incid_comm), sum(map(c -> c.n_lesions > 0, allcofs)) > 0 #, sum(map(c -> c.exh_countdown > 0, allcofs))
 end
 
-outofbounds(a)::Bool = !ismissing(a) && (!isfinite(a) || a > 10.0 || a < -0.01)
-# outofbounds(a::Vector)::Bool = (!ismissing(a) && (!isfinite(a) || a > 10.0 || a < -0.01))
+n_infected(cofs::Vector{Coffee}) = map(c -> c.n_lesions > 0, cofs)
+infected(c::Coffee) = c.n_lesions > 0
+
+n_lesions(c::Coffee) = c.n_lesions
+
 
 function cat_dfs(Ti::Tuple{DataFrame, DataFrame}, Tj::Tuple{DataFrame, DataFrame})
     return vcat(Ti[1], Tj[1]), vcat(Ti[2], Tj[2])
