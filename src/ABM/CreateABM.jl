@@ -132,7 +132,7 @@ end
 function init_abm_obj(props::Props, rng::Xoshiro, ini_rusts::Float64)::SpatialRustABM
     space = GridSpaceSingle((props.rustpars.map_side, props.rustpars.map_side), periodic = false, metric = :chebyshev)
 
-    model = UnkillableABM(Coffee, space; properties = props, rng = rng)
+    model = UnremovableABM(Coffee, space; properties = props, rng = rng)
 
     # TODO: comment out ABC coffee initialization
     # add_trees!(model)
