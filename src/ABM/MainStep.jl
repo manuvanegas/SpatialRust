@@ -146,10 +146,10 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, g
     for rust in Iterators.filter(r -> r.rusted, model.agents)
         local_temp = model.current.temperature - (model.rustpars.temp_cooling * (1.0 - rust.sunlight))
 
-        germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
-
         if rust.n_lesions > 0
             grow_f(rust, model.rng, model.rustpars, local_temp, f_day)
+
+            germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
 
             parasitize!(rust, model.rustpars, model.farm_map)
             
@@ -158,7 +158,10 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, g
                 rain_dispersal(model, rust, spore_area)
                 wind_dispersal(model, rust, spore_area)
             end
+        else
+            germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
         end
+        
         if losttrack(rust.areas) || !isfinite(rust.storage)
             model.current.withinbounds = false
             break

@@ -23,7 +23,7 @@ function r_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
                     # @inbounds rust.ages[nl] = -1
                     # @inbounds rust.areas[nl] = 0.001# 0.00014
                     rust.n_lesions += 1
-                    push!(rust.ages, -1)
+                    push!(rust.ages, 0)
                     push!(rust.areas, 0.001)# 0.00014
                     push!(rust.spores, false)
                     rust.sentinel.active && track_lesion!(rust.sentinel)
@@ -64,7 +64,7 @@ function nr_germinate!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float6
                         # @inbounds rust.ages[nl] = -1
                         # @inbounds rust.areas[nl] = 0.001 #0.00014
                         rust.n_lesions += 1
-                        push!(rust.ages, -1)
+                        push!(rust.ages, 0)
                         push!(rust.areas, 0.001)# 0.00014
                         push!(rust.spores, false)
                         rust.sentinel.active && track_lesion!(rust.sentinel)
