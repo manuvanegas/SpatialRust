@@ -42,7 +42,8 @@ end
 end
 
 # Coffee constructor
-function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+# function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
+function Coffee(id, pos, max_lesions::Int, rust_gr::Float64;
     sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0)
 
     # fill_n = max_lesions - length(ages)
@@ -200,7 +201,7 @@ function init_spatialrust(;
         host_spo_inh, max_g_temp, rep_gro, spore_pct, fung_inf, fung_gro_prev,
         fung_gro_cur, fung_spor_prev, fung_spor_cur, 
         #
-        steps, (steps * 2 + 1), rust_paras, exh_threshold, exh_countdown,
+        steps, rust_paras, exh_threshold, exh_countdown,
         #
         map_side, rain_distance, diff_splash, tree_block, wind_distance, diff_wind, shade_block
     )
@@ -302,7 +303,7 @@ struct RustPars
     fung_spor_cur::Float64 
     # parasitism
     steps::Int
-    reset_age::Int
+    # reset_age::Int
     rust_paras::Float64
     exh_threshold::Float64
     exh_countdown::Int

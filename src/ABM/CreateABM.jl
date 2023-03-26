@@ -7,7 +7,7 @@ function add_trees!(model::SpatialRustABM)
     # startday::Int = model.current.days
     ind_shade::Float64 = model.current.ind_shade
     max_lesions::Int = model.rustpars.max_lesions
-    max_age::Int = model.rustpars.reset_age
+    # max_age::Int = model.rustpars.reset_age
     light_noise = truncated(Normal(0.0, 0.005), -0.01, 0.01)
     rustgr_dist = truncated(Normal(model.rustpars.rust_gr, 0.005), 0.0, 0.35)
 
@@ -15,7 +15,8 @@ function add_trees!(model::SpatialRustABM)
     for pos in cof_pos
         let sunlight = clamp(1.0 - shade_map[pos] * ind_shade + rand(model.rng, light_noise), 0.0, 1.0)
             add_agent!(
-                Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
+                # Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
+                Tuple(pos), model, max_lesions, rand(model.rng, rustgr_dist);
                 sunlight = sunlight, storage = init_storage(sunlight)
             )
         end

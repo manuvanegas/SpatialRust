@@ -9,10 +9,12 @@ function harvest!(model::SpatialRustABM)
     # end
 
     model.current.fung_count = 0
-    new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive, model.rustpars.max_lesions, model.rustpars.reset_age)
+    # new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive, model.rustpars.max_lesions, model.rustpars.reset_age)
+    new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive)
 end
 
-function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::Int)
+# function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::Int)
+function new_harvest_cycle!(c::Coffee, surv_p::Float64)
     c.production = 0.0
     c.deposited *= surv_p
     # surv_n = c.n_lesions = trunc(Int, c.n_lesions * surv_p)

@@ -62,7 +62,7 @@ function add_abc_trees!(model::SpatialRustABM)
     shade_map::Matrix{Float64} = model.shade_map
     ind_shade::Float64 = model.current.ind_shade
     max_lesions::Int = model.rustpars.max_lesions
-    max_age::Int = model.rustpars.reset_age
+    # max_age::Int = model.rustpars.reset_age
     light_noise = truncated(Normal(0.0, 0.005), -0.01, 0.01)
     rustgr_dist = truncated(Normal(model.rustpars.rust_gr, 0.005), 0.0, 0.35)
 
@@ -70,7 +70,8 @@ function add_abc_trees!(model::SpatialRustABM)
     for pos in cof_pos
         let sunlight = max(1.0 - shade_map[pos] * ind_shade + rand(model.rng, light_noise), 0.0)
             add_agent!(
-                Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
+                # Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
+                Tuple(pos), model, max_lesions, rand(model.rng, rustgr_dist);
                 sunlight = sunlight, 
                 veg = init_veg_116(sunlight),
                 storage = init_storage_116(sunlight)
