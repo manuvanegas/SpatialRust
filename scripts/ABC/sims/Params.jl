@@ -3,9 +3,9 @@ using DrWatson
 
 using Arrow, CSV, DataFrames, Distributions, Random
 
-Ns = 2*10^6 # number of parameter combinations to test
+Ns = 10^6 # number of parameter combinations to test
 
-newid = 7
+newid = 8
 file_name = string("parameters_", newid, ".csv")
 arr_file_name = string("parameters_", newid, ".arrow")
 par_path = datadir("ABC", file_name)
@@ -15,22 +15,23 @@ max_temp_dist = truncated(Normal(30.0, 1.0), 22.0, 38.0)
 
 parameters = DataFrame(
     p_row = collect(1:Ns),
-    res_commit = rand(Uniform(0.0, 0.5), Ns),
-    μ_prod = rand(Uniform(0.0, 0.04), Ns),
-    max_inf = rand(Uniform(), Ns),
-    host_spo_inh = rand(Uniform(), Ns),
-    rust_gr = rand(Uniform(0.0, 0.5), Ns),
-    opt_g_temp = rand(opt_temp_dist, Ns),
-    max_g_temp = rand(max_temp_dist, Ns),
-    rep_gro = rand(Uniform(), Ns),
-    spore_pct = rand(Uniform(), Ns),
-    rust_paras = rand(Uniform(0.0, 0.2), Ns),
-    exh_threshold = rand(Uniform(0.0, 1.5), Ns),
-    rain_distance = rand(Uniform(0.0, 15.0), Ns),
-    tree_block = rand(Uniform(), Ns),
-    wind_distance = rand(Uniform(5.0, 20.0), Ns),
     shade_block = rand(Uniform(), Ns),
+    # wind_distance = rand(Uniform(5.0, 20.0), Ns),
+    tree_block = rand(Uniform(), Ns),
+    rain_distance = rand(Uniform(0.0, 10.0), Ns),
     lesion_survive = rand(Uniform(), Ns),
+    max_inf = rand(Uniform(), Ns),
+    spore_pct = rand(Uniform(), Ns),
+    host_spo_inh = rand(Uniform(), Ns),
+    rep_gro = rand(Uniform(), Ns),
+    rust_gr = rand(Uniform(0.0, 0.3), Ns),
+    rust_paras = rand(Uniform(0.0, 0.1), Ns),
+    exh_threshold = rand(Uniform(0.0, 1.5), Ns),
+    μ_prod = rand(Uniform(0.0, 0.05), Ns),
+    res_commit = rand(Uniform(0.0, 0.5), Ns),
+    max_g_temp = rand(max_temp_dist, Ns),
+    opt_g_temp = rand(opt_temp_dist, Ns),
+
     # temp_cooling = 
     # light_inh = 
     # rain_washoff = 
@@ -57,7 +58,7 @@ while checktemps
             exh_threshold = rand(Uniform(0.0, 1.5), newrows),
             rain_distance = rand(Uniform(0.0, 10.0), newrows),
             tree_block = rand(Uniform(), newrows),
-            wind_distance = rand(Uniform(0.0, 20.0), newrows),
+            # wind_distance = rand(Uniform(0.0, 20.0), newrows),
             shade_block = rand(Uniform(), newrows),
             lesion_survive = rand(Uniform(), newrows),
         
@@ -68,6 +69,8 @@ while checktemps
         ))
     end
 end
+
+parameters[!, :wind_distance] = parameters[!, :rain_distance] .* 2.0
 
 CSV.write(par_path, parameters)
 Arrow.write(datadir("ABC", arr_file_name), parameters)
