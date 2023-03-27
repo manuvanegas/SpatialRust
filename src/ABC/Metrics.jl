@@ -24,30 +24,42 @@ end
 #     end
 # end
 
-function prod_clr_corr(df::DataFrame, allcofs::Vector{Coffee})
+function clr_categories!(df::DataFrame, allcofs::Vector{Coffee})
     df[!, :clr_cat] = map(clr_cat, allcofs)
-    subset!(df, :nl_c => ByRow(==(0)), :clr_cat => ByRow(>(0)))
-    
-    if isempty(df)
-        prod_clr_cor = missing
-    else
-        prod_clr_cor = corkendall(df[!, :FtL], df[!, :clr_cat])
-    end
-
-    return prod_clr_cor
+    select!(subset!(df, :nl_c => ByRow(==(0)), :clr_cat => ByRow(>(0))), :FtL, :clr_cat)
 end
+
+# function prod_clr_corr(df::DataFrame, allcofs::Vector{Coffee})
+#     df[!, :clr_cat] = map(clr_cat, allcofs)
+#     subset!(df, :nl_c => ByRow(==(0)), :clr_cat => ByRow(>(0)))
+    
+#     if isempty(df)
+#         prod_clr_cor = missing
+#     else
+#         prod_clr_cor = corkendall(df[!, :FtL], df[!, :clr_cat])
+#     end
+
+#     return prod_clr_cor
+# end
 
 function clr_cat(c::Coffee)
     if c.exh_countdown > 0
-        return 4
+        return 6
     elseif c.n_lesions == 0
         return 0
-    elseif (sps = sum(c.spores)) == 0
-        return 1
-    elseif sps < 3
-        return 2
     else
-        return 3
+        area = sum(c.areas)
+        if area < 5.0
+            return 1
+        elseif area < 10.0
+            return 2
+        elseif area < 15.0
+            return 3
+        elseif area < 20.0
+            return 4
+        else
+            return 5
+        end
     end
 end
 

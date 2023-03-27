@@ -121,6 +121,7 @@ function grow_rust!(rust::Coffee, rng::Xoshiro, rustpars::RustPars, local_temp::
     end
 end
 
+# https://github.com/JuliaLang/julia/issues/43737
 findeach(f::Function, A) = (first(p) for p in pairs(A) if f(last(p)))
 
 function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, fday::Int)

@@ -37,9 +37,9 @@ function sim_abc(p_row::NamedTuple,
     #     p_row, temp_data, rain_data, wind_data, when_2017, when_2018, :regshaded
     # )
 
-    sun_per_age_df, sun_globs_df = simulate_single_plot(p_row, :fullsun)
+    sun_per_age_df, sun_globs_df, sun_cor_df = simulate_single_plot(p_row, :fullsun)
 
-    shade_per_age_df, shade_globs_df = simulate_single_plot(p_row, :regshaded)
+    shade_per_age_df, shade_globs_df, shade_cor_df = simulate_single_plot(p_row, :regshaded)
 
     # sun_per_age_df, sun_globs_df = simulate_single_plot(
     #     p_row, w, when, :fullsun
@@ -58,9 +58,21 @@ function sim_abc(p_row::NamedTuple,
         # flush(stdout)
     end
 
+    if any(ismissing.(sun_cor_df[!, 1])) || any(ismissing.(shade_cor_df[!, 1]))
+        prod_clr_cor = missing
+    else
+        append!(sun_cor_df, shade_cor_df)
+        if isempty(sun_cor_df)
+            prod_clr_cor = missing
+        else
+            prod_clr_cor = corkendall(sun_cor_df[!, :FtL], sun_cor_df[!, :clr_cat])
+        end
+    end
+
     per_age_df = vcat(sun_per_age_df, shade_per_age_df)
     per_age_df[!, :p_row] .= p_row[:p_row]
     globs_df = vcat(sun_globs_df, shade_globs_df)
+    globs_df[!, :cor] .= prod_clr_cor
     globs_df[!, :p_row] .= p_row[:p_row]
 
     return per_age_df, globs_df
@@ -109,7 +121,7 @@ function simulate_single_plot(
         shade_g_rate = 0.008,
         p_row...
     )
-    P1a, P12a = abc_att_run!(model1, steps, iday)
+    P1a, P12a = abc_att_run!(model1)
 
     model2 = init_spatialrust(;
         # w;
@@ -128,7 +140,7 @@ function simulate_single_plot(
         p_row...
     )
     setup_plant_sampling!(model2, 9, sampled_blocks)
-    per_age, prod_clr_cor, areas, nls, P1o, P12o, incidiff, rusts, active = abc_run_2y!(model2, steps, when)
+    per_age, prod_clr_df, areas, nls, P1o, P12o, incidiff, rusts, active = abc_run_2y!(model2, steps, when)
     plot = ifelse(type == :fullsun, :sun, :shade)
     per_age[!, :plot] .= plot
     globdf = DataFrame(
@@ -136,7 +148,7 @@ function simulate_single_plot(
         P12att = P12a,
         P1obs = P1o,
         P12obs = P12o,
-        cor = prod_clr_cor,
+        # cor = prod_clr_cor,
         areas = areas,
         nls = nls,
         incidiff = incidiff,
@@ -145,10 +157,10 @@ function simulate_single_plot(
         plot = plot
     )
 
-    return per_age, globdf
+    return per_age, globdf, prod_clr_df
 end
 
-function abc_att_run!(model::SpatialRustABM, n::Int, d::Int)
+function abc_att_run!(model::SpatialRustABM)
 
     step!(model, dummystep, step_model!, 250)
     P1 = model.current.prod
@@ -170,7 +182,7 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
         )
     allowmissing!(per_age, Not([:dayn, :age, :cycle]))
     prod_clr_df = DataFrame()
-    prod_clr_cor = 0.0
+    # prod_clr_cor = 0.0
     areas = 0.0
     nls = 0.0
     incid_comm = 0.0
@@ -206,9 +218,9 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
             areas, nls = get_areas_nl(allcofs)
             
             if sum(map(c -> c.n_lesions > 0, allcofs)) < 3 && sum(map(c -> c.exh_countdown > 0, allcofs)) / ncofs < 0.1
-                prod_clr_cor = missing
+                prod_clr_df = DataFrame(FtL = Float64[], clr_cat = Int[])
             else
-                prod_clr_cor = prod_clr_corr(prod_clr_df, allcofs)
+                clr_categories!(prod_clr_df, allcofs)
             end
             incid_harv = (sum(map(c -> c.exh_countdown > 0 || c.n_lesions > 0, allcofs))) /ncofs
         end
@@ -230,10 +242,10 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
         per_age[!, :nl] .= missing
         per_age[!, :occup] .= missing
 
-        return per_age, missing, missing, missing, missing, missing, missing, missing, missing
+        return per_age, DataFrame(FtL = missing, clr_cat = missing), missing, missing, missing, missing, missing, missing, missing
     else
         P12 = model.current.prod
-        return per_age, prod_clr_cor, areas, nls, P1, P12, (incid_harv - incid_comm), sum(map(c -> c.n_lesions > 0, allcofs)), sum(map(c -> c.exh_countdown == 0, allcofs))
+        return per_age, prod_clr_df, areas, nls, P1, P12, (incid_harv - incid_comm), sum(map(c -> c.n_lesions > 0, allcofs)), sum(map(c -> c.exh_countdown == 0, allcofs))
     end
 end
 
