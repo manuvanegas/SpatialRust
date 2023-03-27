@@ -27,7 +27,7 @@ echo `date +%F-%T`
 echo $SLURM_JOB_ID
 echo $SLURM_JOB_NODELIST
 # ulimit -s 262144
-julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl 7 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 100 #500
+julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl 8 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 100 #500
 # ARGS: params file, slurm job array id, # cores, # sims per core
 
 # julia --machine-file $SLURM_NODEFILE --sysimage src/PkgCompile/ABCSysimage.so -e 'u_t = @elapsed begin; @everywhere begin; using Pkg; Pkg.activate("."); end; @everywhere using SpatialRust; end; println(u_t)'
