@@ -52,10 +52,10 @@ function rusted_cluster(model::SpatialRustABM, r::Int, avail_cofs) # Returns a "
     return cluster
 end
 
-function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee plants
+function init_rusts!(model::SpatialRustABM, ini_rusts::Float64) # inoculate coffee plants
     if ini_rusts < 1.0
         n_rusts = max(round(Int, ini_rusts * nagents(model)), 1)
-        rusted_cofs = sample(model.rng, collect(allagents(model)), n_rusts, replace = false)
+        rusted_cofs = sample(model.rng, model.agents, n_rusts, replace = false)
         # rusted_cofs = collect(model[i] for i in rusted_ids)
     elseif ini_rusts < 2.0
         r = 1
@@ -80,7 +80,7 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee 
     # nl_dist = LogUniform(1,25.999)
     # a_dist = truncated(Exponential(0.2), 0, 1)
     # rids = collect(getproperty.(rusted_cofs, (:id)))
-    nl_distr = Binomial(24, 0.1)
+    nl_distr = Binomial(24, 0.05) # Merle, 2020
 
     for rusted in rusted_cofs
         deposited = 0.0
@@ -110,7 +110,7 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Real) # inoculate coffee 
                 # ages[li] = 0
                 # areas[li] = area
                 # spores[li] = true
-                push!(ages, 7)
+                push!(ages, 14)
                 push!(areas, area)
                 push!(spores, true)
             else

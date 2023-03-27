@@ -26,12 +26,12 @@ end
 function pre_step!(model::SpatialRustABM)
     # update day counters
     model.current.days += 1
-    model.current.ticks += 1
+    t = model.current.ticks += 1
 
     # update weather conditions from Weather data
-    model.current.rain = model.weather.rain_data[model.current.ticks]
-    @inbounds model.current.wind = model.weather.wind_data[model.current.ticks]
-    @inbounds model.current.temperature = model.weather.temp_data[model.current.ticks]
+    model.current.rain = model.weather.rain_data[t]
+    @inbounds model.current.wind = model.weather.wind_data[t]
+    @inbounds model.current.temperature = model.weather.temp_data[t]
 
     # spore outpour decay, then outpour can return spores to the farm if windy
     model.outpour .*= 0.9
@@ -39,12 +39,11 @@ function pre_step!(model::SpatialRustABM)
         model.current.wind_h = rand(model.rng) * 360.0
     end
 
-    # update sampling cycle (for ABC)
-    # if (model.current.ticks - 1) in model.mngpars.switch_cycles #TODO
-    #     if model.current.cycle[1] == 5 && !isassigned(model.current.cycle, 2)
-    #         push!(model.current.cycle, 6)
+    # if t % 60 == 0 && sum(map(c -> c.rusted, model.agents)) == 0
+    #     if sum(model.outpour) == 0.0
+    #         reintroduce_rusts!(model, 10)
     #     else
-    #         model.current.cycle .+= 1
+    #         reintroduce_rusts!(model, 1)
     #     end
     # end
 end

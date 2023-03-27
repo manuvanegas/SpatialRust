@@ -343,3 +343,41 @@ function starting_pos(rng, side::Int, q::Int)
         return (rand(rng, 1:quarter), 1)[shuffle!(rng, [1,2])]
     end
 end
+
+function reintroduce_rusts!(model::SpatialRustABM, n_rusts::Int)
+    activecofs = filter(c -> c.exh_countdown == 0, model.agents)
+    # n_rusts = max(round(Int, p * length(activecofs)), 1)
+    n_rusts = min(n_rusts, length(activecofs))
+    rusted_cofs = sample(model.rng, activecofs, n_rusts, replace = false)
+    nl_distr = Binomial(24, 0.05) # Merle, 2020
+
+    for rusted in rusted_cofs
+        deposited = 0.0
+        nl = n_lesions = 1 + rand(model.rng, nl_distr)
+        ages = rusted.ages
+        areas = rusted.areas
+        spores = rusted.spores
+
+        for _ in 1:nl
+            area = rand(model.rng)
+            # if area < 0.05 then the lesion is just in the "deposited" state,
+            # so no changes have to be made to any of its variables
+            if 0.05 < area < 0.9
+                push!(ages, 0)
+                push!(areas, area)
+                push!(spores, false)
+            elseif area > 0.9
+                push!(ages, 14)
+                push!(areas, area)
+                push!(spores, true)
+            else
+                deposited += 1.0
+                n_lesions -= 1
+            end
+        end
+
+        rusted.rusted = true
+        rusted.deposited = deposited
+        rusted.n_lesions = n_lesions
+    end
+end
