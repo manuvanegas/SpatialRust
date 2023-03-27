@@ -89,7 +89,7 @@ function simulate_single_plot(
     wind_data = winddata()
     when = collect_days()
 
-    steps = 618
+    steps = 616
     iday = 115
     sampled_blocks = 100
 
@@ -128,8 +128,9 @@ function simulate_single_plot(
         p_row...
     )
     setup_plant_sampling!(model2, 9, sampled_blocks)
-    per_age, prod_clr_cor, areas, nls, P1o, P12o, incidiff, anyrusts = abc_run_2y!(model2, steps, when)
-    per_age[!, :plot] .= ifelse(type == :fullsun, :sun, :shade)
+    per_age, prod_clr_cor, areas, nls, P1o, P12o, incidiff, rusts, active = abc_run_2y!(model2, steps, when)
+    plot = ifelse(type == :fullsun, :sun, :shade)
+    per_age[!, :plot] .= plot
     globdf = DataFrame(
         P1att = P1a,
         P12att = P12a,
@@ -139,8 +140,9 @@ function simulate_single_plot(
         areas = areas,
         nls = nls,
         incidiff = incidiff,
-        anyrusts = anyrusts,
-        plot = ifelse(type == :fullsun, :sun, :shade)
+        rusts = rusts,
+        active = active,
+        plot = plot
     )
 
     return per_age, globdf
@@ -166,10 +168,7 @@ end
 function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = Int[])
 
     ncofs = model.mngpars.n_cofs
-    cycledays = DataFrame(
-        day = [17, 77, 140, 259, 287, 315, 343, 372, 399, 427],
-        cycle = [[1], [2], [3], [4], [4,5], [5,6], [6,7], [7,8], [8,9], [9]]
-    )
+    allcofs = model.agents
 
     per_age = DataFrame(
         dayn = Int[], age = Int[], cycle = Int[],
@@ -181,23 +180,18 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
     prod_clr_cor = 0.0
     areas = 0.0
     nls = 0.0
-    P1 = 0.0
-    P12 = 0.0
     incid_comm = 0.0
     incid_harv = 0.0
-    # incids2 = zeros(2)
 
     for c in eachcol(per_age)
-        sizehint!(c, 110)
+        sizehint!(c, 612)
     end
 
-    allcofs = model.agents
-
-    s = 0
-    while s < n && model.current.withinbounds
-        cycleday = filter(:day => ==(s), cycledays)
-        if !isempty(cycleday)
-            newcycles = cycleday[1, :cycle]
+    step!(model, dummystep, step_model!, 17)
+    s = 17
+    while s < 456 && model.current.withinbounds
+        newcycles = cycledays(s)
+        if !isempty(newcycles)
             cycle_sentinels(model, minimum(newcycles) - 1, maximum(newcycles))
             if s ∈ when_weekly
                 cycle_n, max_age, week8 = current_cycle_ages(s)
@@ -212,61 +206,75 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
                 df[!, :dayn] .= s
                 append!(per_age, df)
             end
-        elseif s == 21
+        elseif s == 20
             get_prod_df!(prod_clr_df, allcofs)
             incid_comm = sum(map(c -> c.n_lesions > 0 ||c.exh_countdown > 0, allcofs)) / ncofs
-            # incid_comm = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
-        elseif s == 135
+        elseif s == 185
             areas, nls = get_areas_nl(allcofs)
             
-            # if length(model.rusts) < 3 && sum(map(c -> c.exh_countdown > 0, model.agents)) / ncofs < 0.1
             if sum(map(c -> c.n_lesions > 0, allcofs)) < 3 && sum(map(c -> c.exh_countdown > 0, allcofs)) / ncofs < 0.1
                 prod_clr_cor = missing
             else
                 prod_clr_cor = prod_clr_corr(prod_clr_df, allcofs)
             end
-        elseif s == 251
-            P1 = model.current.prod
-            # incid_harv = (sum(map(c -> c.exh_countdown > 0, model.agents)) + sum(getproperty.(model.agents, :n_lesions) .> 0)) / ncofs
-            incid_harv = (sum(map(c -> c.exh_countdown > 0 || c.n_lesions > 0, allcofs))) /ncofs 
-            # + sum(map(c -> c.n_lesions > 0, allcofs))) / ncofs
-            # elseif s == 501
-        #     incids2[1] = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
-        elseif s == 617
-            P12 = model.current.prod
-            # incids2[2] = sum(getproperty.(model.agents, :n_lesions) .> 0) / ncofs
+            incid_harv = (sum(map(c -> c.exh_countdown > 0 || c.n_lesions > 0, allcofs))) /ncofs
         end
         step!(model, dummystep, step_model!, 1)
         s += 1
     end
 
+    P1 = model.current.prod
+
+    while s < n && model.current.withinbounds
+        step!(model, dummystep, step_model!, 1)
+        s += 1
+    end
+
     if !model.current.withinbounds
-        areas = missing
-        nls = missing
-        prod_clr_cor = missing
-        Ps = [missing, missing]
-        incid_harv = missing
         per_age = pull_empdates()
         per_age[!, :area] .= missing
         per_age[!, :spore] .= missing
         per_age[!, :nl] .= missing
         per_age[!, :occup] .= missing
+
+        return per_age, missing, missing, missing, missing, missing, missing, missing, missing
+    else
+        P12 = model.current.prod
+        return per_age, prod_clr_cor, areas, nls, P1, P12, (incid_harv - incid_comm), sum(map(c -> c.n_lesions > 0, allcofs)), sum(map(c -> c.exh_countdown == 0, allcofs))
     end
-
-    return per_age, prod_clr_cor, areas, nls, P1, P12, (incid_harv - incid_comm), sum(map(c -> c.n_lesions > 0, allcofs)) > 0 #, sum(map(c -> c.exh_countdown > 0, allcofs))
 end
-
-n_infected(cofs::Vector{Coffee}) = map(c -> c.n_lesions > 0, cofs)
-infected(c::Coffee) = c.n_lesions > 0
-
-n_lesions(c::Coffee) = c.n_lesions
-
 
 function cat_dfs(Ti::Tuple{DataFrame, DataFrame}, Tj::Tuple{DataFrame, DataFrame})
     return vcat(Ti[1], Tj[1]), vcat(Ti[2], Tj[2])
 end
 
 ## Get cycle #, max relevant age
+
+function cycledays(today::Int)
+    if today == 17
+        return [1]
+    elseif today == 77
+        return [2]
+    elseif today == 140
+        return [3]
+    elseif today == 259
+        return [4]
+    elseif today == 287
+        return [4,5]
+    elseif today == 315
+        return [5,6]
+    elseif today == 343
+        return [6,7]
+    elseif today == 372
+        return [7,8]
+    elseif today == 399
+        return [8,9]
+    elseif today == 427
+        return [9]
+    else
+        return Int[]
+    end
+end
 
 function current_cycle_ages(today::Int)
     if today < 200
