@@ -9,35 +9,23 @@ function harvest!(model::SpatialRustABM)
     # end
 
     model.current.fung_count = 0
-    # new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive, model.rustpars.max_lesions, model.rustpars.reset_age)
     new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive)
 end
 
-# function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::Int)
 function new_harvest_cycle!(c::Coffee, surv_p::Float64)
     c.production = 0.0
     c.deposited *= surv_p
-    # surv_n = c.n_lesions = trunc(Int, c.n_lesions * surv_p)
     surv_n = trunc(Int, c.n_lesions * surv_p)
     if surv_n == 0
-        # fill!(c.ages, reset_age)
-        # fill!(c.areas, 0.0)
-        # fill!(c.spores, false)
         c.n_lesions = 0
         empty!(c.ages)
         empty!(c.areas)
         empty!(c.spores)
         if c.deposited < 0.05
             c.deposited = 0.0
-            # delete!(rust.rusts, c)
             c.rusted = false
         end
     else
-        # fill_n = max_nl - surv_n
-        # surv_sites = sortperm(ifzerothentwo.(c.areas))[1:surv_n]
-        # c.ages = append!(c.ages[surv_sites], fill(reset_age, fill_n))
-        # c.areas = append!(c.areas[surv_sites], zeros(fill_n))
-        # c.spores = append!(c.spores[surv_sites], fill(false, fill_n))
         lost = c.n_lesions - surv_n
         c.n_lesions = surv_n
         deleteat!(c.ages, 1:lost)
@@ -46,7 +34,7 @@ function new_harvest_cycle!(c::Coffee, surv_p::Float64)
     end
 end
 # 
-ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
+# ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
 
 # function prune_shades!(model::SpatialRustABM, prune_i::Int)
 #     prune_to = model.mngpars.target_shade[prune_i]
@@ -99,43 +87,27 @@ function inspect!(model::SpatialRustABM)
         # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
         elseif any(c.areas .> 0.1) && (rand(model.rng) < maximum(c.areas))
             n_infected += 1
-            spotted = unique!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas[1:c.n_lesions])), 5))
-            fill_n = length(spotted)
-            c.n_lesions -= fill_n
-            c.ages = append!(c.ages[Not(spotted)], fill(model.rustpars.reset_age, fill_n))
-            c.areas = append!(c.areas[Not(spotted)], zeros(fill_n))
-            c.spores = append!(c.spores[Not(spotted)], fill(false, fill_n))
+            spotted = unique!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), 5))
+            deleteat!(c.ages, spotted)
+            deleteat!(c.areas, spotted)
+            deleteat!(c.spores, spotted)
+            c.n_lesions -= length(spotted)
+            # fill_n = length(spotted)
+            # c.n_lesions -= fill_n
+            # c.ages = append!(c.ages[Not(spotted)], fill(model.rustpars.reset_age, fill_n))
+            # c.areas = append!(c.areas[Not(spotted)], zeros(fill_n))
+            # c.spores = append!(c.spores[Not(spotted)], fill(false, fill_n))
             if c.n_lesions == 0 && (c.deposited < 0.05)
                 c.deposited == 0.0
                 # delete!(model.rusts, c)
                 c.rusted = false
             end
         end
- 
-        # cof = model[c]
-        # if c.hg_id != 0# && rand < model.pars.inspect_effort * (sum(model[hg_id].state[2,]) / 3)
-        #     #elimina las que sean > 2.5, * effort
-        #     @inbounds rust = model[c.hg_id]
-        #     @inbounds areas = rust.state[2, 1:rust.n_lesions]
-        #     if rand(model.rng) < maximum(areas)
-        #     # if any(areas .> 0.05)
-        #         # replace!(a -> ifelse(a .< 0.05, 0.0, a), areas) # areas < 0.05 have 0 chance of being spotted
-        #         spotted = unique!(sample(model.rng, 1:rust.n_lesions, weights(areas), 5))
-        #         newstate = @inbounds rust.state[:, Not(spotted)]
-        #         rust.n_lesions -= length(spotted)
-        #         rust.state = hcat(newstate, zeros(4, length(spotted)))
-        #         n_infected += 1
-        #     end
-        #     # rust.n_lesions = round(Int, model[cof.hg_id].n_lesions * 0.1)
-        #     # rust.area = round(Int, model[cof.hg_id].area * 0.1)
-        # end
     end
 
     model.current.costs += model.mngpars.tot_inspect_cost
     model.current.obs_incidence = n_infected / model.mngpars.n_inspected
 end
-
-# exhausted(c::Coffee)::Bool = c.exh_countdown > 0
 
 visible(a::Float64) = a > 0.1 ? a : 0.0
 
