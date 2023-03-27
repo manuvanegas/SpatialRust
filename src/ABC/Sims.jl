@@ -103,7 +103,7 @@ function simulate_single_plot(
         temp_data = temp_data,
         ini_rusts = 0.0,
         prune_sch = [15,166,-1],
-        inspect_period = 460,
+        inspect_period = steps,
         fungicide_sch = Int[],
         target_shade = [0.15, 0.2, -1],
         shade_g_rate = 0.008,
@@ -121,7 +121,7 @@ function simulate_single_plot(
         temp_data = temp_data,
         ini_rusts = 0.02,
         prune_sch = [15, 166, -1],
-        inspect_period = 460,
+        inspect_period = steps,
         fungicide_sch = Int[],
         target_shade = [0.15, 0.2, -1],
         shade_g_rate = 0.008,
@@ -149,19 +149,12 @@ function simulate_single_plot(
 end
 
 function abc_att_run!(model::SpatialRustABM, n::Int, d::Int)
-    P1 = 0.0
-    P12 = 0.0
-    s = d
-    steps = d + n
-    while s < steps
-        if s == 366
-            P1 = model.current.prod
-        elseif s == 731
-            P12 = model.current.prod
-        end
-        step!(model, dummystep, step_model!, 1)
-        s += 1
-    end
+
+    step!(model, dummystep, step_model!, 250)
+    P1 = model.current.prod
+    step!(model, dummystep, step_model!, 365)
+    P12 = model.current.prod
+
     return P1, P12
 end
 
@@ -390,13 +383,13 @@ end
 
 
 function dummy_abc()
-    when_rust = Vector(Arrow.Table("data/exp_pro/input/whentocollect.arrow")[1])
-    when_2017 = filter(d -> d < 200, when_rust)
-    when_2018 = filter(d -> d > 200, when_rust)
-    w_table = Arrow.Table("data/exp_pro/input/weather.arrow")
-    temp_data = Tuple(w_table[2])
-    rain_data = Tuple(w_table[3])
-    wind_data = Tuple(w_table[4]);
+    # when_rust = Vector(Arrow.Table("data/exp_pro/input/whentocollect.arrow")[1])
+    # when_2017 = filter(d -> d < 200, when_rust)
+    # when_2018 = filter(d -> d > 200, when_rust)
+    # w_table = Arrow.Table("data/exp_pro/input/weather.arrow")
+    # temp_data = Tuple(w_table[2])
+    # rain_data = Tuple(w_table[3])
+    # wind_data = Tuple(w_table[4]);
 
     tdf = DataFrame(
         p_row = [1,2, 3], 
@@ -418,5 +411,5 @@ function dummy_abc()
         target_shade = [[0.15, 0.25], [0.15, 0.25], [0.15, 0.25]]
     )
 
-    touts = map(p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018), Tables.namedtupleiterator(tdf))
+    touts = map(p -> sim_abc(p), Tables.namedtupleiterator(tdf))
 end
