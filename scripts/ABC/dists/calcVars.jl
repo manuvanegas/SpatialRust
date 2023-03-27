@@ -10,7 +10,7 @@ time_load = @elapsed begin
 end
 println("Load: $time_load")
 
-mkpath("results/ABC/variances/sents/q7")
+mkpath("results/ABC/variances/sents/q8")
 
 # read relevant files
 time_read = @elapsed begin
@@ -34,27 +34,28 @@ flush(stdout)
 
 # calculate variance from sim outputs
 time_vars = @elapsed begin
-    # g_σ2_quants, g_n_quants = g_σ2_nts(quantfiles)
-    σ2_quants, n_quants, g_σ2_quants, g_n_quants = σ2_nts(quantfiles)
+    g_σ2_quants, g_n_quants = σ2_nts(quantfiles)
+    # σ2_quants, n_quants, g_σ2_quants, g_n_quants = σ2_nts(quantfiles)
     # σ2_quants, n_quants = σ2_nts(quantfiles)
     σ2_quals, n_quals = σ2_ls(qualfiles)
 end
-
-time_join = @elapsed begin
-    σ2_quants = leftjoin(quantdata, σ2_quants, on = [:plot, :dayn, :age, :cycle], order = :left)
-    n_quants = leftjoin(quantdata[:, [:plot, :dayn, :age, :cycle]], n_quants, on = [:plot, :dayn, :age, :cycle], order = :left)
-end
 println("Variance: $time_vars")
-println("Join: $time_join")
+flush(stdout)
+
+# time_join = @elapsed begin
+#     # σ2_quants = leftjoin(quantdata, σ2_quants, on = [:plot, :dayn, :age, :cycle], order = :left)
+#     # n_quants = leftjoin(quantdata[:, [:plot, :dayn, :age, :cycle]], n_quants, on = [:plot, :dayn, :age, :cycle], order = :left)
+# end
+# println("Join: $time_join")
 flush(stdout)
 
 time_write = @elapsed begin
     # write csvs
-    CSV.write("results/ABC/variances/sents/q7/v_quants.csv", σ2_quants)
-    CSV.write("results/ABC/variances/sents/q7/v_gquants.csv", g_σ2_quants)
-    CSV.write("results/ABC/variances/sents/q7/v_quals.csv", σ2_quals)
-    CSV.write("results/ABC/variances/sents/q7/n_quants.csv", n_quants)
-    CSV.write("results/ABC/variances/sents/q7/n_gquants.csv", g_n_quants)
-    CSV.write("results/ABC/variances/sents/q7/n_quals.csv", n_quals)
+    # CSV.write("results/ABC/variances/sents/q7/v_quants.csv", σ2_quants)
+    CSV.write("results/ABC/variances/sents/q8/v_gquants.csv", g_σ2_quants)
+    CSV.write("results/ABC/variances/sents/q8/v_quals.csv", σ2_quals)
+    # CSV.write("results/ABC/variances/sents/q7/n_quants.csv", n_quants)
+    CSV.write("results/ABC/variances/sents/q8/n_gquants.csv", g_n_quants)
+    CSV.write("results/ABC/variances/sents/q8/n_quals.csv", n_quals)
 end
 println("Write: $time_write")
