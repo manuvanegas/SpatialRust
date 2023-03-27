@@ -210,8 +210,12 @@ function init_spatialrust(;
     n_coffees = count(farm_map .== 1)
 
     pruneskept = filter!(i -> prune_sch[i] > 0, sortperm(prune_sch))
-    sort!(prune_sch)
-    if !allunique(prune_sch)
+    keepat!(prune_sch, pruneskept)
+    keepat!(target_shade, pruneskept)
+    if (l = length(prune_sch) == 2) && !allunique(prune_sch)
+        prune_sch = keepat!(prune_sch, 1)
+        target_shade = minimum(target_shade)
+    elseif l == 3 && !allunique(prune_sch)
         if prune_sch[1] == prune_sch[3]
             prune_sch = keepat!(prune_sch, 1)
             target_shade = minimum(target_shade)
@@ -225,8 +229,8 @@ function init_spatialrust(;
             target_shade[1] = min(target_shade[1], ts)
         end
     end
-    prune_sch = Tuple(keepat!(prune_sch, pruneskept))
-    target_shade = Tuple(keepat!(target_shade, pruneskept))
+    prune_sch = Tuple(prune_sch)
+    target_shade = Tuple(target_shade)
 
     fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
     n_inspect = trunc(Int, inspect_effort * n_coffees)
