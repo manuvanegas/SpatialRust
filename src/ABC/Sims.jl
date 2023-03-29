@@ -197,7 +197,6 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
     while s < 456 && model.current.withinbounds
         newcycles = cycledays(s)
         if !isempty(newcycles)
-            cycle_sentinels(model, minimum(newcycles) - 1, maximum(newcycles))
             if s ∈ when_weekly
                 cycle_n, max_age, week8 = current_cycle_ages(s)
                 let df = get_weekly_data(model, cycle_n, max_age, week8)
@@ -205,6 +204,7 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
                     append!(per_age, df)
                 end
             end
+            cycle_sentinels(model, minimum(newcycles) - 1, maximum(newcycles))
         elseif s ∈ when_weekly
             cycle_n, max_age, week8 = current_cycle_ages(s)
             let df = get_weekly_data(model, cycle_n, max_age, week8)

@@ -144,7 +144,7 @@ function abs_norm_dist(sims::DataFrame, empdata::DataFrame, vars::DataFrameRow):
 end
 
 absdiff(sim::Float64, dat::Float64, var::Float64) = (sim - dat)^2 / var
-absdiff(sim::Missing, dat::Float64, var::Float64) = 4.0 * dat^2 / var
+absdiff(sim::Missing, dat::Float64, var::Float64) = dat^2 / var
 absdiff(sim::Float64, dat::Missing, var::Float64) = 0.0
 absdiff(sim::Missing, dat::Missing, var::Float64) = 0.0
 
