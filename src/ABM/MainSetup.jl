@@ -188,7 +188,7 @@ function init_spatialrust(;
         map_side = size(farm_map)[1]
     end
 
-    smap = create_shade_map(farm_map, shade_r, map_side)
+    smap = create_shade_map(farm_map, shade_r, map_side, common_map)
 
     cp = CoffeePars(
         veg_d, rep_d, f_avail * phs_max, k_sl, k_v, photo_frac,
