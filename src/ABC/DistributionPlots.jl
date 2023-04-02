@@ -28,8 +28,8 @@ function dodged_rainclouds(wideparams::DataFrame, wideselected::DataFrame, nnorm
 
     nparams = filter(:variable => v -> isnormalpar(v), params)
     nselected = filter(:variable => v -> isnormalpar(v), selected)
-    uparams = filter(:variable => v -> !isnormalpar(v), params)
-    uselected = filter(:variable => v -> !isnormalpar(v), selected)
+    uparams = filter(:variable => v -> !isnormalpar(v) && v != "wind_distance", params)
+    uselected = filter(:variable => v -> !isnormalpar(v) && v != "wind_distance", selected)
 
     fbox = Figure(resolution = (width, height));
     # fbox = Figure(resolution = (72 .* (5, 10)), fontsize = 11);
