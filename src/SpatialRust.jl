@@ -1,7 +1,6 @@
 module SpatialRust
 
-using Agents, Distributions, Random
-using DataFrames
+using Agents, DataFrames, Distributions, Random
 using DrWatson: srcdir, datadir
 using StatsBase: sample, weights
 
@@ -30,7 +29,6 @@ include(srcdir("ABC", "Sims.jl"))
 
 export SpatialRustABM
 
-# precompile(dummyrun_spatialrust, (Int, Int, Int))
 end
 #
 # function dummyrun_spatialrust()
