@@ -1,7 +1,7 @@
 # Calculate distances using FileTrees
 
 ## "Qualitative" variables
-function calc_l_dists(qualsdirname::String, dats::DataFrame, vars::DataFrameRow)::DataFrame
+function calc_l_dists(qualsdirname::String, dats::DataFrame, vars::DataFrameRow)::NTuple{2, DataFrame}
     ft = FileTree(string("/scratch/mvanega1/ABC/sims/", qualsdirname))
     l_file_tree = FileTrees.load(ft; lazy = true) do file
         DataFrame(Arrow.Table(path(file)))
@@ -89,7 +89,7 @@ function diff_quals(sims::DataFrame, dats::DataFrame, vars::DataFrameRow)::DataF
 
     selfmetrics[!, :P12loss_dn] = baltoldist.(
         selfmetrics[!, :P12loss],
-        max(0.2, selfmetrics[!, :P1loss] .* dats[1, :P12loss]),
+        minloss.(0.2, selfmetrics[!, :P1loss] .* dats[1, :P12loss]),
         dats[2, :P12loss], 2.0) # double weight for losses that are too small
     selfmetrics[!, :P12loss_dv] = selfmetrics[!, :P12loss_dn] ./ vars[:P12loss]
 
@@ -97,11 +97,12 @@ function diff_quals(sims::DataFrame, dats::DataFrame, vars::DataFrameRow)::DataF
         selfmetrics[!, Symbol(name, :_dn)] = toldist.(selfmetrics[!, name], Ref(dats[!, name]))
         selfmetrics[!, Symbol(name, :_dv)] = selfmetrics[!, Symbol(name, :_dn)] ./ vars[name]
     end
-    selfmetrics[!, :surv_dn] = selfmetrics[!, :rusts] .> 4 .&& selfmetrics[!, :active] .> 4
+    # selfmetrics[!, :surv_dn] = selfmetrics[!, [:rusts]] .> 4 .&& selfmetrics[!, :active] .> 4
+    transform!(selfmetrics, [:rusts, :active] => ByRow(survival) => :surv_dn)
     selfmetrics[!, :surv_dv] = selfmetrics[!, :surv_dn]
     
     prowdists = combine(groupby(selfmetrics, :p_row),
-    r"_d" .=> mean,
+    Cols(r"_d") .=> mean,
     renamecols = false)
 
 
@@ -110,9 +111,9 @@ function diff_quals(sims::DataFrame, dats::DataFrame, vars::DataFrameRow)::DataF
     return prowdists
 end
 
-function ind_yield(P1att::Float64, P12att::Float64, P1obs::Float64, P12obs::Float64, plot::Symbol)
+function ind_yield(P1att, P12att, P1obs, P12obs, plot::Symbol)
     ncofs = ifelse(plot == :sun, 5000, 4711)
-    return P1att / ncofs, P12att / ncofs, P1obs / ncofs, P12obs / ncofs
+    return P1att / ncofs, P12att / ncofs, P1obs / ncofs, P12obs / ncofs, plot
 end
 
 function yieldloss(y1att, y1obs, y12att, y12obs)
@@ -137,7 +138,7 @@ function toldist(sim::Float64, tol::Vector{Float64})
     end
 end
 
-toldist(sim::Missing, tol::Vector{Union{Missing,Float64}}) = 1e5
+toldist(sim::Missing, tol) = 1e5
 
 # function toldistsep(sim::Union{Missing, Float64}, tmin::Union{Missing, Float64}, tmax::Union{Missing, Float64})
 #     if ismissing(sim) || !isfinite(sim)
@@ -151,8 +152,7 @@ toldist(sim::Missing, tol::Vector{Union{Missing,Float64}}) = 1e5
 #     end
 # end
 
-baltoldist(sim::Missing, tmin::Missing, tmax::Float64) = 1e5
-baltoldist(sim::Missing, tmin::Float64, tmax::Float64) = 1e5
+baltoldist(sim::Missing, tmin, tmax::Float64, bal::Float64) = 1e5
 
 function baltoldist(sim::Float64, tmin::Float64, tmax::Float64, bal::Float64)
     if !isfinite(sim)
@@ -165,6 +165,13 @@ function baltoldist(sim::Float64, tmin::Float64, tmax::Float64, bal::Float64)
         return 0.0
     end
 end
+
+minloss(tmin::Float64, sim::Float64) = max(tmin, sim)
+
+minloss(tmin::Float64, sim::Missing) = missing
+
+survival(rust::Int, cof::Int) = rust > 4 && cof > 4
+survival(rust::Missing, cof::Missing) = false
 
 ## Quantitative variables
 function calc_nt_dists(quantsdirname::String, empdata::DataFrame, vars::DataFrameRow)::NTuple{2, DataFrame}
