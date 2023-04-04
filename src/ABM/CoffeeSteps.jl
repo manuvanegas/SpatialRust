@@ -120,7 +120,9 @@ function rep_growth!(coffee::Coffee, pars::CoffeePars, sl::Float64)
 end
 
 
-init_storage(sl::Float64) = 100.0 * exp(-6.2 * sl) + 2.5
+init_storage(sl::Float64) = 75.5 * exp(-5.5 * sl) + 2.2
+init_veg(sl::Float64) = 0.84 * sl + 1.14
+
 # new_veg_storage(neighs::Float64, shade::Float64) = 120.0 - 100.0 * neighs * shade
 # new_veg_storage(sunlight::Float64) = 120.0 - 100.0 * sunlight
 

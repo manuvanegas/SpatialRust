@@ -96,7 +96,43 @@ ttfig40 = plotevenodd(1, 0.001, 40)
 # Makie.inline!(true) #true -> display in ide; false -> new window (allows inspecting data points)
 # ttfig40
 
-vegodd, _, storodd = ndayavgs(1, 0.001, 40, false)
+vegodd, _, storodd = ndayavgs(1, 0.01, 40, false)
+vegodddat, _, storodddat = ndayavgs(1, 0.01, 40, false)
+datdf = DataFrame(l = 0.01:0.01:1.0, veg = vegodddat, stor = storodddat)
+
+
+function stor_appr(light)
+    C = 75.5 #100.0
+    k = -5.5 #-6.2
+    c = 2.2 # 2.5
+
+    C * exp(k * light) + c
+end
+function veg_appr(light)
+    # C = 
+    # k = 
+    # c = 
+
+    # C * exp(k * light) + c
+    0.84 * light + 1.14
+end
+
+
+Makie.inline!(true)
+ttfitlights = 0.01:0.01:1.0
+lines(ttfitlights, stor_appr.(ttfitlights));
+lines!(ttfitlights, storodd)
+current_figure()
+
+
+lines(ttfitlights[50:100], stor_appr.(ttfitlights[50:100]));
+lines!(ttfitlights[50:100], storodd[50:100])
+current_figure()
+
+stor_appr(0.82)
+3.119507907287153
+veg_appr(0.82)
+1.8287999999999998
 
 # test numbers
 figtest = plot_sun_shade(false, false,
@@ -147,23 +183,6 @@ function lookup_dict(day::Int, lstep::Float64, ys::Int, bd::Int = 135)
     lights = lstep:lstep:1.0
     vegstor_light = Dict(l => (v, s) for (l,v,s) in zip(lights, vegv, storv))
 end
-
-Makie.inline!(true)
-ttfitlights = 0.01:0.01:1.0
-lines(ttfitlights, 100.0 .* exp.(- 6.2 .* ttfitlights) .+ 2.5)
-lines!(0.001:0.001:1.0, storodd)
-current_figure()
-
-
-function stor_appr(light)
-    C = 100.0
-    k = -6.2
-    c = 2.5
-
-    C * exp(k * light) + c
-end
-
-
 
 ## Now for ABC. Starts Apr 26, which is day # 116
 

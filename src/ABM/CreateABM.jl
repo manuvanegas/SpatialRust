@@ -17,7 +17,9 @@ function add_trees!(model::SpatialRustABM)
             add_agent!(
                 # Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
                 Tuple(pos), model, max_lesions, rand(model.rng, rustgr_dist);
-                sunlight = sunlight, storage = init_storage(sunlight)
+                sunlight = sunlight,
+                veg = init_veg(sunlight),
+                storage = init_storage(sunlight)
             )
         end
     end
