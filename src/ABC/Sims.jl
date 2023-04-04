@@ -382,13 +382,13 @@ function current_cycle_ages(today::Int)
         elseif today == 427
             return [8, 9], 6, true
         elseif today == 434
-            return [9, 10], 4, false
+            return [9], 4, false
         elseif today == 442
-            return [9, 10], 5, false
+            return [9], 5, false
         elseif today == 448
-            return [9, 10], 5, false
+            return [9], 5, false
         elseif today == 455
-            return [9, 10], 6, true
+            return [9], 6, true
         end
     end
 end 

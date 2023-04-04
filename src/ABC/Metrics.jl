@@ -114,7 +114,7 @@ function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::I
             df_c = DataFrame()
             df_c[!, :age] = div.(cof.ages, 7, RoundNearest)
             df_c[!, :area] = cof.areas
-            df_c[!, :spore] = cof.spores .* cof.areas .* spore_pct
+            df_c[!, :spore] = cof.spores #.* cof.areas .* spore_pct
             df_c[!, :id] .= cof.id
             df_c[!, :cycle] .= cof.cycle
             df_c[!, :nl] .= cof.n_lesions
@@ -135,7 +135,7 @@ function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::I
             df_areas = combine(
                 groupby(df_i, [:age, :cycle]),
                 :area => median => :area,
-                :spore => median => :spore,
+                :spore => mean => :spore,
                 nrow => :occup
             )
             if cycle_last
