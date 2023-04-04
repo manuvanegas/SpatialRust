@@ -12,15 +12,15 @@ end
 quantsdirname = ARGS[1]
 qualsdirname = ARGS[2]
 qldats = DataFrame(
-    P1loss = [0.05, 0.45],
-    P12loss = [1.1, 0.75], #
+    P1loss = [0.1, 0.5], ##
+    P12loss = [1.1, 0.9], # ##
     incidiff = [0.35, 1.0],
     cor = [0.2, 0.95],
-    P1att = [-10.0, 0.6], #
+    P1att = [-0.005, 0.6], #
     bienniality = [-0.01, 1.0],
     Pattpct = [0.0, 0.25],
-    areas = [-0.1, 1000.0],
-    nls = [-1000.0, 0.1]
+    areas = [-0.1, 25.0],
+    nls = [-25.0, 0.1]
 )
 
 mkpath("results/ABC/dists/sents/q8")
@@ -31,7 +31,7 @@ qlvars = CSV.read("results/ABC/variances/sents/q8/v_quals.csv", DataFrame)
 
 
 time_dists = @elapsed begin
-    l_dists = calc_l_dists(qualsdirname, qldats, qlvars[1,:])
+    l_distsn, l_distsv = calc_l_dists(qualsdirname, qldats, qlvars[1,:])
     nt_dists, nmissings = calc_nt_dists(quantsdirname, empdata, qntvars[1,:])
 end
 println("Distances: $time_dists")
@@ -43,10 +43,12 @@ time_joinwrite = @elapsed begin
     # scale quant dists by # obs
     scale_dists!(nt_dists, obscounts)
     # join quant and qual dists
-    dists = leftjoin(nt_dists, l_dists, on = :p_row)
+    ndists = leftjoin(nt_dists, l_distsn, on = :p_row)
+    vdists = leftjoin(nt_dists, l_distsv, on = :p_row)
     # write
     # CSV.write("results/ABC/dists/sents/novar/squareddists.csv", dists)
-    CSV.write("results/ABC/dists/sents/q8/squareddists.csv", dists)
+    CSV.write("results/ABC/dists/sents/q8/squareddists_n.csv", ndists)
+    CSV.write("results/ABC/dists/sents/q8/squareddists_v.csv", vdists)
     CSV.write("results/ABC/dists/sents/q8/nmissings.csv", nmissings)
 end
 println("Join+write: $time_joinwrite")

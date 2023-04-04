@@ -18,7 +18,7 @@ function calc_l_dists(qualsdirname::String, dats::DataFrame, vars::DataFrameRow)
     #     Not(:p_row) .=> missum,
     #     renamecols = false
     # )
-    return rowdists
+    return select(rowdists, :p_row, r"_dn"), select(rowdists, :p_row, r"_dv")
 end
 
 # function missum(v)
@@ -35,75 +35,132 @@ end
 # function diff_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
 function diff_quals(sims::DataFrame, dats::DataFrame, vars::DataFrameRow)::DataFrame
 
-    selfmetrics = select(sims, :p_row,
-        [:P1att, :P1obs, :P12att, :P12obs] => ByRow(yieldloss) => [:P1loss, :P12loss],
-        :incidiff, :cor
+    # divide total production by number of coffees to get yield per coffee
+    prodcols = [:P1att, :P12att, :P1obs, :P12obs, :plot]
+    sims = transform(sims,
+        prodcols => ByRow(ind_yield) => prodcols
     )
-    metricsself = [:P1loss, :incidiff, :cor]
-    for name in metricsself
-        selfmetrics[!, Symbol(name, :_d)] = toldist.(selfmetrics[!, name], Ref(dats[!, name]), vars[name])
-    end
-    selfmetrics[!, :P12loss_d] = toldistsep.(selfmetrics[!, :P12loss], selfmetrics[!, :P12loss] .* dats[1, :P12loss], dats[2, :P12loss], vars[:P12loss])
-    
-    prowdists = combine(groupby(selfmetrics, :p_row),
-    [:incidiff_d, :cor_d, :P1loss_d, :P12loss_d] .=> mean,
-    renamecols = false)
 
-
-
+    # diffmetrics: metrics whose relevance is in the difference between sun and shade
     diffmetrics = select(sims, :p_row, :plot,
         [:P1att, :P12att] => ByRow(bienniality) => [:P1att, :bienniality, :P12att],
         :areas, :nls
     )
 
-    dfsun = subset(diffmetrics, :plot => ByRow(==(:sun)))
-    dfsh = subset(diffmetrics, :plot => ByRow(==(:shade)))
+    dfsun = subset(diffmetrics, :plot => ByRow(==(:sun)), view = true)[!, Not(:plot)]
+    dfsh = subset(diffmetrics, :plot => ByRow(==(:shade)), view = true)[!, Not(:plot)]
+    widedf = outerjoin(dfsun, dfsh, on = :p_row, renamecols = "_sun" => "_sh")
 
-    metricsdiff = [:P1att, :bienniality, :areas, :nls]
-
-    dfsun[!, metricsdiff] = dfsun[!, metricsdiff] .- dfsh[!, metricsdiff]
-    dfsun[!, :Pattpct] = 1.0 .- dfsh[!, :P12att] ./ dfsun[!, :P12att]
-
-    diffdists = DataFrame(p_row = unique(sims[:, :p_row]))
-    for name in [:Pattpct, :bienniality, :areas, :nls]
-        diffdists[!, Symbol(name, :_d)] .= toldist.(dfsun[!, name], Ref(dats[!, name]), vars[name])
+    for m in [:P1att, :bienniality, :areas, :nls]
+        widedf[!, m] = widedf[!, Symbol(m, :_sun)] - widedf[!, Symbol(m, :_sh)]
     end
-    diffdists[!, :P1att_d] = toldistsep.(dfsun[!, :P1att], dats[1, :P1att], dfsun[!, :P1att] .* dats[2, :P1att], vars[:P1att])
+    widedf[!, :Pattpct] = 1.0 .- widedf[!, :P12att_sun] ./ widedf[!, :P12att_sh]
+
+    diffdists = DataFrame(p_row = widedf[:, :p_row])
+    for name in [:Pattpct, :bienniality, :areas, :nls]
+        diffdists[!, Symbol(name, :_dn)] = toldist.(widedf[!, name], Ref(dats[!, name]))
+        diffdists[!, Symbol(name, :_dv)] = diffdists[!, Symbol(name, :_dn)] ./ vars[name]
+    end
+    diffdists[!, :P1att_dn] = toldist.(widedf[!, :P1att], widedf[!, :P1att] .* Ref(dats[!, :P1att]))
+    diffdists[!, :P1att_dv] = diffdists[!, :P1att_dn] ./ vars[:P1att]
+
+    # metricsdiff = [:P1att, :bienniality, :areas, :nls]
+
+    # dfsun[!, metricsdiff] = dfsun[!, metricsdiff] .- dfsh[!, metricsdiff]
+    # dfsun[!, :Pattpct] = 1.0 .- dfsh[!, :P12att] ./ dfsun[!, :P12att]
+
+    # diffdists = DataFrame(p_row = unique(sims[:, :p_row]))
+    # for name in [:Pattpct, :bienniality, :areas, :nls]
+    #     diffdists[!, Symbol(name, :_d)] .= toldist.(dfsun[!, name], Ref(dats[!, name]), vars[name])
+    # end
+    # diffdists[!, :P1att_d] = toldistsep.(dfsun[!, :P1att], dats[1, :P1att], dfsun[!, :P1att] .* dats[2, :P1att], vars[:P1att])
+
+
+
+    # selfmetrics: metrics that are "self-relevant"
+    # distance output is the mean of sun and shade dists
+    selfmetrics = select(sims, :p_row,
+        [:P1att, :P1obs, :P12att, :P12obs] => ByRow(yieldloss) => [:P1loss, :P12loss],
+        :incidiff, :cor, :rusts, :active
+    )
+    
+    selfmetrics[!, :P1loss_dn] = baltoldist.(selfmetrics[!, :P1loss], dats[1, :P1loss], dats[2, :P1loss], 5.0) # dist from 0.5 to 1 is 5X dist from 0 to 0.1
+    selfmetrics[!, :P1loss_dv] = selfmetrics[!, :P1loss_dn] ./ vars[:P1loss]
+
+    selfmetrics[!, :P12loss_dn] = baltoldist.(
+        selfmetrics[!, :P12loss],
+        max(0.2, selfmetrics[!, :P1loss] .* dats[1, :P12loss]),
+        dats[2, :P12loss], 2.0) # double weight for losses that are too small
+    selfmetrics[!, :P12loss_dv] = selfmetrics[!, :P12loss_dn] ./ vars[:P12loss]
+
+    for name in [:incidiff, :cor]
+        selfmetrics[!, Symbol(name, :_dn)] = toldist.(selfmetrics[!, name], Ref(dats[!, name]))
+        selfmetrics[!, Symbol(name, :_dv)] = selfmetrics[!, Symbol(name, :_dn)] ./ vars[name]
+    end
+    selfmetrics[!, :surv_dn] = selfmetrics[!, :rusts] .> 4 .&& selfmetrics[!, :active] .> 4
+    selfmetrics[!, :surv_dv] = selfmetrics[!, :surv_dn]
+    
+    prowdists = combine(groupby(selfmetrics, :p_row),
+    r"_d" .=> mean,
+    renamecols = false)
+
 
     leftjoin!(prowdists, diffdists, on = :p_row)
 
     return prowdists
 end
 
+function ind_yield(P1att::Float64, P12att::Float64, P1obs::Float64, P12obs::Float64, plot::Symbol)
+    ncofs = ifelse(plot == :sun, 5000, 4711)
+    return P1att / ncofs, P12att / ncofs, P1obs / ncofs, P12obs / ncofs
+end
+
 function yieldloss(y1att, y1obs, y12att, y12obs)
-    y1loss = (y1att - y1obs) / y1att
-    return y1loss, ((y12att - y12obs) / y12att)
+    # y1loss = (y1att - y1obs) / y1att
+    return ((y1att - y1obs) / y1att), ((y12att - y12obs) / y12att)
 end
 
 function bienniality(Y1, Y12)
     return Y1, (abs(2.0 * Y1 - Y12) / Y1), Y12
 end
 
-function toldist(sim::Union{Missing, Float64}, tol::Vector{Float64}, var::Float64)
+function toldist(sim::Float64, tol::Vector{Float64})
     tmin, tmax = tol
-    if ismissing(sim) || !isfinite(sim)
-        return 10e4
+    if !isfinite(sim)
+        return 1e5
     elseif sim > tmax
-        return (sim - tmax) ^ 2 / var
+        return (sim - tmax) ^ 2
     elseif sim < tmin
-        return (tmin - sim) ^ 2 / var
+        return (tmin - sim) ^ 2
     else
         return 0.0
     end
 end
 
-function toldistsep(sim::Union{Missing, Float64}, tmin::Union{Missing, Float64}, tmax::Union{Missing, Float64}, var::Float64)
-    if ismissing(sim) || !isfinite(sim)
-        return 10e4
+toldist(sim::Missing, tol::Vector{Union{Missing,Float64}}) = 1e5
+
+# function toldistsep(sim::Union{Missing, Float64}, tmin::Union{Missing, Float64}, tmax::Union{Missing, Float64})
+#     if ismissing(sim) || !isfinite(sim)
+#         return 1e5
+#     elseif sim > tmax
+#         return (sim - tmax) ^ 2
+#     elseif sim < tmin
+#         return (tmin - sim) ^ 2
+#     else
+#         return 0.0
+#     end
+# end
+
+baltoldist(sim::Missing, tmin::Missing, tmax::Float64) = 1e5
+baltoldist(sim::Missing, tmin::Float64, tmax::Float64) = 1e5
+
+function baltoldist(sim::Float64, tmin::Float64, tmax::Float64, bal::Float64)
+    if !isfinite(sim)
+        return 1e5
     elseif sim > tmax
-        return (sim - tmax) ^ 2 / var
+        return (sim - tmax) ^ 2
     elseif sim < tmin
-        return (tmin - sim) ^ 2 / var
+        return (bal * (tmin - sim)) ^ 2
     else
         return 0.0
     end
