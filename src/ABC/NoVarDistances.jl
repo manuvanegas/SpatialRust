@@ -54,14 +54,14 @@ function diff_quals(sims::DataFrame, dats::DataFrame, vars::DataFrameRow)::DataF
     for m in [:P1att, :bienniality, :areas, :nls]
         widedf[!, m] = widedf[!, Symbol(m, :_sun)] - widedf[!, Symbol(m, :_sh)]
     end
-    widedf[!, :Pattpct] = 1.0 .- widedf[!, :P12att_sun] ./ widedf[!, :P12att_sh]
+    widedf[!, :Pattpct] = 1.0 .- widedf[!, :P12att_sh] ./ widedf[!, :P12att_sun]
 
     diffdists = DataFrame(p_row = widedf[:, :p_row])
     for name in [:Pattpct, :bienniality, :areas, :nls]
         diffdists[!, Symbol(name, :_dn)] = toldist.(widedf[!, name], Ref(dats[!, name]))
         diffdists[!, Symbol(name, :_dv)] = diffdists[!, Symbol(name, :_dn)] ./ vars[name]
     end
-    diffdists[!, :P1att_dn] = toldist.(widedf[!, :P1att], widedf[!, :P1att] .* Ref(dats[!, :P1att]))
+    diffdists[!, :P1att_dn] = toldist.(widedf[!, :P1att], widedf[!, :P1att_sun] .* Ref(dats[!, :P1att]))
     diffdists[!, :P1att_dv] = diffdists[!, :P1att_dn] ./ vars[:P1att]
 
     # metricsdiff = [:P1att, :bienniality, :areas, :nls]
