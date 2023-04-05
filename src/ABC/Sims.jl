@@ -37,18 +37,6 @@ function sim_abc(p_row::NamedTuple,
     #     p_row, temp_data, rain_data, wind_data, when_2017, when_2018, :regshaded
     # )
 
-    sun_per_age_df, sun_globs_df, sun_cor_df = simulate_single_plot(p_row, :fullsun)
-
-    shade_per_age_df, shade_globs_df, shade_cor_df = simulate_single_plot(p_row, :regshaded)
-
-    # sun_per_age_df, sun_globs_df = simulate_single_plot(
-    #     p_row, w, when, :fullsun
-    # )
-
-    # shade_per_age_df, shade_globs_df = simulate_single_plot(
-    #     p_row, w, when, :regshaded
-    # )
-
     if p_row[:p_row] % 500 > 496
         GC.gc()
         # println("Row $(p_row[:p_row])")
@@ -58,22 +46,93 @@ function sim_abc(p_row::NamedTuple,
         # flush(stdout)
     end
 
-    if any(ismissing.(sun_cor_df[!, 1])) || any(ismissing.(shade_cor_df[!, 1]))
-        prod_clr_cor = missing
+    sun_per_age_df, sun_cor_df, sun_globs  = simulate_single_plot(p_row, :fullsun)
+
+    if isempty(sun_per_age_df)
+
+        per_age_df = pull_empdates()
+        per_age_df[!, :area] .= missing
+        per_age_df[!, :spore] .= missing
+        per_age_df[!, :nl] .= missing
+        per_age_df[!, :occup] .= missing
+        per_age_df[!, :p_row] .= p_row[:p_row]
+
+        globs_df = DataFrame(
+            P1att = [missing, missing],
+            P12att = [missing, missing],
+            P1obs = [missing, missing],
+            P12obs = [missing, missing],
+            areas = [missing, missing],
+            nls = [missing, missing],
+            incidiff = [missing, missing],
+            rusts = [missing, missing],
+            active = [missing, missing],
+            cor = [missing, missing],
+            plot = [:sun, :shade],
+            p_row = [p_row[:p_row], p_row[:p_row]]
+        )
+
     else
-        append!(sun_cor_df, shade_cor_df)
-        if isempty(sun_cor_df)
-            prod_clr_cor = missing
+
+        shade_per_age_df, shade_cor_df, shade_globs = simulate_single_plot(p_row, :regshaded)
+
+        if isempty(shade_per_age_df)
+
+            per_age_df = pull_empdates()
+            per_age_df[!, :area] .= missing
+            per_age_df[!, :spore] .= missing
+            per_age_df[!, :nl] .= missing
+            per_age_df[!, :occup] .= missing
+            per_age_df[!, :p_row] .= p_row[:p_row]
+
+            globs_df = DataFrame(
+                P1att = [missing, missing],
+                P12att = [missing, missing],
+                P1obs = [missing, missing],
+                P12obs = [missing, missing],
+                areas = [missing, missing],
+                nls = [missing, missing],
+                incidiff = [missing, missing],
+                rusts = [missing, missing],
+                active = [missing, missing],
+                cor = [missing, missing],
+                plot = [:sun, :shade],
+                p_row = [p_row[:p_row], p_row[:p_row]]
+            )
         else
-            prod_clr_cor = corkendall(sun_cor_df[!, :FtL], sun_cor_df[!, :clr_cat])
+            sun_per_age_df[!, :plot] .= :sun
+            shade_per_age_df[!, :plot] .= :shade
+
+            per_age_df = vcat(sun_per_age_df, shade_per_age_df)
+            per_age_df[!, :p_row] .= p_row[:p_row]
+
+            if any(ismissing.(sun_cor_df[!, 1])) || any(ismissing.(shade_cor_df[!, 1]))
+                prod_clr_cor = missing
+            else
+                append!(sun_cor_df, shade_cor_df)
+                if isempty(sun_cor_df)
+                    prod_clr_cor = missing
+                else
+                    prod_clr_cor = corkendall(sun_cor_df[!, :FtL], sun_cor_df[!, :clr_cat])
+                end
+            end
+
+            globs_df = DataFrame([sun_globs, shade_globs])
+            rename!(globs_df, [:P1att, :P12att, :P1obs, :P12obs, :areas, :nls, :incidiff, :rusts, :active])            
+            # globs_df = vcat(sun_globs_df, shade_globs_df)
+            globs_df[!, :cor] .= prod_clr_cor
+            globs_df[!, :plot] .= [:sun, :shade]
+            globs_df[!, :p_row] .= p_row[:p_row]
         end
     end
 
-    per_age_df = vcat(sun_per_age_df, shade_per_age_df)
-    per_age_df[!, :p_row] .= p_row[:p_row]
-    globs_df = vcat(sun_globs_df, shade_globs_df)
-    globs_df[!, :cor] .= prod_clr_cor
-    globs_df[!, :p_row] .= p_row[:p_row]
+    # sun_per_age_df, sun_globs_df = simulate_single_plot(
+    #     p_row, w, when, :fullsun
+    # )
+
+    # shade_per_age_df, shade_globs_df = simulate_single_plot(
+    #     p_row, w, when, :regshaded
+    # )
 
     return per_age_df, globs_df
 end
@@ -141,23 +200,24 @@ function simulate_single_plot(
     )
     setup_plant_sampling!(model2, 9, sampled_blocks)
     per_age, prod_clr_df, areas, nls, P1o, P12o, incidiff, rusts, active = abc_run_2y!(model2, steps, when)
-    plot = ifelse(type == :fullsun, :sun, :shade)
-    per_age[!, :plot] .= plot
-    globdf = DataFrame(
-        P1att = P1a,
-        P12att = P12a,
-        P1obs = P1o,
-        P12obs = P12o,
-        # cor = prod_clr_cor,
-        areas = areas,
-        nls = nls,
-        incidiff = incidiff,
-        rusts = rusts,
-        active = active,
-        plot = plot
-    )
+    # plot = ifelse(type == :fullsun, :sun, :shade)
+    # per_age[!, :plot] .= plot
+    # globdf = DataFrame(
+    #     P1att = P1a,
+    #     P12att = P12a,
+    #     P1obs = P1o,
+    #     P12obs = P12o,
+    #     # cor = prod_clr_cor,
+    #     areas = areas,
+    #     nls = nls,
+    #     incidiff = incidiff,
+    #     rusts = rusts,
+    #     active = active,
+    #     # plot = plot
+    # )
 
-    return per_age, globdf, prod_clr_df
+    # return per_age, globdf, prod_clr_df
+    return per_age, prod_clr_df, (P1a, P12a, P1o, P12o, areas, nls, incidiff, rusts, active)
 end
 
 function abc_att_run!(model::SpatialRustABM)
@@ -236,11 +296,12 @@ function abc_run_2y!(model::SpatialRustABM, n::Int, when_weekly::Vector{Int} = I
     end
 
     if !model.current.withinbounds
-        per_age = pull_empdates()
-        per_age[!, :area] .= missing
-        per_age[!, :spore] .= missing
-        per_age[!, :nl] .= missing
-        per_age[!, :occup] .= missing
+        # per_age = pull_empdates()
+        # per_age[!, :area] .= missing
+        # per_age[!, :spore] .= missing
+        # per_age[!, :nl] .= missing
+        # per_age[!, :occup] .= missing
+        per_age = DataFrame()
 
         return per_age, DataFrame(FtL = missing, clr_cat = missing), missing, missing, missing, missing, missing, missing, missing
     else
