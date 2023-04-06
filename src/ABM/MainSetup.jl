@@ -44,7 +44,7 @@ end
 # Coffee constructor
 # function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
 function Coffee(id, pos, max_lesions::Int, rust_gr::Float64;
-    sunlight::Float64 = 1.0, veg::Float64 = 1.85, storage::Float64 = 100.0)
+    sunlight::Float64 = 1.0, veg::Float64 = 2.0, storage::Float64 = 100.0)
 
     # fill_n = max_lesions - length(ages)
     
@@ -206,9 +206,6 @@ function init_spatialrust(;
         map_side, rain_distance, diff_splash, tree_block, wind_distance, diff_wind, shade_block
     )
 
-    n_shades = count(farm_map .== 2)
-    n_coffees = count(farm_map .== 1)
-
     pruneskept = filter!(i -> prune_sch[i] > 0, sortperm(prune_sch))
     keepat!(prune_sch, pruneskept)
     keepat!(target_shade, pruneskept)
@@ -231,8 +228,11 @@ function init_spatialrust(;
     end
     prune_sch = Tuple(prune_sch)
     target_shade = Tuple(target_shade)
-
     fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
+    
+    n_shades = count(farm_map .== 2)
+    n_coffees = count(farm_map .== 1)
+
     n_inspect = trunc(Int, inspect_effort * n_coffees)
 
     mp = MngPars{length(prune_sch),length(fungicide_sch)}(
@@ -256,10 +256,10 @@ function init_spatialrust(;
     )
 
     return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
-        # Set{Coffee}(),
-        # ),
-        Set{Sentinel}()), rng,
-        ini_rusts
+        Set{Sentinel}()),
+        # )
+        rng,
+        ini_rusts,
     )
 end
 

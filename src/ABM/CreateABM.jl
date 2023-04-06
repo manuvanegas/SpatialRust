@@ -4,44 +4,22 @@
 function add_trees!(model::SpatialRustABM)
     farm_map::Matrix{Int} = model.farm_map
     shade_map::Matrix{Float64} = model.shade_map
-    # startday::Int = model.current.days
     ind_shade::Float64 = model.current.ind_shade
     max_lesions::Int = model.rustpars.max_lesions
-    # max_age::Int = model.rustpars.reset_age
-    light_noise = truncated(Normal(0.0, 0.005), -0.01, 0.01)
-    rustgr_dist = truncated(Normal(model.rustpars.rust_gr, 0.005), 0.0, 0.35)
+    rustgr_dist = truncated(Normal(model.rustpars.rust_gr, 0.001), 0.0, 0.35)
 
     cof_pos = findall(x -> x == 1, farm_map)
     for pos in cof_pos
-        let sunlight = clamp(1.0 - shade_map[pos] * ind_shade + rand(model.rng, light_noise), 0.0, 1.0)
-            add_agent!(
-                # Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
-                Tuple(pos), model, max_lesions, rand(model.rng, rustgr_dist);
-                sunlight = sunlight,
-                veg = init_veg(sunlight),
-                storage = init_storage(sunlight)
-            )
-        end
+        sunlight = 1.0 - shade_map[pos] * ind_shade
+        add_agent!(
+            # Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
+            Tuple(pos), model, max_lesions, rand(model.rng, rustgr_dist);
+            sunlight = sunlight,
+            storage = init_storage(sunlight)
+        )
     end
 end
 
-# function appr_storage(shade_map::Matrix{Float64}, target_shade::Float64, start_days::Int, coffee_pars::CoffeePars)
-#     prod_cycle_d = start_days % coffee_pars.harvest_day
-#     if coffee_pars.veg_d <= prod_cycle_d < coffee_pars.rep_d
-#         return new_veg_storage.(shade, target_shade)
-#     # elseif coffee_pars.rep_d < coffee_pars.veg_d <= prod_cycle_d
-#     #     return new_veg_storage.(shade)
-#     else
-#         return new_repr_storage.(shade, target_shade)
-#     end
-# end
-
-# function add_coffees!(model::SpatialRustABM, start_days_at::Int, pos::CartesianIndex{2})
-#     # newcof = Coffee(nextid(model), Tuple(pos); shades = [round(Int, model.shade_map[pos])], production = float(start_days_at))
-#     newcof = Coffee(nextid(model), Tuple(pos), 1.0, 1.0, Int[], 0.0, 0.0, 0, 0, 0, Int[])
-#
-#     add_agent!(newcof, model)
-# end
 
 # Add initial rust agents
 
@@ -131,6 +109,7 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Float64) # inoculate coff
         # rusted.spores = spores[sortidx]
         # push!(model.rusts, rusted)
     end
+    return nothing
 end
 
 function init_abm_obj(props::Props, rng::Xoshiro, ini_rusts::Float64)::SpatialRustABM
@@ -140,9 +119,102 @@ function init_abm_obj(props::Props, rng::Xoshiro, ini_rusts::Float64)::SpatialRu
 
     # TODO: comment out ABC coffee initialization
     # add_trees!(model)
+    # pre_run365!(model, props.mngpars)
     add_abc_trees!(model)
+    pre_run_abc!(model, props.mngpars)
 
     ini_rusts > 0.0 && init_rusts!(model, ini_rusts)
 
     return model
+end
+
+#assumes harvest_day is 365 and start_day_at is 0
+function pre_run365!(model::SpatialRustABM, mngpars::MngPars)
+    p1 = p2 = p3 = 0
+    t1 = t2 = t3 = 0.0
+    prune1 = prune2 = prune3 = no_prune
+
+    sch = mngpars.prune_sch
+    shadets = mngpars.target_shade
+    lsch = length(sch)
+    if lsch == 1
+        p1 = sch[1]
+        t1 = shadets[1]
+        prune1 = prune_shades!
+    elseif lsch == 2
+        p1, p2 = sch
+        t1, t2 = shadets
+        prune1 = prune2 = prune_shades!
+    elseif lsch == 3
+        p1, p2, p3 = sch        
+        t1, t2, t3 = shadets
+        prune1 = prune2 = prune3 = prune_shades!
+    end
+
+    g_rate = mngpars.shade_g_rate
+
+    s = 0
+    while s < p1
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune1(model, t1)
+    while s < p2
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune2(model, t2)
+    while s < p3
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune3(model, t3)
+    while s < 365
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    harvest!(model)
+
+    while s < 365 + p1
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune1(model, t1)
+    while s < 365 + p2
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune2(model, t2)
+    while s < 365 + p3
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune3(model, t3)
+    while s < 730
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    harvest!(model)
+
+    model.current.days = 0
+    return nothing
+end
+
+function no_prune(model::SpatialRustABM, target::Float64)
 end

@@ -67,7 +67,7 @@ function coffee_step!(model::SpatialRustABM)
                 vegetative_step!(cof, pars, model.shade_map, model.current.ind_shade)
             end
         elseif cycled == repd
-            commit_dist = Normal(pars.res_commit, 0.02)
+            commit_dist = Normal(pars.res_commit, 0.01)
             for cof in model.agents
                 commit_step!(cof, pars, model.shade_map, model.current.ind_shade, commit_dist, model.rng)
             end
@@ -77,6 +77,7 @@ function coffee_step!(model::SpatialRustABM)
             end
         end
     end
+    return nothing
 end
 
 function rust_step!(model::SpatialRustABM)
@@ -135,6 +136,7 @@ function rust_step!(model::SpatialRustABM)
         update_rusts!(rust)
         # update_deposited!(rust, model.farm_map, model.rustpars)
     end
+    return nothing
 end
 
 function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, germinate_f::Function, grow_f::Function,
@@ -166,6 +168,7 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, g
             break
         end
     end
+    return nothing
 end
 
 function losttrack(as)
@@ -202,4 +205,5 @@ function farmer_step!(model)
         #     fungicide!(model)
         # end
     end
+    return nothing
 end

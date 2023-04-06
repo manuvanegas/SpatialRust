@@ -59,28 +59,33 @@ quickdist(pos1::NTuple{2,Int}, pos2::NTuple{2,Int}) = sqrt(sum((pos1 .- pos2) .^
 
 function add_abc_trees!(model::SpatialRustABM)
     farm_map::Matrix{Int} = model.farm_map
-    shade_map::Matrix{Float64} = model.shade_map
     ind_shade::Float64 = model.current.ind_shade
     max_lesions::Int = model.rustpars.max_lesions
-    # max_age::Int = model.rustpars.reset_age
-    light_noise = truncated(Normal(0.0, 0.005), -0.01, 0.01)
-    rustgr_dist = truncated(Normal(model.rustpars.rust_gr, 0.005), 0.0, 0.35)
+    rustgr_dist = truncated(Normal(model.rustpars.rust_gr, 0.001), 0.0, 0.35)
 
     cof_pos = findall(x -> x == 1, farm_map)
-    for pos in cof_pos
-        let sunlight = max(1.0 - shade_map[pos] * ind_shade + rand(model.rng, light_noise), 0.0)
+
+    if @inbounds farm_map[1] == 2
+        shade_map::Matrix{Float64} = model.shade_map
+        for pos in cof_pos
+            sunlight = 1.0 - shade_map[pos] * ind_shade
             add_agent!(
-                # Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
                 Tuple(pos), model, max_lesions, rand(model.rng, rustgr_dist);
                 sunlight = sunlight, 
                 veg = init_veg_116(sunlight),
                 storage = init_storage_116(sunlight)
             )
         end
+    else
+        for pos in cof_pos
+            add_agent!(
+                Tuple(pos), model, max_lesions, rand(model.rng, rustgr_dist);
+                sunlight = 1.0, 
+                veg = init_veg_116(1.0),
+                storage = init_storage_116(1.0)
+            )
+        end
     end
-    # println(getproperty.(model.agents[1:10], :sunlight))
-    # println(getproperty.(model.agents[1:10], :veg))
-    # println(getproperty.(model.agents[1:10], :storage))
 end
 
 function init_veg_116(sunlight::Float64)
@@ -90,4 +95,64 @@ end
 function init_storage_116(sunlight::Float64)
     # return 80.0 * exp(-5.8 * sunlight) + 7.8
     return 100.0 * exp(-7.1 * sunlight) + 7.8
+end
+
+function pre_run_abc!(model::SpatialRustABM, mngpars::MngPars)
+
+    g_rate = mngpars.shade_g_rate
+
+    s = 115
+    while s < 166
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune_shades!(model, 0.2)
+    while s < 365
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    harvest!(model)
+
+    while s < 380
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune_shades!(model, 0.15)
+    while s < 531
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune_shades!(model, 0.2)
+    while s < 730
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    harvest!(model)
+
+    while s < 381
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+    prune_shades!(model, 0.15)
+    while s < 845
+        model.current.days += 1
+        grow_shades!(model.current, g_rate)
+        coffee_step!(model)
+        s += 1
+    end
+
+    model.current.days = 115
+    return nothing
 end

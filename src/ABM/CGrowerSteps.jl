@@ -10,6 +10,7 @@ function harvest!(model::SpatialRustABM)
 
     model.current.fung_count = 0
     new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive)
+    return nothing
 end
 
 function new_harvest_cycle!(c::Coffee, surv_p::Float64)
@@ -32,6 +33,7 @@ function new_harvest_cycle!(c::Coffee, surv_p::Float64)
         deleteat!(c.areas, 1:lost)
         deleteat!(c.spores, 1:lost)
     end
+    return nothing
 end
 # 
 # ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
