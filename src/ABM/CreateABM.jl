@@ -125,6 +125,9 @@ function init_abm_obj(props::Props, rng::Xoshiro, ini_rusts::Float64)::SpatialRu
 
     ini_rusts > 0.0 && init_rusts!(model, ini_rusts)
 
+    # print(mean(map(c -> c.veg, model.agents)), ", ")
+    # print(mean(map(c -> c.storage, model.agents)), ", ")
+    # println(mean(map(c -> c.production, model.agents)))
     return model
 end
 
@@ -181,7 +184,7 @@ function pre_run365!(model::SpatialRustABM, mngpars::MngPars)
         coffee_step!(model)
         s += 1
     end
-    harvest!(model)
+    map(harvest_day, model.agents)
 
     while s < 365 + p1
         model.current.days += 1
@@ -210,7 +213,7 @@ function pre_run365!(model::SpatialRustABM, mngpars::MngPars)
         coffee_step!(model)
         s += 1
     end
-    harvest!(model)
+    map(harvest_day, model.agents)
 
     model.current.days = 0
     return nothing
@@ -218,3 +221,5 @@ end
 
 function no_prune(model::SpatialRustABM, target::Float64)
 end
+
+harvest_day(c::Coffee) = c.production = 0.0

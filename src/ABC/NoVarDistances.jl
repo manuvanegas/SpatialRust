@@ -84,7 +84,7 @@ function diff_quals(sims::DataFrame, dats::DataFrame, vars::DataFrameRow)::DataF
         :incidiff, :cor, :rusts, :active
     )
     
-    selfmetrics[!, :P1loss_dn] = baltoldist.(selfmetrics[!, :P1loss], dats[1, :P1loss], dats[2, :P1loss], 5.0) # dist from 0.5 to 1 is 5X dist from 0 to 0.1
+    selfmetrics[!, :P1loss_dn] = baltoldist.(selfmetrics[!, :P1loss], dats[1, :P1loss], dats[2, :P1loss], 3.5) # dist from 0.65 to 1 is 3.5X dist from 0 to 0.1
     selfmetrics[!, :P1loss_dv] = selfmetrics[!, :P1loss_dn] ./ vars[:P1loss]
 
     selfmetrics[!, :P12loss_dn] = baltoldist.(

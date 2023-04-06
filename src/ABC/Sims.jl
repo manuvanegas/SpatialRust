@@ -58,7 +58,7 @@ function sim_abc(p_row::NamedTuple,
         per_age_df[!, :p_row] .= p_row[:p_row]
 
         globs_df = DataFrame(
-            P1att = [missing, missing],
+            P1att = [sun_globs[1], missing],
             P12att = [missing, missing],
             P1obs = [missing, missing],
             P12obs = [missing, missing],
@@ -86,7 +86,7 @@ function sim_abc(p_row::NamedTuple,
             per_age_df[!, :p_row] .= p_row[:p_row]
 
             globs_df = DataFrame(
-                P1att = [missing, missing],
+                P1att = [sun_globs[1], missing],
                 P12att = [missing, missing],
                 P1obs = [missing, missing],
                 P12obs = [missing, missing],

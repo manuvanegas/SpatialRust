@@ -115,7 +115,7 @@ function pre_run_abc!(model::SpatialRustABM, mngpars::MngPars)
         coffee_step!(model)
         s += 1
     end
-    harvest!(model)
+    map(harvest_day, model.agents)
 
     while s < 380
         model.current.days += 1
@@ -137,7 +137,7 @@ function pre_run_abc!(model::SpatialRustABM, mngpars::MngPars)
         coffee_step!(model)
         s += 1
     end
-    harvest!(model)
+    map(harvest_day, model.agents)
 
     while s < 381
         model.current.days += 1

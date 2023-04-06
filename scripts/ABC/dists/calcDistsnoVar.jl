@@ -12,15 +12,15 @@ end
 quantsdirname = ARGS[1]
 qualsdirname = ARGS[2]
 qldats = DataFrame(
-    P1loss = [0.1, 0.5], ##
-    P12loss = [1.1, 0.9], # ##
-    incidiff = [0.35, 1.0],
-    cor = [0.2, 0.95],
     P1att = [-0.005, 0.6], #
     bienniality = [-0.01, 1.0],
     Pattpct = [0.0, 0.25],
     areas = [-0.1, 25.0],
-    nls = [-25.0, 0.1]
+    nls = [-25.0, 0.1],
+    P1loss = [0.1, 0.65], ##
+    P12loss = [1.1, 0.95], # ##
+    incidiff = [0.35, 1.0],
+    cor = [0.2, 0.95]
 )
 
 mkpath("results/ABC/dists/sents/q8")
