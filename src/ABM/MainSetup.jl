@@ -409,7 +409,7 @@ function ind_shade_i(
             pruned_to = target_shade[prune_i]
         end
         # logistic equation to determine starting shade level
-        return (0.8 * pruned_to) / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune)))
+        return 0.8 * (pruned_to / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune))))
     end
 end
 

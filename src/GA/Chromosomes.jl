@@ -79,7 +79,7 @@ end
 
 DoY(x::Vararg{Int}) = collect(@. round(Int, 365 * x * inv(32)))
 proportion(x::Vararg{Int}) = collect(@. (x + 1) * inv(32))
-propto08(x::Vararg{Int}) = collect(@. (x + 1) * 0.8 * inv(32))
+propto08(x::Vararg{Int}) = collect(@. (x + 1) * 0.75 * inv(32))
 perioddays(x::Int) = (x + 1) * 4
 
 
