@@ -23,11 +23,11 @@ qldats = DataFrame(
     cor = [0.2, 0.95]
 )
 
-mkpath("results/ABC/dists/sents/q8")
+mkpath("results/ABC/dists/sents/q9")
 
 empdata = DataFrame(Arrow.Table("data/exp_pro/compare/perdate_age_long_10.arrow"))
-qntvars = CSV.read("results/ABC/variances/sents/q8/v_gquants.csv", DataFrame)
-qlvars = CSV.read("results/ABC/variances/sents/q8/v_quals.csv", DataFrame)
+qntvars = CSV.read("results/ABC/variances/sents/q9/v_gquants.csv", DataFrame)
+qlvars = CSV.read("results/ABC/variances/sents/q9/v_quals.csv", DataFrame)
 
 
 time_dists = @elapsed begin
@@ -47,8 +47,8 @@ time_joinwrite = @elapsed begin
     vdists = leftjoin(nt_dists, l_distsv, on = :p_row)
     # write
     # CSV.write("results/ABC/dists/sents/novar/squareddists.csv", dists)
-    CSV.write("results/ABC/dists/sents/q8/squareddists_n.csv", ndists)
-    CSV.write("results/ABC/dists/sents/q8/squareddists_v.csv", vdists)
-    CSV.write("results/ABC/dists/sents/q8/nmissings.csv", nmissings)
+    CSV.write("results/ABC/dists/sents/q9/squareddists_n.csv", ndists)
+    CSV.write("results/ABC/dists/sents/q9/squareddists_v.csv", vdists)
+    CSV.write("results/ABC/dists/sents/q9/nmissings.csv", nmissings)
 end
 println("Join+write: $time_joinwrite")

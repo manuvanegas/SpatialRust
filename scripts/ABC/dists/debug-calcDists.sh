@@ -18,4 +18,4 @@ echo $SLURM_JOB_ID
 echo $SLURM_JOB_NODELIST
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/ABC/dists/calcDistsnoVar.jl quants_8 quals_8
+~/SpatialRust/scripts/ABC/dists/calcDistsnoVar.jl quants_9 quals_9

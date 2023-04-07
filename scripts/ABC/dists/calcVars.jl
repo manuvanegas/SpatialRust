@@ -10,7 +10,7 @@ time_load = @elapsed begin
 end
 println("Load: $time_load")
 
-mkpath("results/ABC/variances/sents/q8")
+mkpath("results/ABC/variances/sents/q9")
 
 # read relevant files
 time_read = @elapsed begin
@@ -52,10 +52,10 @@ flush(stdout)
 time_write = @elapsed begin
     # write csvs
     # CSV.write("results/ABC/variances/sents/q7/v_quants.csv", σ2_quants)
-    CSV.write("results/ABC/variances/sents/q8/v_gquants.csv", g_σ2_quants)
-    CSV.write("results/ABC/variances/sents/q8/v_quals.csv", σ2_quals)
+    CSV.write("results/ABC/variances/sents/q9/v_gquants.csv", g_σ2_quants)
+    CSV.write("results/ABC/variances/sents/q9/v_quals.csv", σ2_quals)
     # CSV.write("results/ABC/variances/sents/q7/n_quants.csv", n_quants)
-    CSV.write("results/ABC/variances/sents/q8/n_gquants.csv", g_n_quants)
-    CSV.write("results/ABC/variances/sents/q8/n_quals.csv", n_quals)
+    CSV.write("results/ABC/variances/sents/q9/n_gquants.csv", g_n_quants)
+    CSV.write("results/ABC/variances/sents/q9/n_quals.csv", n_quals)
 end
 println("Write: $time_write")

@@ -18,4 +18,4 @@ echo $SLURM_JOB_ID
 echo $SLURM_JOB_NODELIST
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 cp $SLURM_NODEFILE logs/ABC/nodefiles/varnodes_${SLURM_JOB_ID}
-julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/dists/calcVars.jl quants_8 quals_8 0
+julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/dists/calcVars.jl quants_9 quals_9 0
