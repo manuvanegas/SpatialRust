@@ -45,6 +45,15 @@ run_time = @elapsed begin
     println("total: ", length(outputs))
 end
 
+# function map_here(par_iterator)
+#     return map(sim_abc, par_iterator)
+# end
+
+# run_time = @elapsed begin
+#     outputs = map_here(Tables.namedtupleiterator(parameters))
+#     println("total: ", length(outputs))
+# end
+
 println("Run: $run_time")
 flush(stdout)
 

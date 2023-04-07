@@ -2,6 +2,7 @@
 #SBATCH --array=2
 #SBATCH --ntasks=5
 #SBATCH --ntasks-per-core=1
+# #SBATCH --nodelist=c016
 # #SBATCH --mem=5G
 #SBATCH -p htc
 #SBATCH -q debug
@@ -26,9 +27,10 @@ export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 echo `date +%F-%T`
 echo $SLURM_JOB_ID
 echo $SLURM_JOB_NODELIST
-# ulimit -s 262144
-julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl 8 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 100 #500
+ulimit -s 262144
 # ARGS: params file, slurm job array id, # cores, # sims per core
+julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl 9 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 100 #500
+# julia ~/SpatialRust/scripts/ABC/sims/runABC.jl 9 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 400
 
 # julia --machine-file $SLURM_NODEFILE --sysimage src/PkgCompile/ABCSysimage.so -e 'u_t = @elapsed begin; @everywhere begin; using Pkg; Pkg.activate("."); end; @everywhere using SpatialRust; end; println(u_t)'
 
