@@ -41,12 +41,14 @@ end
 function runsimple!(model::SpatialRustABM, steps::Int)
     meanshade = mean(model.shade_map)
     ncofs = length(model.agents)
+    sporepct = model.rustpars.spore_pct
 
     df = DataFrame(dayn = Int[],
         veg = Float64[], storage = Float64[], production = Float64[],
         indshade = Float64[], mapshade = Float64[],
         nl = Float64[], sumarea = Float64[], sumspore = Float64[],
-        active = Float64[]
+        sporearea = Float64[],
+        active = Float64[], farmprod = Float64[]
     )
     for c in eachcol(df)
         sizehint!(c, steps)
@@ -76,7 +78,9 @@ function runsimple!(model::SpatialRustABM, steps::Int)
             mean(map(a -> a.n_lesions, model.agents)),
             msuma,
             msumsp,
-            sum(active.(model.agents)) / ncofs
+            mean(map(sporear, model.agents)),
+            sum(map(active, model.agents)) / ncofs,
+            copy(model.current.prod)
         ])
         step!(model, dummystep, step_model!, 1)
         s += 1
@@ -104,8 +108,14 @@ function runsimple!(model::SpatialRustABM, steps::Int)
         mean(map(a -> a.n_lesions, model.agents)),
         msuma,
         msumsp,
-        sum(active.(model.agents)) / ncofs
+        mean(map(sporear, model.agents)),
+        sum(map(active, model.agents)) / ncofs,
+        copy(model.current.prod)
     ])
 
     return df
+end
+
+function sporear(a::Coffee)
+    return sum((ar * sp for (ar,sp) in zip(a.areas, a.spores)), init = 0.0)
 end
