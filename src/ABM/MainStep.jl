@@ -19,6 +19,7 @@ function step_model!(model::SpatialRustABM)
     #         @error "t $(model.current.ticks), repeated id within $rids"
     #     end
     # end
+    return nothing
 end
 
 ## "Step" functions
@@ -46,34 +47,52 @@ function pre_step!(model::SpatialRustABM)
     #         reintroduce_rusts!(model, 1)
     #     end
     # end
+    return nothing
 end
 
 function coffee_step!(model::SpatialRustABM)
-    let prod_cycle_d = mod1(model.current.days, 365),
-        pars = model.coffeepars
+    prod_cycle_d = mod1(model.current.days, 365)
+    pars = model.coffeepars
 
-        if pars.veg_d < pars.rep_d
-            vegd = pars.veg_d
-            repd = pars.rep_d
-            cycled = prod_cycle_d
-        else
-            vegd = - pars.veg_d
-            repd = - pars.rep_d
-            cycled = - prod_cycle_d
-        end
+    if pars.veg_d < pars.rep_d
+        vegd = pars.veg_d
+        repd = pars.rep_d
+        cycled = prod_cycle_d
+    else
+        vegd = - pars.veg_d
+        repd = - pars.rep_d
+        cycled = - prod_cycle_d
+    end
 
+    if cycled != repd
         if vegd <= cycled < repd
-            for cof in model.agents
-                vegetative_step!(cof, pars, model.shade_map, model.current.ind_shade)
-            end
-        elseif cycled == repd
-            commit_dist = Normal(pars.res_commit, 0.01)
-            for cof in model.agents
-                commit_step!(cof, pars, model.shade_map, model.current.ind_shade, commit_dist, model.rng)
-            end
+            growth = veg_growth!
         else
-            for cof in model.agents
-                reproductive_step!(cof, pars, model.shade_map, model.current.ind_shade)
+            growth = rep_growth!
+        end
+        for cof in model.agents
+            if cof.exh_countdown == 0
+                sl = update_sunlight!(cof, model.shade_map, model.current.ind_shade)
+                growth(cof, pars, sl)
+            elseif cof.exh_countdown > 1
+                cof.exh_countdown -= 1
+            else
+                sl = update_sunlight!(cof, model.shade_map, model.current.ind_shade)
+                regrow!(cof, sl, model.farm_map)
+            end
+        end
+    else
+        commit_dist = Normal(pars.res_commit, 0.01)
+        for cof in model.agents
+            if cof.exh_countdown == 0
+                sl = update_sunlight!(cof, model.shade_map, model.current.ind_shade)
+                veg_growth!(cof, pars, sl)
+                cof.production = max(0.0, rand(model.rng, commit_dist) * cof.sunlight * cof.veg * cof.storage)
+            elseif cof.exh_countdown > 1
+                cof.exh_countdown -= 1
+            else
+                sl = update_sunlight!(cof, model.shade_map, model.current.ind_shade)
+                regrow!(cof, sl, model.farm_map)
             end
         end
     end
@@ -176,34 +195,32 @@ function losttrack(as)
 end
 
 function farmer_step!(model)
-    let doy = mod1(model.current.days, 365)
+    doy = mod1(model.current.days, 365)
 
-        if doy == model.mngpars.harvest_day
-            harvest!(model)
-        end
-
-        prune_i = findfirst(==(doy), model.mngpars.prune_sch)
-        # if !isempty(prune_i)
-        if !isnothing(prune_i)
-            prune_shades!(model, model.mngpars.target_shade[prune_i])
-            # prune_shades!(model)
-        end
-
-        # the following is commented out for ABC. TODO: uncomment it when calibration is done
-
-        # if model.current.days % model.mngpars.inspect_period == 0
-        #     inspect!(model)
-        # end
-
-        # if model.current.fungicide > 0
-        #     model.current.fungicide -= 1
-        # elseif model.mngpars.incidence_as_thr
-        #     if model.current.fung_count < 4 && model.current.obs_incidence > model.mngpars.incidence_thresh
-        #         fungicide!(model)
-        #     end
-        # elseif doy in model.mngpars.fungicide_sch
-        #     fungicide!(model)
-        # end
+    if doy == model.mngpars.harvest_day
+        harvest!(model)
     end
+
+    prune_i = findfirst(==(doy), model.mngpars.prune_sch)
+    if !isnothing(prune_i)
+        prune_shades!(model, model.mngpars.target_shade[prune_i])
+    end
+
+    # the following is commented out for ABC. TODO: uncomment it when calibration is done
+
+    # if model.current.days % model.mngpars.inspect_period == 0
+    #     inspect!(model)
+    # end
+
+    # if model.current.fungicide > 0
+    #     model.current.fungicide -= 1
+    # elseif model.mngpars.incidence_as_thr
+    #     if model.current.fung_count < 4 && model.current.obs_incidence > model.mngpars.incidence_thresh
+    #         fungicide!(model)
+    #     end
+    # elseif doy in model.mngpars.fungicide_sch
+    #     fungicide!(model)
+    # end
+    
     return nothing
 end

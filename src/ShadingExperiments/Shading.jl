@@ -11,7 +11,7 @@ end
 
 function run_par_combination(pars::DataFrameRow)
     model = init_spatialrust(; pars...)
-    mdf = custom_run!(model, pars[:steps])
+    mdf = custom_run!(model)
 
     return hcat(
         DataFrame(pars[[:rep, :barriers, :shade_d, :target_shade, :prune_sch, :mean_temp, :rain_prob]]),
@@ -19,7 +19,7 @@ function run_par_combination(pars::DataFrameRow)
         )
 end
 
-function custom_run!(model::SpatialRustABM, steps::Int)
+function custom_run!(model::SpatialRustABM)
     allcofs = model.agents
 
     s = 0
@@ -67,13 +67,12 @@ function custom_run!(model::SpatialRustABM, steps::Int)
         s += 1
     end
 
-
     return DataFrame(
         totprod = model.current.prod,
         maxA = maxareas,
         maxS = maxspores,
         maxI = maxinf,
-        shading = (shadetracker / 365) * mean(model.shade_map),
+        shading = (shadetracker / 365.0) * mean(model.shade_map),
         n_coffees = model.mngpars.n_cofs,
         n_shades = model.mngpars.n_shades
     )
