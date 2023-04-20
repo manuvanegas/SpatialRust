@@ -8,6 +8,7 @@ mutable struct Sentinel
     cycle::Int
     n_lesions::Int
     ages::Vector{Int}
+    # visibles::Vector{Bool}
     areas::Vector{Float64}
     # latent::Vector{Float64}
     spores::Vector{Bool}

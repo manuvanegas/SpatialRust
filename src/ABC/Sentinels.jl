@@ -14,7 +14,11 @@ function cycle_sentinels(model::SpatialRustABM, oldcycle::Int, newcycle::Int)
     end
     for c in filter(c -> c.sentinel.cycle == newcycle, model.agents)
         c.sentinel.active = true
-        # c.sentinel.n_lesions = true
+        nonvisibles = filter!(i -> !c.spores[i], findall(<(0.001), c.areas))
+        c.sentinel.ages = @inbounds c.ages[nonvisibles]
+        # c.sentinel.visibles = falses(length(nonvisibles))
+        c.sentinel.areas = @inbounds c.areas[nonvisibles]
+        c.sentinel.spores = @inbounds c.spores[nonvisibles]
 
         push!(model.sentinels, c.sentinel)
     end
