@@ -1,7 +1,15 @@
 ##Growth
 
+# No fungicide version of rust growth
 function grow_rust!(rust::Coffee, rng::Xoshiro, rustpars::RustPars, local_temp::Float64, rain_spo::Float64, fday::Int)
-    # No fungicide version of rust growth
+    # Senescence after ~5 months (McCain & Hennen, 1984)
+    rmrusts = findall(>(150), rust.ages)
+    if !isnothing(rmrusts)
+        nl = rust.n_lesions -= length(rmrusts)
+        deleteat!(rust.ages, rmrusts)
+        deleteat!(rust.areas, rmrusts)
+        deleteat!(rust.spores, rmrusts)
+    end
     # All rusts age 1 day
     @fastmath rust.ages .+= 1
     # Temperature-dependent growth modifier. If <= 0, there is no growth or sporulation
@@ -25,10 +33,11 @@ function grow_rust!(rust::Coffee, rng::Xoshiro, rustpars::RustPars, local_temp::
         # @fastmath rust.areas .+= rust.areas .* (1.0 .- rust.areas) .* growth_mod
         area_gro = max(0.0, 1.0 - sum(areas) / 25.0)
         @fastmath areas .+= areas .* (growth_mod * area_gro)
+        clamp!(areas, -1.0, 7.0) # (McCain & Hennen, 1984)
 
         # If active, update ABC sentinel leaves
         if rust.sentinel.active
-            # sent = rust.sentinel
+            sent = rust.sentinel
             # for v in findeach(identity, rust.sentinel.visibles)
             #     sent.ages[v] += 1
             # end
@@ -47,8 +56,8 @@ end
 # https://github.com/JuliaLang/julia/issues/43737
 findeach(f::Function, A) = (first(p) for p in pairs(A) if f(last(p)))
 
+# Fungicide version of rust growth. See grow_rust for more details
 # function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64, rain_spo::Float64, fday::Int)
-#     # Fungicide version of rust growth. See grow_rust for more details
 #     # This version has vectors for growth and sporulation modifiers because preventative vs curative 
 #     # fungicide effects are different (some lesions can be older, some younger, than last fung spraying)
 #     @fastmath rust.ages .+= 1

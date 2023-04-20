@@ -155,7 +155,7 @@ end
 
 cgro(v, sumar, gr, repgro) = v[2] = v[1] + repgro * (gr * v[1] * (1.0 - sumar/25.0))
 
-dayss, lesss = multiles(0.2, 0.00005, 1, 1.0, 50)
+dayss, lesss = multiles(0.2, 0.00005, 1, 1.0, 150);
 lines(dayss, lesss)
 lesss[18]
 
