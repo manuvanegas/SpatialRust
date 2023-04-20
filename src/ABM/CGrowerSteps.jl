@@ -10,6 +10,7 @@ function harvest!(model::SpatialRustABM)
 
     model.current.fung_count = 0
     new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive)
+    # map(a -> new_harvest_cycle!(a, model.mngpars.les_surv), model.agents)
     return nothing
 end
 

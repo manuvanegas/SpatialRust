@@ -94,15 +94,15 @@
 Pkg.activate(".")
 using CairoMakie
 
-g_r = 0.5
+g_r = 0.1
 
 days = collect(1:100)
 snls = repeat(1:5, inner=20)
 # snls = repeat(1:20, inner=5)
-host_rep = 1.0
+host_rep = 3.0
 # snls = fill(0, 100)
 sizes = zeros(length(days))
-sizes[1] = 0.001
+sizes[1] = 0.0001
 
 for day in 2:length(days)
     sizes[day] = sizes[day - 1] + host_rep * (g_r * 
@@ -138,6 +138,76 @@ end
 
 lines(days, sizep)
 
+function multiles(gr, si, nls, repgro, ndays = 100)
+    les = zeros(ndays, 25)
+    les[1, 1:nls] .= si
+
+    for day in 2:ndays
+        sumar = sum(les[day - 1,:])
+        for l in 1:25
+            cgro(@views(les[day - 1:day, l]), sumar, gr, repgro)
+        end
+    end
+
+    days = collect(1:ndays)
+    return days, les[:, 1]
+end
+
+cgro(v, sumar, gr, repgro) = v[2] = v[1] + repgro * (gr * v[1] * (1.0 - sumar/25.0))
+
+dayss, lesss = multiles(0.2, 0.00005, 1, 1.0, 50)
+lines(dayss, lesss)
+lesss[18]
+
+gotto03(gr, si, host) = findfirst(>(0.3), multiles(gr, si, 1, host, 100)[2])
+
+function spoext(grm, si, hm)
+    ds = Int[]
+    for gr in 0.05:0.05:grm
+        for h in 1.0:hm
+            d = gotto03(gr,si,h)
+            push!(ds, ifelse(isnothing(d), 101, d))
+        end
+    end
+    return ds
+    # return extrema(ds)
+end
+
+function visandspo(grm, si, hm)
+    ds = Bool[]
+    yes = []
+    for gr in 0.02:0.02:grm
+        for h in 1.0:0.5:hm
+            les = multiles(gr, si, 1, h, 100)[2]
+            d1 = findfirst(>(0.001), les)
+            d2 = findfirst(>(0.3), les)
+            if isnothing(d1) || isnothing(d2)
+                push!(ds, false)
+            else
+                if 14 <= d1 <= 25
+                    if 25 <= d2 <= 55
+                        push!(ds,true)
+                        push!(yes, (gr,h))
+                    else
+                        push!(ds,false)
+                    end
+                else
+                    push!(ds,false)
+                end
+            end
+        end
+    end
+    return ds, yes
+    # return extrema(ds)
+end
+
+ds05 = spoext(0.5, 0.00005, 5.0)
+ds1 = spoext(0.5, 0.0001,5.0)
+
+sum(visandspo(0.5, 0.00005, 5.0)[1])
+sum(visandspo(0.5, 0.0001, 5.0)[1])
+plot(getindex.(visandspo(0.5, 0.00005, 5.0)[2],1), getindex.(visandspo(0.5, 0.00005, 5.0)[2], 2))
+plot(getindex.(visandspo(0.5, 0.0001, 5.0)[2],1), getindex.(visandspo(0.5, 0.0001, 5.0)[2], 2))
 ## Implementing Runge-Kutta to correct extreme changes. Then benchmark
 
 function rungekutta()

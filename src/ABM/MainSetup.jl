@@ -9,7 +9,7 @@ mutable struct Sentinel
     n_lesions::Int
     ages::Vector{Int}
     areas::Vector{Float64}
-    # spores::BitVector
+    # latent::Vector{Float64}
     spores::Vector{Bool}
 end
 
@@ -33,7 +33,7 @@ end
     n_lesions::Int
     ages::Vector{Int}
     areas::Vector{Float64}
-    # spores::BitVector
+    # latent::Vector{Float64}
     spores::Vector{Bool}
 
     # ABC
@@ -99,13 +99,19 @@ function init_spatialrust(;
     # rust parameters
     max_lesions::Int64 = 25,                # maximum number of rust lesions
     temp_cooling::Float64 = 4.0,            # temp reduction due to shade
+    max_inf::Float64 = 0.9,                 # Max infection probability
     light_inh::Float64 = 0.1,               # extent of effect of UV inactivation 
     rain_washoff::Float64 = 0.3,            # " " " rain wash-off (0 to 1); Savary et al 2004
-    max_inf::Float64 = 0.9,                 # Max infection probability
+    rep_inf::Float64 = 0.3,                 # Weight of reprod growth on infection prob
+    viab_loss::Float64 = 0.75,              # Deposited spore viability loss
     rust_gr::Float64 = 0.16,                # rust area growth rate
     opt_g_temp::Float64 = 22.5,             # optimal rust growth temp
+    # opt_temp::Float64 = 22.5,             # optimal rust growth temp
     host_spo_inh::Float64 = 1.0,            # Coeff for inhibition of storage on sporul
+    # rep_spo::Float64 = 1.0,            # Coeff for inhibition of storage on sporul
+    dry_spo::Float64 = 0.8,                 # Prob sporulation without rain
     max_g_temp::Float64 = 30.0,             # maximum rust growth temp
+    # temp_ampl::Float64 = 30.0,             # maximum rust growth temp
     rep_gro::Float64 = 0.7,                 # resource sink effect on area growth
     # veg_gro::Float64 = 0.3,                 # growth during vegetative phase
     spore_pct::Float64 = 0.6,               # % of area that sporulates
@@ -118,13 +124,16 @@ function init_spatialrust(;
     steps::Int = 500,                       # simulation steps. Included in RustPars to reset Rust ages values on exhaustion
     rust_paras::Float64 = 0.1,              # resources taken per unit of total area
     exh_threshold::Float64 = 0.5,           # veg threshold for exhaustion (0 to 2)
+    # exh_thresh::Float64 = 0.5,           # veg threshold for exhaustion (0 to 2)
     exh_countdown::Int = 731,               # days to count after plant has been exhausted (2-3 y to resume production) 
 
     map_side::Int = 100,                    # side size
     rain_distance::Float64 = 1.0,           # mean distance of spores dispersed by rain
-    diff_splash::Float64 = 2.0,             # times rain distance due to enhanced kinetic e (shade) (Avelino et al. 2020 "Kinetic energy was twice as high"+Gagliardi)
+    # rain_dst::Float64 = 1.0,           # mean distance of spores dispersed by rain
+    diff_splash::Float64 = 2.5,             # times rain distance due to enhanced kinetic e (shade) (Avelino et al. 2020: "Kinetic energy was twice as high"+ Gagliardi et al. 2021: TKE ~ 5xOpenness%)
     tree_block::Float64 = 0.8,              # prob a tree will block rust dispersal
     wind_distance::Float64 = 5.0,           # mean distance of spores dispersed by wind
+    # wind_dst::Float64 = 5.0,           # mean distance of spores dispersed by wind
     diff_wind::Float64 = 3.0,               # additional wind distance due to increased openness (Pezzopane
     shade_block::Float64 = 0.5,             # prob of Shades blocking a wind dispersal event
 
@@ -144,8 +153,10 @@ function init_spatialrust(;
     coffee_price::Float64 = 1.0,
 
     lesion_survive::Float64 = 0.1,
+    # les_surv::Float64 = 0.1,
     # target_shade::Float64 = 0.15,            # individual shade level after pruning
     target_shade::Vector{Float64} = [0.3, 0.5, 0.0],            # individual shade level after pruning
+    # target_shade -> post_prune
     inspect_effort::Float64 = 0.01,         # % coffees inspected each time
     fung_effect::Int = 30,                  # length of fungicide effect
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
@@ -197,13 +208,16 @@ function init_spatialrust(;
 
     rp = RustPars(
         max_lesions, temp_cooling, light_inh, rain_washoff, max_inf, rust_gr, opt_g_temp,
-        # host_spo_inh, max_g_temp, rep_gro, veg_gro, spore_pct, fung_inf, fung_gro_prev,
+        # max_lesions, temp_cooling, light_inh, rain_washoff, viab_loss, max_inf, rust_gr, opt_temp,
         host_spo_inh, max_g_temp, rep_gro, spore_pct, fung_inf, fung_gro_prev,
+        # rep_spo, -(1.0/temp_ampl^2), rep_gro, spore_pct, fung_inf, fung_gro_prev,
         fung_gro_cur, fung_spor_prev, fung_spor_cur, 
         #
         steps, rust_paras, exh_threshold, exh_countdown,
+        # steps, rust_paras, exh_thresh, exh_countdown,
         #
         map_side, rain_distance, diff_splash, tree_block, wind_distance, diff_wind, shade_block
+        # map_side, rain_dst, diff_splash, tree_block, wind_dst, diff_wind, shade_block
     )
 
     pruneskept = filter!(i -> prune_sch[i] > 0, sortperm(prune_sch))
@@ -245,6 +259,7 @@ function init_spatialrust(;
         other_costs, coffee_price,
         #
         lesion_survive, target_shade, n_inspect, fung_effect,
+        # les_surv, target_shade, n_inspect, fung_effect,
         shade_g_rate, shade_r
     )
 
@@ -292,11 +307,15 @@ struct RustPars
     temp_cooling::Float64
     light_inh::Float64
     rain_washoff::Float64
+    # viab_loss::Float64
     max_inf::Float64
     rust_gr::Float64
     opt_g_temp::Float64
+    # opt_temp::Float64
     host_spo_inh::Float64
+    # rep_spo::Float64
     max_g_temp::Float64
+    # temp_ampl_c::Float64
     rep_gro::Float64
     # veg_gro::Float64
     spore_pct::Float64
@@ -310,13 +329,16 @@ struct RustPars
     # reset_age::Int
     rust_paras::Float64
     exh_threshold::Float64
+    # exh_thresh::Float64
     exh_countdown::Int
     # dispersal
     map_side::Int
     rain_distance::Float64
+    # rain_dst::Float64
     diff_splash::Float64
     tree_block::Float64
     wind_distance::Float64
+    # wind_dst::Float64
     diff_wind::Float64
     shade_block::Float64
 end
@@ -340,6 +362,7 @@ struct MngPars{N,M}
     coffee_price::Float64
     # others
     lesion_survive::Float64
+    # les_surv::Float64
     # target_shade::Float64
     target_shade::NTuple{N, Float64}
     n_inspected::Int

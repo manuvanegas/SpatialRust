@@ -6,6 +6,7 @@ function disperse_rain!(model::SpatialRustABM, rust::Coffee, spores::Float64)
     pos = rust.pos
     d_mod = (4.0 - 4.0 * pars.diff_splash) * (rust.sunlight - 0.5)^2.0 + pars.diff_splash
     exp_dist = Exponential(pars.rain_distance)
+    # exp_dist = Exponential(pars.rain_dst)
     # exp_dist = pars.rain_dist
     splashed = rand(model.rng, Poisson(spores))
     for _ in 1:splashed
@@ -41,6 +42,7 @@ function disperse_wind!(model::SpatialRustABM, rust::Coffee, spores::Float64)
     shading = @inbounds model.shade_map[rust.pos...]
     rustpars = model.rustpars
     w_distance = rand(model.rng, Exponential(rustpars.wind_distance)) * (1 + rust.sunlight * rustpars.diff_wind)
+    # w_distance = rand(model.rng, Exponential(rustpars.wind_dst)) * (1 + rust.sunlight * rustpars.diff_wind)
     # w_distance = rand(model.rng, rustpars.wind_dist) * (1 + rust.sunlight * rustpars.diff_wind)
     lifted = rand(model.rng, Poisson(spores * shading))
     if w_distance < 1.0
@@ -185,6 +187,7 @@ end
 function outside_spores!(model::SpatialRustABM)
     heading = model.current.wind_h
     expdist = Exponential(model.rustpars.wind_distance)
+    # expdist = Exponential(model.rustpars.wind_dst)
     outsp = model.outpour
 
     if isapprox(heading, 360.0; atol = 2.0) || isapprox(heading, 0.0; atol = 2.0)

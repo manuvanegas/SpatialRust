@@ -22,8 +22,8 @@ end
 
 function track_lesion!(sentinel::Sentinel)
     sentinel.n_lesions += 1
-    push!(sentinel.ages, -1)
-    push!(sentinel.areas, 0.001)
+    push!(sentinel.ages, 0)
+    push!(sentinel.areas, 0.00005)
     push!(sentinel.spores, false)
 end
 
