@@ -101,13 +101,13 @@ function init_spatialrust(;
     max_lesions::Int64 = 25,                # maximum number of rust lesions
     temp_cooling::Float64 = 4.0,            # temp reduction due to shade
     max_inf::Float64 = 0.9,                 # Max infection probability
-    light_inh::Float64 = 0.1,               # extent of effect of UV inactivation 
-    rain_washoff::Float64 = 0.3,            # " " " rain wash-off (0 to 1); Savary et al 2004
+    light_inh::Float64 = 0.1,               # UV inactivation prob under 100% sunlight 
+    rain_washoff::Float64 = 0.25,           # rain wash-off " " " "; Avelino et al., 2020
     rep_inf::Float64 = 0.3,                 # Weight of reprod growth on infection prob
     viab_loss::Float64 = 0.75,              # Deposited spore viability loss
     rust_gr::Float64 = 0.16,                # rust area growth rate
-    opt_g_temp::Float64 = 22.5,             # optimal rust growth temp
-    # opt_temp::Float64 = 22.5,             # optimal rust growth temp
+    opt_g_temp::Float64 = 23.0,             # optimal rust growth temp
+    # opt_temp::Float64 = 23.0,             # optimal rust growth temp
     host_spo_inh::Float64 = 1.0,            # Coeff for inhibition of storage on sporul
     # rep_spo::Float64 = 1.0,            # Coeff for inhibition of storage on sporul
     dry_spo::Float64 = 0.8,                 # Prob sporulation without rain

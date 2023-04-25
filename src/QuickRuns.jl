@@ -30,6 +30,22 @@ function justtwosteps(side::Int = 60)
     return model
 end
 
+function step_n!(model::SpatialRustABM, n::Int)
+    s = 0
+    while s < n
+        step_model!(model)
+        s += 1
+    end
+end
+
+function step_while!(model::SpatialRustABM, s::Int, n::Int)
+    while s < n && model.current.withinbounds
+        step_model!(model)
+        s += 1
+    end
+    return s
+end
+
 function simplerun(steps::Int = 365; kwargs...)
     model = init_spatialrust(steps = steps; kwargs...)
 
@@ -82,7 +98,7 @@ function runsimple!(model::SpatialRustABM, steps::Int)
             mean(map(a -> a.n_lesions, allcofs)),
             msuma,
             msumsp,
-            mean(map(sporear, allcofs)),
+            mean(map(sporear, allcofs)) * sporepct,
             sum(map(active, allcofs)) / ncofs,
             copy(model.current.prod),
             sum(map(a -> a.rusted, allcofs)),
@@ -116,7 +132,7 @@ function runsimple!(model::SpatialRustABM, steps::Int)
         mean(map(a -> a.n_lesions, allcofs)),
         msuma,
         msumsp,
-        mean(map(sporear, allcofs)),
+        mean(map(sporear, allcofs)) * sporepct,
         sum(map(active, allcofs)) / ncofs,
         copy(model.current.prod),
         sum(map(a -> a.rusted, allcofs)),
