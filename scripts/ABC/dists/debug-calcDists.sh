@@ -1,6 +1,7 @@
 #!/bin/bash
-#SBATCH --ntasks=4
+#SBATCH --ntasks=2
 #SBATCH --ntasks-per-core=1
+#SBATCH --mem=1G
 #SBATCH -p htc
 #SBATCH -q debug
 #SBATCH -J ABCdist
@@ -18,4 +19,4 @@ echo $SLURM_JOB_ID
 echo $SLURM_JOB_NODELIST
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/ABC/dists/calcDistsnoVar.jl quants_9 quals_9
+~/SpatialRust/scripts/ABC/dists/calcDistsnoVar.jl quants_10a quals_10a

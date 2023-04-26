@@ -2,7 +2,7 @@
 
 ## "Qualitative" variables
 # function calc_l_dists(qualsdirname::String, dats::DataFrame, vars::DataFrameRow)::NTuple{2, DataFrame}
-function calc_l_dists(qualsdirname::String, dats)::NTuple{2, DataFrame}
+function calc_l_dists(qualsdirname::String, dats)::DataFrame
     ft = FileTree(string("/scratch/mvanega1/ABC/sims/", qualsdirname))
     l_file_tree = FileTrees.load(ft; lazy = true) do file
         DataFrame(Arrow.Table(path(file)))
@@ -37,7 +37,9 @@ end
 
 # function diff_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
 function diff_quals(sims::DataFrame, dats)::DataFrame
-    dists = DataFrame(p_row = joined[:, :p_row])
+    sims[!, :rusts] .= collect(ismissing(r) ? r : Float64.(r) for r in sims[!, :rusts])
+    # sims[!, :rusts] .= Float64.(sims[!, :rusts])
+    dists = DataFrame(p_row = sims[:, :p_row])
     for var in [:P12loss, :LP, :incid, :rusts]
         # transform!(sims, var => ByRow(s -> sumtoldist(s, dats[var])), renamecols = false)
         dists[!, var] = sumtoldist.(sims[!, var], Ref(dats[var]))
