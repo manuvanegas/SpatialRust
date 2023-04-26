@@ -135,7 +135,8 @@ function cycle_data(model::SpatialRustABM, cycle::Int, s::Int)
     ntot = nrow(df)
 
     if isempty(df)
-        pcts = DataFrame()
+        pcts = DataFrame(dayn = s, category = 0:5,
+        nlpct = missing, sporepct = missing, latentpct = missing)
     else
         pcts = DataFrame(dayn = Int[], category = Int[],
         nlpct = Float64[], sporepct = Float64[], latentpct = Float64[])

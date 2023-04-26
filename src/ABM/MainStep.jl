@@ -98,7 +98,7 @@ function rust_step!(model::SpatialRustABM)
                 rust_step_schedule(model, 1.0, 0, 1.0, r_germinate!, grow_rust!, disperse_rain!, dummy_disp)
             end
         else
-            dry_spo = 0.8 # model.rustpars.dry_spo
+            dry_spo = model.rustpars.pdry_spo
             if model.current.wind
                 rust_step_schedule(model, 1.0, 0, dry_spo, nr_germinate!, grow_rust!, dummy_disp, disperse_wind!)
                 outside_spores!(model)
@@ -117,7 +117,7 @@ function rust_step!(model::SpatialRustABM)
                 rust_step_schedule(model, fung_inf, f_day, 1.0, r_germinate!, grow_f_rust!, disperse_rain!, dummy_disp)
             end
         else
-            dry_spo = 0.8 # model.rustpars.dry_spo
+            dry_spo = model.rustpars.pdry_spo
             if model.current.wind
                 rust_step_schedule(model, fung_inf, f_day, dry_spo, nr_germinate!, grow_f_rust!, dummy_disp, disperse_wind!)
                 outside_spores!(model)
@@ -165,8 +165,8 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, r
             germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
         end
 
-        update_rust!(rust)
-        # update_rust!(rust, rustpars.viab_loss)
+        # update_rust!(rust)
+        update_rust!(rust, model.rustpars.viab_loss)
     end
     return nothing
 end
