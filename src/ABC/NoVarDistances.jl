@@ -37,7 +37,7 @@ end
 
 # function diff_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
 function diff_quals(sims::DataFrame, dats)::DataFrame
-    sims[!, :rusts] .= collect(ismissing(r) ? r : Float64.(r) for r in sims[!, :rusts])
+    # sims[!, :rusts] .= collect(ismissing(r) ? r : Float64.(r) for r in sims[!, :rusts])
     # sims[!, :rusts] .= Float64.(sims[!, :rusts])
     dists = DataFrame(p_row = sims[:, :p_row])
     for var in [:P12loss, :LP, :incid, :rusts]

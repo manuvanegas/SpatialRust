@@ -9,8 +9,8 @@ end
 end
 
 # ARGS: quantsdirname, qualsdirname
-quantsdirname = ARGS[1]
-qualsdirname = ARGS[2]
+quantsdirname = string("quants_", ARGS[1])
+qualsdirname = string("quals_", ARGS[1])
 qldats = (
     P12loss = [0.3, 0.85], #
     LP = [25.0, 65.0],
@@ -32,9 +32,7 @@ qldats = (
 #     cor = [0.2, 0.95]
 # )
 
-v = "10a"
-
-mkpath(string("results/ABC/dists/sents/", v))
+mkpath(string("results/ABC/dists/sents/", ARGS[1]))
 
 empdata = DataFrame(Arrow.Table("data/exp_pro/v2/compare.arrow"))
 # qntvars = CSV.read("results/ABC/variances/sents/q9/v_gquants.csv", DataFrame)
@@ -59,8 +57,8 @@ time_joinwrite = @elapsed begin
     # vdists = leftjoin(nt_dists, l_distsv, on = :p_row)
     # write
     # CSV.write("results/ABC/dists/sents/novar/squareddists.csv", dists)
-    CSV.write(string("results/ABC/dists/sents/", v, "/squareddists.csv"), ndists)
+    CSV.write(string("results/ABC/dists/sents/", ARGS[1], "/squareddists.csv"), ndists)
     # CSV.write(string("results/ABC/dists/sents/", v, "/squareddists_v.csv"), vdists)
-    CSV.write(string("results/ABC/dists/sents/", v, "/nmissings.csv"), nmissings)
+    CSV.write(string("results/ABC/dists/sents/", ARGS[1], "/nmissings.csv"), nmissings)
 end
 println("Join+write: $time_joinwrite")

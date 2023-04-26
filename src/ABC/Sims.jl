@@ -376,6 +376,8 @@ function abc_run_shade!(model::SpatialRustABM)
         return DataFrame(), DataFrame(), missing, missing, missing, missing, missing, missing
     else
         P12 = model.current.prod 
+        
+        meandeps = mean(les_df[!, :deps])
         totles = sum(infected[!, :nl])
         meanlatent = sum(infected[!, :latent]) / totles
         LP = sum(infected[!, :lp]) / totles
