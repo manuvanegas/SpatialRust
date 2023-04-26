@@ -59,14 +59,13 @@ function sim_abc(p_row::NamedTuple)
         globs_df = DataFrame(
             p_row = rn,
             P12loss = missing,
-            meandeps = missing,
-            meanlatent = missing,
             LP = missing,
             incid = missing,
             rusts = missing,
+            meandeps = missing,
+            meanlatent = missing,
             cor = missing,
         )
-
     else
         cyc_df, sh_cor_df, sh_globs = simulate_plot(p_row, temp_data, rain_data, wind_data,:regshaded)
 
@@ -97,11 +96,11 @@ function sim_abc(p_row::NamedTuple)
             globs_df = DataFrame(
                 p_row = rn,
                 P12loss = missing,
-                meandeps = missing,
-                meanlatent = missing,
                 LP = missing,
                 incid = missing,
                 rusts = missing,
+                meandeps = missing,
+                meanlatent = missing,
                 cor = missing,
             )
         else
@@ -311,6 +310,7 @@ function abc_run_shade!(model::SpatialRustABM)
     for c in eachcol(cyc_df)
         sizehint!(c, 54)
     end
+    allowmissing!(cyc_df, [:nlpct, :sporepct, :latentpct])
 
     step_n!(model, 17)
     cycle_sentinels(model, 0, 1)

@@ -44,7 +44,7 @@ function disperse_wind!(model::SpatialRustABM, rust::Coffee, spores::Float64)
     w_distance = rand(model.rng, Exponential(rustpars.wind_distance)) * (1 + rust.sunlight * rustpars.diff_wind)
     # w_distance = rand(model.rng, Exponential(rustpars.wind_dst)) * (1 + rust.sunlight * rustpars.diff_wind)
     # w_distance = rand(model.rng, rustpars.wind_dist) * (1 + rust.sunlight * rustpars.diff_wind)
-    lifted = rand(model.rng, Poisson(spores * shading))
+    lifted = rand(model.rng, Poisson(spores * (1.0 - 0.5 * shading)))
     if w_distance < 1.0
         for _ in 1:lifted
         # for (area, spor) in zip(rust.areas, rust.spores)

@@ -141,7 +141,7 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, r
 
     for rust in rusts
         if any(rust.spores)
-            spore_area = sum(last(p) for p in pairs(rust.areas) if rust.spores[first(p)]) * model.rustpars.spore_pct * rust.sunlight
+            spore_area = sum(last(p) for p in pairs(rust.areas) if rust.spores[first(p)]) * model.rustpars.spore_pct * (1.0 + rust.sunlight)
             rain_dispersal(model, rust, spore_area)
             wind_dispersal(model, rust, spore_area)
         end
