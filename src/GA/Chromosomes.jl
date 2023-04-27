@@ -58,7 +58,7 @@ Shades:
 - barrier_rows -- 2                     | 1
 Shade Management:
 - prune_sch -- 3X DoY                   | 3x5
-- target_shade -- 3X 0.1to1             | 3x5
+- post_prune -- 3X 0.1to1             | 3x5
 Inspection:
 - inspect_period -- dayperiod           | 4
 - inspect_effort -- 0.1to1              | 5

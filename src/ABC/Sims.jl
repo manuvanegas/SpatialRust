@@ -206,11 +206,12 @@ function simulate_plot(
         rain_data = rain_data,
         wind_data = wind_data,
         temp_data = temp_data,
-        ini_rusts = 0.0,
+        # ini_rusts = 0.0,
+        p_rusts = 0.0,
         prune_sch = [15,166,-1],
         inspect_period = steps,
         fungicide_sch = Int[],
-        target_shade = [0.15, 0.2, -1],
+        post_prune = [0.15, 0.2, -1],
         shade_g_rate = 0.008,
         shade_d = 6,
         barriers = (0,0),
@@ -225,11 +226,12 @@ function simulate_plot(
         rain_data = rain_data,
         wind_data = wind_data,
         temp_data = temp_data,
-        ini_rusts = 0.02,
+        # ini_rusts = 0.02,
+        p_rusts = 0.02,
         prune_sch = [15, 166, -1],
         inspect_period = steps,
         fungicide_sch = Int[],
-        target_shade = [0.15, 0.2, -1],
+        post_prune = [0.15, 0.2, -1],
         shade_g_rate = 0.008,
         shade_d = 6,
         barriers = (0,0),
@@ -512,7 +514,7 @@ end
 #         prune_sch = [15,166,-1],
 #         inspect_period = steps,
 #         fungicide_sch = Int[],
-#         target_shade = [0.15, 0.2, -1],
+#         post_prune = [0.15, 0.2, -1],
 #         shade_g_rate = 0.008,
 #         p_row...
 #     )
@@ -529,7 +531,7 @@ end
 #         prune_sch = [15, 166, -1],
 #         inspect_period = steps,
 #         fungicide_sch = Int[],
-#         target_shade = [0.15, 0.2, -1],
+#         post_prune = [0.15, 0.2, -1],
 #         shade_g_rate = 0.008,
 #         p_row...
 #     )
@@ -812,7 +814,7 @@ end
 #         rust_gr = [0.15, 0.9, 0.179],
 #         rep_gro = [2.0, 3.0, 1.062],
 #         shade_g_rate = [0.008, 0.008, 0.008],
-#         target_shade = [[0.15, 0.25], [0.15, 0.25], [0.15, 0.25]]
+#         post_prune = [[0.15, 0.25], [0.15, 0.25], [0.15, 0.25]]
 #     )
 
 #     touts = map(p -> sim_abc(p), Tables.namedtupleiterator(tdf))

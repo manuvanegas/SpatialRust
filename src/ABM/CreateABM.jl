@@ -138,7 +138,7 @@ function pre_run365!(model::SpatialRustABM, mngpars::MngPars)
     prune1 = prune2 = prune3 = no_prune
 
     sch = mngpars.prune_sch
-    shadets = mngpars.target_shade
+    shadets = mngpars.post_prune
     lsch = length(sch)
     if lsch == 1
         p1 = sch[1]

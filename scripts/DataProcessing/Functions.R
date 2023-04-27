@@ -125,6 +125,7 @@ per.leaf.aggs <- function(d) {
   d %>% 
     group_by(dayn, leaf.id) %>% 
     mutate(leaf.area = sum(num.area),
+           leaf.spored = sum(spore.area),
            leaf.nl = max(Lesion),
            .groups = "drop")
 }

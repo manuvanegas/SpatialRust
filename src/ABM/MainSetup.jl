@@ -69,7 +69,7 @@ end
 function init_spatialrust(;
     seed::Int = 0,
     start_days_at::Int = 0,
-    ini_rusts::Float64 = 0.01,              # % of initial rusts (# of initial clusters, if > 1)
+    p_rusts::Float64 = 0.01,              # % of initial rusts (# of initial clusters, if > 1)
     p_row::Int = 0,                         # parameter combination number (for ABC)
     rep::Int = 0,                           # repetition number (for other exps)
 
@@ -104,15 +104,11 @@ function init_spatialrust(;
     rep_inf::Float64 = 0.3,                 # Weight of reprod growth on infection prob
     viab_loss::Float64 = 0.75,              # Deposited spore viability loss
     rust_gr::Float64 = 0.16,                # basic rust area growth rate
-    # opt_g_temp::Float64 = 23.0,             # optimal rust growth temp
     opt_temp::Float64 = 23.0,               # optimal rust growth temp
-    # host_spo_inh::Float64 = 1.0,            # Coeff for inhibition of storage on sporul
     rep_spo::Float64 = 1.0,                 # Effect on reprod growth on sporul
     pdry_spo::Float64 = 0.8,                # Prob of sporulation without rain
-    # max_g_temp::Float64 = 30.0,             # maximum rust growth temp
     temp_ampl::Float64 = 5.0,               # (max temp - optimal temp)
     rep_gro::Float64 = 0.7,                 # resource sink effect on area growth
-    # veg_gro::Float64 = 0.3,                 # growth during vegetative phase
     spore_pct::Float64 = 0.6,               # % of area that sporulates
     fung_inf::Float64 = 0.9,                # infection prob under fungicide mod
     fung_gro_prev::Float64 = 0.3,           # fungicide mod to growth rate on preventive fungicide
@@ -122,16 +118,12 @@ function init_spatialrust(;
     
     steps::Int = 500,                       # simulation steps. Included in RustPars to reset Rust ages values on exhaustion
     rust_paras::Float64 = 0.1,              # resources taken per unit of total area
-    # exh_threshold::Float64 = 0.5,           # veg threshold for exhaustion (0 to 2)
-    exh_thresh::Float64 = 0.5,           # veg threshold for exhaustion (0 to 2)
     exh_countdown::Int = 731,               # days to count after plant has been exhausted (2-3 y to resume production) 
 
     map_side::Int = 100,                    # side size
-    # rain_distance::Float64 = 1.0,           # mean distance of spores dispersed by rain
     rain_dst::Float64 = 1.0,                # mean distance of spores dispersed by rain
     diff_splash::Float64 = 2.5,             # times rain distance due to enhanced kinetic e (shade) (Avelino et al. 2020: "Kinetic energy was twice as high"+ Gagliardi et al. 2021: TKE ~ 5xOpenness%)
     tree_block::Float64 = 0.8,              # prob a tree will block rust dispersal
-    # wind_distance::Float64 = 5.0,           # mean distance of spores dispersed by wind
     wind_dst::Float64 = 5.0,                # mean distance of spores dispersed by wind
     diff_wind::Float64 = 3.0,               # additional wind distance due to increased openness (Pezzopane
     shade_block::Float64 = 0.5,             # prob of Shades blocking a wind dispersal event
@@ -151,14 +143,11 @@ function init_spatialrust(;
     other_costs::Float64 = 1.0,             # other costs considered
     coffee_price::Float64 = 1.0,
 
-    # lesion_survive::Float64 = 0.1,
     les_surv::Float64 = 0.1,
-    # target_shade::Float64 = 0.15,            # individual shade level after pruning
-    target_shade::Vector{Float64} = [0.3, 0.5, 0.0],            # individual shade level after pruning
-    # target_shade -> post_prune
+    post_prune::Vector{Float64} = [0.3, 0.5, 0.0],            # individual shade level after pruning
     inspect_effort::Float64 = 0.01,         # % coffees inspected each time
     fung_effect::Int = 30,                  # length of fungicide effect
-    # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
+
     # shade parameters
     shade_g_rate::Float64 = 0.008,           # shade growth rate
     shade_r::Int = 3,                       # radius of influence of shades
@@ -203,42 +192,38 @@ function init_spatialrust(;
 
     rp = RustPars(
         #
-        # max_lesions, temp_cooling, light_inh, rain_washoff, max_inf, 
         max_lesions, temp_cooling, light_inh, rain_washoff, rep_inf, viab_loss, max_inf, 
         #
-        # rust_gr, opt_g_temp, host_spo_inh, max_g_temp, rep_gro, spore_pct, 
         rust_gr, opt_temp, rep_spo, pdry_spo, -(1.0/temp_ampl^2), rep_gro, spore_pct, 
         fung_inf, fung_gro_prev, fung_gro_cur, fung_spor_prev, fung_spor_cur, 
         #
-        # steps, rust_paras, exh_threshold, exh_countdown,
         steps, rust_paras, exh_countdown,
         #
-        # map_side, rain_distance, diff_splash, tree_block, wind_distance, diff_wind, shade_block
         map_side, rain_dst, diff_splash, tree_block, wind_dst, diff_wind, shade_block
     )
 
     pruneskept = filter!(i -> prune_sch[i] > 0, sortperm(prune_sch))
     keepat!(prune_sch, pruneskept)
-    keepat!(target_shade, pruneskept)
+    keepat!(post_prune, pruneskept)
     if (l = length(prune_sch) == 2) && !allunique(prune_sch)
         prune_sch = keepat!(prune_sch, 1)
-        target_shade = minimum(target_shade)
+        post_prune = minimum(post_prune)
     elseif l == 3 && !allunique(prune_sch)
         if prune_sch[1] == prune_sch[3]
             prune_sch = keepat!(prune_sch, 1)
-            target_shade = minimum(target_shade)
+            post_prune = minimum(post_prune)
         elseif prune_sch[2] == prune_sch[3]
             pop!(prune_sch)
-            ts = pop!(target_shade)
-            target_shade[2] = min(target_shade[2], ts)
+            ts = pop!(post_prune)
+            post_prune[2] = min(post_prune[2], ts)
         elseif prune_sch[1] == prune_sch[2]
             popat!(prune_sch, 2)
-            ts = popat!(target_shade, 2)
-            target_shade[1] = min(target_shade[1], ts)
+            ts = popat!(post_prune, 2)
+            post_prune[1] = min(post_prune[1], ts)
         end
     end
     prune_sch = Tuple(prune_sch)
-    target_shade = Tuple(target_shade)
+    post_prune = Tuple(post_prune)
     fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
     
     n_shades = count(farm_map .== 2)
@@ -255,15 +240,14 @@ function init_spatialrust(;
         n_coffees, inspect_cost * n_inspect, fung_cost * n_coffees,
         other_costs, coffee_price,
         #
-        les_surv, target_shade, n_inspect, fung_effect,
-        # les_surv, target_shade, n_inspect, fung_effect,
+        les_surv, post_prune, n_inspect, fung_effect,
         shade_g_rate, shade_r
     )
 
     doy = start_days_at == 0 ? veg_d - 1 : start_days_at
 
     b = Books(
-        doy, 0, ind_shade_i(shade_g_rate, doy, target_shade, prune_sch),
+        doy, 0, ind_shade_i(shade_g_rate, doy, post_prune, prune_sch),
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true
     )
 
@@ -271,7 +255,7 @@ function init_spatialrust(;
         Set{Sentinel}()),
         # )
         rng,
-        ini_rusts,
+        p_rusts,
     )
 end
 
@@ -362,8 +346,8 @@ struct MngPars{N,M}
     # others
     lesion_survive::Float64
     # les_surv::Float64
-    # target_shade::Float64
-    target_shade::NTuple{N, Float64}
+    # post_prune::Float64
+    post_prune::NTuple{N, Float64}
     n_inspected::Int
     fung_effect::Int
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
@@ -412,7 +396,7 @@ end
 function ind_shade_i(
     shade_g_rate::Float64,
     start_day_at::Int,
-    target_shade::NTuple{N, Float64},
+    post_prune::NTuple{N, Float64},
     prune_sch::NTuple{N, Int}) where {N}
 
     if isempty(prune_sch)
@@ -424,37 +408,14 @@ function ind_shade_i(
         if isempty(prune_diff)
             lastprune, prune_i = findmax(prune_sch)
             last_prune = 365 + day - lastprune
-            pruned_to = target_shade[prune_i]
+            pruned_to = post_prune[prune_i]
         else
             lastprune, prune_i = findmin(prune_diff)
             last_prune = minimum(prune_diff)
-            pruned_to = target_shade[prune_i]
+            pruned_to = post_prune[prune_i]
         end
         # logistic equation to determine starting shade level
         return 0.8 * (pruned_to / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune))))
     end
 end
 
-
-# # Calculate initial ind_shade
-# function ind_shade_i(
-#     shade_g_rate::Float64,
-#     start_day_at::Int,
-#     target_shade::Float64,
-#     prune_sch::NTuple{N, Int}) where N
-
-#     if isempty(prune_sch)
-#         return 0.8
-#     else
-#         day = start_day_at > 0 ? start_day_at : 1
-#         # calculate elapsed days since last prune
-#         prune_diff = filter(>(0), day .- prune_sch)
-#         if isempty(prune_diff)
-#             last_prune = 365 + day - maximum(prune_sch)
-#         else
-#             last_prune = minimum(prune_diff)
-#         end
-#         # logistic equation to determine starting shade level
-#         return (0.8 * target_shade) / (target_shade + (0.8 - target_shade) * exp(-(shade_g_rate * last_prune)))
-#     end
-# end

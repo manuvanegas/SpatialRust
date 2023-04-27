@@ -40,7 +40,7 @@ end
 # ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
 
 # function prune_shades!(model::SpatialRustABM, prune_i::Int)
-#     prune_to = model.mngpars.target_shade[prune_i]
+#     prune_to = model.mngpars.post_prune[prune_i]
 #     if model.current.ind_shade > prune_to
 #         model.current.ind_shade = prune_to
 #     else
@@ -59,8 +59,8 @@ function prune_shades!(model::SpatialRustABM, tshade::Float64)
 end
 
 # function prune_shades!(model::SpatialRustABM)
-#     if model.current.ind_shade > model.mngpars.target_shade
-#         model.current.ind_shade = model.mngpars.target_shade
+#     if model.current.ind_shade > model.mngpars.post_prune
+#         model.current.ind_shade = model.mngpars.post_prune
 #     else
 #         model.current.ind_shade *= 0.9
 #     end
@@ -75,7 +75,7 @@ end
 #     # pruned = partialsort(model.current.shade_ids, 1:n_pruned, rev=true, by = x -> model[x].shade)
 #     # for pr in pruned
 #     for pr in model.current.shade_ids
-#         model[pr].shade = model.pars.target_shade
+#         model[pr].shade = model.pars.post_prune
 #     end
 # end
 

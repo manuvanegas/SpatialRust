@@ -184,7 +184,7 @@ function farmer_step!(model)
 
     prune_i = findfirst(==(doy), model.mngpars.prune_sch)
     if !isnothing(prune_i)
-        prune_shades!(model, model.mngpars.target_shade[prune_i])
+        prune_shades!(model, model.mngpars.post_prune[prune_i])
     end
 
     # the following is commented out for ABC. TODO: uncomment it when calibration is done
