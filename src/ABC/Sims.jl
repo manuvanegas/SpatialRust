@@ -197,7 +197,7 @@ function simulate_plot(
 
     steps = 615
     iday = 115
-    sampled_blocks = 100
+    sampled_blocks = 125
 
     model1 = init_spatialrust(;
         steps = steps,
