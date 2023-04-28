@@ -1,14 +1,15 @@
 # Simulations to run the Approx Bayesian Computation approach
 
-export sim_abc, cat_dfs, abc_pmap, tempdata, raindata, winddata, collect_days
+# export sim_abc, cat_dfs, abc_pmap, tempdata, raindata, winddata, collect_days
+export sim_abc, abc_pmap, tempdata, raindata, winddata
 
-using StatsBase: corkendall, proportions
+using StatsBase: corkendall
 using Statistics: quantile
 using Distributed
 
 include(srcdir("ABC","Metrics.jl"))
-include(srcdir("ABC","PrepforABC.jl"))
-include(srcdir("ABC","Sentinels.jl"))
+# include(srcdir("ABC","PrepforABC.jl"))
+# include(srcdir("ABC","Sentinels.jl"))
 include(srcdir("ABC","SimData.jl"))
 
 function abc_pmap(par_iterator, wp::CachingPool)
@@ -30,15 +31,16 @@ function sim_abc(p_row::NamedTuple)
     wind_data = winddata()
     rn = p_row[:p_row]
 
-    _, sun_cor_df, sun_globs = simulate_plot(p_row, temp_data, rain_data, wind_data, :fullsun)
+    # _, sun_cor_df, sun_globs = simulate_plot(p_row, temp_data, rain_data, wind_data, :fullsun)
+    sun_cor_df, sun_globs = simulate_plot(p_row, temp_data, rain_data, wind_data, :fullsun)
 
     if ismissing(first(sun_globs))
 
-        cyc_df = pull_empdates()
-        cyc_df[!, :nlpct] .= missing
-        cyc_df[!, :sporepct] .= missing
-        cyc_df[!, :latentpct] .= missing
-        cyc_df[!, :p_row] .= rn
+        # cyc_df = pull_empdates()
+        # cyc_df[!, :nlpct] .= missing
+        # cyc_df[!, :sporepct] .= missing
+        # cyc_df[!, :latentpct] .= missing
+        # cyc_df[!, :p_row] .= rn
         # cyc_df = DataFrame()
 
         # globs_df = DataFrame(#)
@@ -67,15 +69,16 @@ function sim_abc(p_row::NamedTuple)
             cor = missing,
         )
     else
-        cyc_df, sh_cor_df, sh_globs = simulate_plot(p_row, temp_data, rain_data, wind_data,:regshaded)
+        # cyc_df, sh_cor_df, sh_globs = simulate_plot(p_row, temp_data, rain_data, wind_data,:regshaded)
+        sh_cor_df, sh_globs = simulate_plot(p_row, temp_data, rain_data, wind_data,:regshaded)
 
-        if isempty(cyc_df)
+        if ismissing(first(sh_globs))
             
-            cyc_df = pull_empdates()
-            cyc_df[!, :nlpct] .= missing
-            cyc_df[!, :sporepct] .= missing
-            cyc_df[!, :latentpct] .= missing
-            cyc_df[!, :p_row] .= rn
+            # cyc_df = pull_empdates()
+            # cyc_df[!, :nlpct] .= missing
+            # cyc_df[!, :sporepct] .= missing
+            # cyc_df[!, :latentpct] .= missing
+            # cyc_df[!, :p_row] .= rn
             # cyc_df = DataFrame()
 
             # globs_df = DataFrame(#)
@@ -104,7 +107,7 @@ function sim_abc(p_row::NamedTuple)
                 cor = missing,
             )
         else
-            cyc_df[!, :p_row] .= rn
+            # cyc_df[!, :p_row] .= rn
 
             append!(sun_cor_df, sh_cor_df)
             if nrow(sh_cor_df) < 10
@@ -184,7 +187,8 @@ function sim_abc(p_row::NamedTuple)
         end
     end
 
-    return cyc_df, globs_df
+    # return cyc_df, globs_df
+    return globs_df
 end
 
 function simulate_plot(
@@ -195,9 +199,12 @@ function simulate_plot(
     type::Symbol
 )
 
-    steps = 615
-    iday = 115
-    sampled_blocks = 125
+    meantemp = 22.0
+    rain_prob = 0.8
+    wind_prob = 0.7
+    steps = 730
+    iday = 0
+    # sampled_blocks = 125
 
     model1 = init_spatialrust(;
         steps = steps,
@@ -206,9 +213,11 @@ function simulate_plot(
         rain_data = rain_data,
         wind_data = wind_data,
         temp_data = temp_data,
-        # ini_rusts = 0.0,
+        # rain_prob = rain_prob,
+        # wind_prob = wind_prob,
+        # mean_temp = meantemp,
         p_rusts = 0.0,
-        prune_sch = [15,166,-1],
+        prune_sch = [15, 166, -1],
         inspect_period = steps,
         fungicide_sch = Int[],
         post_prune = [0.15, 0.2, -1],
@@ -226,8 +235,10 @@ function simulate_plot(
         rain_data = rain_data,
         wind_data = wind_data,
         temp_data = temp_data,
-        # ini_rusts = 0.02,
-        p_rusts = 0.02,
+        # rain_prob = rain_prob,
+        # wind_prob = wind_prob,
+        # mean_temp = meantemp,
+        p_rusts = 0.01,
         prune_sch = [15, 166, -1],
         inspect_period = steps,
         fungicide_sch = Int[],
@@ -237,16 +248,19 @@ function simulate_plot(
         barriers = (0,0),
         p_row...
     )
-    setup_plant_sampling!(model2, 9, sampled_blocks)
-    if type == :regshaded
-        cyc_df, prod_clr_df, P12o, LP, incid, rusts, meandeps, meanlatent = abc_run_shade!(model2)
-    else
-        cyc_df, prod_clr_df, P12o, LP, incid, rusts, meandeps, meanlatent = abc_run_sun!(model2)
-    end
+    # setup_plant_sampling!(model2, 9, sampled_blocks)
+    # if type == :regshaded
+    #     cyc_df, prod_clr_df, P12o, LP, incid, rusts, meandeps, meanlatent = abc_run_shade!(model2)
+    # else
+    #     cyc_df, prod_clr_df, P12o, LP, incid, rusts, meandeps, meanlatent = abc_run_sun!(model2)
+    # end
+
+    prod_clr_df, P12o, LP, incid, rusts, meandeps, meanlatent = abc_obs_run!(model2)
 
     P12loss = 1.0 - (P12o / P12a)
 
-    return cyc_df, prod_clr_df, (P12loss, LP, incid, rusts, meandeps, meanlatent)
+    # return cyc_df, prod_clr_df, (P12loss, LP, incid, rusts, meandeps, meanlatent)
+    return prod_clr_df, (P12loss, LP, incid, rusts, meandeps, meanlatent)
 end
 
 function abc_att_run!(model::SpatialRustABM)
@@ -254,143 +268,143 @@ function abc_att_run!(model::SpatialRustABM)
     # step_n!(model, 250)
     # P1 = model.current.prod
     # step_n!(model, 365)
-    step_n!(model, 615)
+    step_n!(model, 730)
     P12 = model.current.prod
 
     return P12
 end
 
-function abc_run_sun!(model::SpatialRustABM)
+function abc_obs_run!(model::SpatialRustABM)
     ncofs = model.mngpars.n_cofs
     allcofs = model.agents
     prod_clr_df = DataFrame()
     les_df = DataFrame(latent = Float64[], nl = Float64[], deps = Float64[], lp = Int[])
 
-    s = step_while!(model, 0, 20)
+    s = step_while!(model, 0, 135)
     get_prod_df!(prod_clr_df, allcofs)
 
-    s = step_while!(model, 20, 71)
+    s = step_while!(model, s, 195)
     append!(les_df, latent_and_dep(allcofs))
 
-    s = step_while!(model, s, 133)
+    s = step_while!(model, s, 255)
     append!(les_df, latent_and_dep(allcofs))
-
-    s = step_while!(model, s, 196)
-    append!(les_df, latent_and_dep(allcofs))
-    clr_areas!(prod_clr_df, allcofs)
-    incid = sum(map(c -> c.n_lesions > 0 ||c.exh_countdown > 0, allcofs)) / ncofs
-
-    s = step_while!(model, s, 615)
-
-    infected = filter(:nl => >(0), les_df)
-    if !model.current.withinbounds || isempty(infected)
-        return DataFrame(), DataFrame(), missing, missing, missing, missing, missing, missing
-    else
-        P12 = model.current.prod 
-
-        meandeps = mean(les_df[!, :deps])
-        totles = sum(infected[!, :nl])
-        meanlatent = sum(infected[!, :latent]) / totles
-        LP = sum(infected[!, :lp]) / totles
-
-        return DataFrame(), prod_clr_df, P12, LP, incid, sum(Float64, map(c -> c.n_lesions > 0, allcofs)), meandeps, meanlatent
-    end
-end
-
-function abc_run_shade!(model::SpatialRustABM)
-
-    ncofs = model.mngpars.n_cofs
-    allcofs = model.agents
-
-    cyc_df = DataFrame(
-        dayn = Int[], category = Int[],
-        nlpct = Float64[], sporepct = Float64[], latentpct = Float64[],
-    )
-    les_df = DataFrame(latent = Float64[], nl = Float64[], deps = Float64[], lp = Int[])
-    prod_clr_df = DataFrame()
-
-    for c in eachcol(cyc_df)
-        sizehint!(c, 54)
-    end
-    allowmissing!(cyc_df, [:nlpct, :sporepct, :latentpct])
-
-    step_n!(model, 17)
-    cycle_sentinels(model, 0, 1)
-    step_n!(model, 3)
-    get_prod_df!(prod_clr_df, allcofs)
-    s = step_while!(model, 20, 71)
-    append!(cyc_df, cycle_data(model, 1, s))
-    append!(les_df, latent_and_dep(allcofs))
-    step_n!(model, 6)
-    s += 6
-
-    cycle_sentinels(model, 1, 2)
-    s = step_while!(model, s, 133)
-    append!(cyc_df, cycle_data(model, 2, s))
-    append!(les_df, latent_and_dep(allcofs))
-    step_n!(model, 7)
-    s += 7
-
-    cycle_sentinels(model, 2, 3)
-    s = step_while!(model, s, 196)
-    append!(cyc_df, cycle_data(model, 3, s))
-    append!(les_df, latent_and_dep(allcofs))
-    clr_areas!(prod_clr_df, allcofs)
-    # areas, deps
-    incid = sum(map(c -> c.n_lesions > 0 ||c.exh_countdown > 0, allcofs)) / ncofs
-
-    # s = step_while!(model, s, 250)
-    # # prod individual?
-    # P1 = model.current.prod #individual?
-
-    s = step_while!(model, s, 259)
-    cycle_sentinels(model, 3, 4)
-    s = step_while!(model, s, 287)
-    cycle_sentinels(model, 3, 5)
 
     s = step_while!(model, s, 315)
-    append!(cyc_df, cycle_data(model, 4, s))
-    cycle_sentinels(model, 4, 6)
+    append!(les_df, latent_and_dep(allcofs))
+    clr_areas!(prod_clr_df, allcofs)
+    incid = sum(map(c -> c.n_lesions > 0 ||c.exh_countdown > 0, allcofs)) / ncofs
 
-    s = step_while!(model, s, 343)
-    append!(cyc_df, cycle_data(model, 5, s))
-    cycle_sentinels(model, 5, 7)
-
-    s = step_while!(model, s, 372)
-    append!(cyc_df, cycle_data(model, 6, s))
-    cycle_sentinels(model, 6, 8)
-
-    s = step_while!(model, s, 399)
-    append!(cyc_df, cycle_data(model, 7, s))
-    cycle_sentinels(model, 7, 9)
-
-    s = step_while!(model, s, 427)
-    append!(cyc_df, cycle_data(model, 8, s))
-    cycle_sentinels(model, 8, 0)
-
-    s = step_while!(model, s, 455)
-    append!(cyc_df, cycle_data(model, 9, s))
-
-    s = step_while!(model, s, 615)
+    s = step_while!(model, s, 730)
 
     infected = filter(:nl => >(0), les_df)
     if !model.current.withinbounds || isempty(infected)
-        return DataFrame(), DataFrame(), missing, missing, missing, missing, missing, missing
+        return DataFrame(), missing, missing, missing, missing, missing, missing
     else
         P12 = model.current.prod 
-        
+
         meandeps = mean(les_df[!, :deps])
         totles = sum(infected[!, :nl])
         meanlatent = sum(infected[!, :latent]) / totles
         LP = sum(infected[!, :lp]) / totles
 
-        return cyc_df, prod_clr_df, P12, LP, incid, sum(Float64, map(c -> c.n_lesions > 0, allcofs)), meandeps, meanlatent
+        return prod_clr_df, P12, LP, incid, sum(Float64, map(c -> c.n_lesions > 0, allcofs)), meandeps, meanlatent
     end
 end
 
-function cat_dfs(Ti::Tuple{DataFrame, DataFrame}, Tj::Tuple{DataFrame, DataFrame})
-    return vcat(Ti[1], Tj[1]), vcat(Ti[2], Tj[2])
-end
+# function abc_run_shade!(model::SpatialRustABM)
+
+#     ncofs = model.mngpars.n_cofs
+#     allcofs = model.agents
+
+#     cyc_df = DataFrame(
+#         dayn = Int[], category = Int[],
+#         nlpct = Float64[], sporepct = Float64[], latentpct = Float64[],
+#     )
+#     les_df = DataFrame(latent = Float64[], nl = Float64[], deps = Float64[], lp = Int[])
+#     prod_clr_df = DataFrame()
+
+#     for c in eachcol(cyc_df)
+#         sizehint!(c, 54)
+#     end
+#     allowmissing!(cyc_df, [:nlpct, :sporepct, :latentpct])
+
+#     step_n!(model, 17)
+#     cycle_sentinels(model, 0, 1)
+#     step_n!(model, 3)
+#     get_prod_df!(prod_clr_df, allcofs)
+#     s = step_while!(model, 20, 71)
+#     append!(cyc_df, cycle_data(model, 1, s))
+#     append!(les_df, latent_and_dep(allcofs))
+#     step_n!(model, 6)
+#     s += 6
+
+#     cycle_sentinels(model, 1, 2)
+#     s = step_while!(model, s, 133)
+#     append!(cyc_df, cycle_data(model, 2, s))
+#     append!(les_df, latent_and_dep(allcofs))
+#     step_n!(model, 7)
+#     s += 7
+
+#     cycle_sentinels(model, 2, 3)
+#     s = step_while!(model, s, 196)
+#     append!(cyc_df, cycle_data(model, 3, s))
+#     append!(les_df, latent_and_dep(allcofs))
+#     clr_areas!(prod_clr_df, allcofs)
+#     # areas, deps
+#     incid = sum(map(c -> c.n_lesions > 0 ||c.exh_countdown > 0, allcofs)) / ncofs
+
+#     # s = step_while!(model, s, 250)
+#     # # prod individual?
+#     # P1 = model.current.prod #individual?
+
+#     s = step_while!(model, s, 259)
+#     cycle_sentinels(model, 3, 4)
+#     s = step_while!(model, s, 287)
+#     cycle_sentinels(model, 3, 5)
+
+#     s = step_while!(model, s, 315)
+#     append!(cyc_df, cycle_data(model, 4, s))
+#     cycle_sentinels(model, 4, 6)
+
+#     s = step_while!(model, s, 343)
+#     append!(cyc_df, cycle_data(model, 5, s))
+#     cycle_sentinels(model, 5, 7)
+
+#     s = step_while!(model, s, 372)
+#     append!(cyc_df, cycle_data(model, 6, s))
+#     cycle_sentinels(model, 6, 8)
+
+#     s = step_while!(model, s, 399)
+#     append!(cyc_df, cycle_data(model, 7, s))
+#     cycle_sentinels(model, 7, 9)
+
+#     s = step_while!(model, s, 427)
+#     append!(cyc_df, cycle_data(model, 8, s))
+#     cycle_sentinels(model, 8, 0)
+
+#     s = step_while!(model, s, 455)
+#     append!(cyc_df, cycle_data(model, 9, s))
+
+#     s = step_while!(model, s, 615)
+
+#     infected = filter(:nl => >(0), les_df)
+#     if !model.current.withinbounds || isempty(infected)
+#         return DataFrame(), DataFrame(), missing, missing, missing, missing, missing, missing
+#     else
+#         P12 = model.current.prod 
+        
+#         meandeps = mean(les_df[!, :deps])
+#         totles = sum(infected[!, :nl])
+#         meanlatent = sum(infected[!, :latent]) / totles
+#         LP = sum(infected[!, :lp]) / totles
+
+#         return cyc_df, prod_clr_df, P12, LP, incid, sum(Float64, map(c -> c.n_lesions > 0, allcofs)), meandeps, meanlatent
+#     end
+# end
+
+# function cat_dfs(Ti::Tuple{DataFrame, DataFrame}, Tj::Tuple{DataFrame, DataFrame})
+#     return vcat(Ti[1], Tj[1]), vcat(Ti[2], Tj[2])
+# end
 
 
 # function sim_abc(p_row::NamedTuple)

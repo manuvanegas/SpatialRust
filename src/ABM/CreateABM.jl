@@ -1,4 +1,17 @@
-## Setup functions
+## Create ABM object
+
+function init_abm_obj(props::Props, rng::Xoshiro, ini_rusts::Float64)::SpatialRustABM
+    space = GridSpaceSingle((props.rustpars.map_side, props.rustpars.map_side), periodic = false, metric = :chebyshev)
+
+    model = UnremovableABM(Coffee, space; properties = props, rng = rng)
+
+    add_trees!(model)
+    pre_run365!(model, props.mngpars)
+
+    ini_rusts > 0.0 && init_rusts!(model, ini_rusts)
+
+    return model
+end
 
 # Add coffee agents according to farm_map
 function add_trees!(model::SpatialRustABM)
@@ -6,16 +19,20 @@ function add_trees!(model::SpatialRustABM)
     shade_map::Matrix{Float64} = model.shade_map
     ind_shade::Float64 = model.current.ind_shade
     max_lesions::Int = model.rustpars.max_lesions
-    rustgr_dist = truncated(Normal(model.rustpars.rust_gr, 0.001), 0.0, 0.35)
+    r_gr = model.rustpars.rust_gr
+    rustgr_dist = truncated(Normal(r_gr, r_gr * 0.01), 0.0, r_gr * 1.5)
 
     cof_pos = findall(x -> x == 1, farm_map)
     for pos in cof_pos
         sunlight = 1.0 - shade_map[pos] * ind_shade
-        add_agent!(
-            # Tuple(pos), model, max_lesions, max_age, rand(model.rng, rustgr_dist);
-            Tuple(pos), model, max_lesions, rand(model.rng, rustgr_dist);
-            sunlight = sunlight,
-            storage = init_storage(sunlight)
+        add_agent_pos!(
+            coffee(nextid(model), Tuple(pos),
+                max_lesions, rand(model.rng, rustgr_dist), 
+                sunlight = sunlight, storage = init_storage(sunlight)),
+            model
+            # Tuple(pos), model, max_lesions, rand(model.rng, rustgr_dist);
+            # sunlight = sunlight,
+            # storage = init_storage(sunlight)
         )
     end
 end
@@ -57,40 +74,27 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Float64) # inoculate coff
         rusted_cofs = unique(rusted_cofs)
     end
 
-    # nl_dist = LogUniform(1,25.999)
-    # a_dist = truncated(Exponential(0.2), 0, 1)
-    # rids = collect(getproperty.(rusted_cofs, (:id)))
-    nl_distr = Binomial(24, 0.05) # Merle, 2020
+    nl_distr = Binomial(model.rustpars.max_lesions - 1, 0.05)
 
     for rusted in rusted_cofs
         deposited = 0.0
-        # max_nl = model.rustpars.max_lesions
         nl = n_lesions = 1 + rand(model.rng, nl_distr)
-        # nl = n_lesions = rand(model.rng, 1:model.rustpars.max_lesions)
-        # nl = n_lesions = trunc(Int, rand(model.rng, nl_dist))
-        # ages = fill((model.rustpars.steps * 2 + 1), max_nl)
-        # areas = zeros(max_nl)
-        # spores = fill(false, max_nl)
         ages = rusted.ages
         areas = rusted.areas
         spores = rusted.spores
 
-        for li in 1:nl
-            area = rand(model.rng)
+        for _ in 1:nl
+            area = rand(model.rng) * 0.3
+            age = round(Int, area * 100.0)
             # area = rand(model.rng, a_dist)
             # if area < 0.05 then the lesion is just in the "deposited" state,
             # so no changes have to be made to any of its variables
-            if 0.05 < area < 0.9
-                # ages[li] = 0
-                # areas[li] = area
-                push!(ages, 0)
+            if 0.01 < area < 0.28
+                push!(ages, age)
                 push!(areas, area)
                 push!(spores, false)
-            elseif area > 0.9
-                # ages[li] = 0
-                # areas[li] = area
-                # spores[li] = true
-                push!(ages, 14)
+            elseif area > 0.28
+                push!(ages, age)
                 push!(areas, area)
                 push!(spores, true)
             else
@@ -99,36 +103,11 @@ function init_rusts!(model::SpatialRustABM, ini_rusts::Float64) # inoculate coff
             end
         end
 
-        # sortidx = sortperm(areas; rev = true)
-
         rusted.rusted = true
         rusted.deposited = deposited
         rusted.n_lesions = n_lesions
-        # rusted.ages = ages[sortidx]
-        # rusted.areas = areas[sortidx]
-        # rusted.spores = spores[sortidx]
-        # push!(model.rusts, rusted)
     end
     return nothing
-end
-
-function init_abm_obj(props::Props, rng::Xoshiro, ini_rusts::Float64)::SpatialRustABM
-    space = GridSpaceSingle((props.rustpars.map_side, props.rustpars.map_side), periodic = false, metric = :chebyshev)
-
-    model = UnremovableABM(Coffee, space; properties = props, rng = rng)
-
-    # TODO: comment out ABC coffee initialization
-    # add_trees!(model)
-    # pre_run365!(model, props.mngpars)
-    add_abc_trees!(model)
-    pre_run_abc!(model, props.mngpars)
-
-    ini_rusts > 0.0 && init_rusts!(model, ini_rusts)
-
-    # print(mean(map(c -> c.veg, model.agents)), ", ")
-    # print(mean(map(c -> c.storage, model.agents)), ", ")
-    # println(mean(map(c -> c.production, model.agents)))
-    return model
 end
 
 #assumes harvest_day is 365 and start_day_at is 0

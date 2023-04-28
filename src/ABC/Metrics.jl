@@ -10,20 +10,6 @@ function get_prod_df!(df::DataFrame, allcofs::Vector{Coffee})
     df[!, :nl_c] = map(c -> c.n_lesions, allcofs)
 end
 
-# fruittoleaf(v::Float64, p::Float64) = p / (v + p)
-
-# function add_clr_areas!(df::DataFrame, model::SpatialRustABM)
-#     df[!, :clr_area] = map(c -> sum(c.areas), model.agents)
-# end
-
-# function meanareas(a)
-#     if sum(a.areas) == 0.0
-#         return 0.0
-#     else
-#         return mean(filter(>(0.0), a.areas))
-#     end
-# end
-
 function clr_areas!(df::DataFrame, allcofs::Vector{Coffee})
     df[!, :exh] = map(c -> c.exh_countdown > 0, allcofs)
     df[!, :areas] = map(c -> sum(c.areas), allcofs)
@@ -40,6 +26,46 @@ function clrcat(exh, area, qs)
         return searchsortedlast(qs, area)
     end
 end
+
+function latent_and_dep(allcofs::Vector{Coffee})
+    df = DataFrame()
+    df[!, :latent] = map(c -> sum(c.areas), allcofs)
+    df[!, :nl] = map(c -> c.n_lesions, allcofs)
+    df[!, :deps] = map(c -> c.deposited, allcofs)
+    df[!, :lp] = map(c -> sum(c.lp), allcofs)
+    return df
+end
+
+# fruittoleaf(v::Float64, p::Float64) = p / (v + p)
+
+# function add_clr_areas!(df::DataFrame, model::SpatialRustABM)
+#     df[!, :clr_area] = map(c -> sum(c.areas), model.agents)
+# end
+
+# function meanareas(a)
+#     if sum(a.areas) == 0.0
+#         return 0.0
+#     else
+#         return mean(filter(>(0.0), a.areas))
+#     end
+# end
+
+# function clr_areas!(df::DataFrame, allcofs::Vector{Coffee})
+#     df[!, :exh] = map(c -> c.exh_countdown > 0, allcofs)
+#     df[!, :areas] = map(c -> sum(c.areas), allcofs)
+
+#     select!(subset!(df, :nl_c => ByRow(==(0)), :areas => ByRow(>(0.0))), :FtL, :exh, :areas)
+
+#     return df
+# end
+
+# function clrcat(exh, area, qs)
+#     if exh > 0
+#         return length(qs) + 1
+#     else
+#         return searchsortedlast(qs, area)
+#     end
+# end
 
 # function prod_clr_corr(df::DataFrame, allcofs::Vector{Coffee})
 #     df[!, :clr_cat] = map(clr_cat, allcofs)
@@ -108,55 +134,55 @@ end
 
 # surveyed_today(c::Coffee, cycle::Vector{Int})::Bool = c.sample_cycle ∈ cycle && c.exh_countdown == 0
 
-function latent_and_dep(allcofs::Vector{Coffee})
-    df = DataFrame()
-    df[!, :latent] = map(c -> sum(c.areas), allcofs)
-    df[!, :nl] = map(c -> c.n_lesions, allcofs)
-    df[!, :deps] = map(c -> c.deposited, allcofs)
-    df[!, :lp] = map(c -> sum(c.ages), allcofs)
-    return df
-end
+# function latent_and_dep(allcofs::Vector{Coffee})
+#     df = DataFrame()
+#     df[!, :latent] = map(c -> sum(c.areas), allcofs)
+#     df[!, :nl] = map(c -> c.n_lesions, allcofs)
+#     df[!, :deps] = map(c -> c.deposited, allcofs)
+#     df[!, :lp] = map(c -> sum(c.ages), allcofs)
+#     return df
+# end
 
-function cycle_data(model::SpatialRustABM, cycle::Int, s::Int)
-    active_sents = Iterators.filter(s -> s.cycle == cycle, model.sentinels)
-    spore_pct = model.rustpars.spore_pct
+# function cycle_data(model::SpatialRustABM, cycle::Int, s::Int)
+#     active_sents = Iterators.filter(s -> s.cycle == cycle, model.sentinels)
+#     spore_pct = model.rustpars.spore_pct
 
-    df = DataFrame()
-    df[!, :sumareas] = map(c -> sumvis(c.areas), active_sents)
-    df[!, :nl] = map(c -> nvis(c.areas), active_sents)
-    df[!, :sumspore] = df[!, :sumareas] .* spore_pct
+#     df = DataFrame()
+#     df[!, :sumareas] = map(c -> sumvis(c.areas), active_sents)
+#     df[!, :nl] = map(c -> nvis(c.areas), active_sents)
+#     df[!, :sumspore] = df[!, :sumareas] .* spore_pct
 
-    filter!(:nl => >(0), df)
+#     filter!(:nl => >(0), df)
 
-    select!(df,
-    :nl=> ByRow(ncatg) => :nlcat,
-    [:sumspore, :sumareas] .=> ByRow(acatg) .=> [:sporecat, :latentcat])
+#     select!(df,
+#     :nl=> ByRow(ncatg) => :nlcat,
+#     [:sumspore, :sumareas] .=> ByRow(acatg) .=> [:sporecat, :latentcat])
 
-    ntot = nrow(df)
+#     ntot = nrow(df)
 
-    if isempty(df)
-        pcts = DataFrame(dayn = s, category = 0:5,
-        nlpct = missing, sporepct = missing, latentpct = missing)
-        # pcts = DataFrame()
-    else
-        pcts = DataFrame(dayn = Int[], category = Int[],
-        nlpct = Float64[], sporepct = Float64[], latentpct = Float64[])
-        for c in 0:5
-            nl = count(==(c), df.nlcat) / ntot
-            sp = count(==(c), df.sporecat) / ntot
-            la = count(==(c), df.latentcat) / ntot
-            push!(pcts, [s, c, nl, sp, la])
-        end
-    end
+#     if isempty(df)
+#         pcts = DataFrame(dayn = s, category = 0:5,
+#         nlpct = missing, sporepct = missing, latentpct = missing)
+#         # pcts = DataFrame()
+#     else
+#         pcts = DataFrame(dayn = Int[], category = Int[],
+#         nlpct = Float64[], sporepct = Float64[], latentpct = Float64[])
+#         for c in 0:5
+#             nl = count(==(c), df.nlcat) / ntot
+#             sp = count(==(c), df.sporecat) / ntot
+#             la = count(==(c), df.latentcat) / ntot
+#             push!(pcts, [s, c, nl, sp, la])
+#         end
+#     end
 
-    return pcts
-end
+#     return pcts
+# end
 
-sumvis(as) = sum(a for a in as if a >= 0.001)
-nvis(as) = sum(map(>=(0.001), as))
+# sumvis(as) = sum(a for a in as if a >= 0.001)
+# nvis(as) = sum(map(>=(0.001), as))
 
-ncatg(nl) = searchsortedlast([3, 6, 9, 12, 15], nl, lt = <=)
-acatg(a) = searchsortedlast([0.0, 0.05, 0.15, 0.25, 0.35], a, lt = <=)
+# ncatg(nl) = searchsortedlast([3, 6, 9, 12, 15], nl, lt = <=)
+# acatg(a) = searchsortedlast([0.0, 0.05, 0.15, 0.25, 0.35], a, lt = <=)
 
 # function get_weekly_data(model::SpatialRustABM, cycle_n::Vector{Int}, max_age::Int, cycle_last::Bool)
 #     # survey_cofs = Iterators.filter(c -> surveyed_today(c, cycle_n), model.agents)

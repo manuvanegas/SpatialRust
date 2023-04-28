@@ -352,7 +352,7 @@ function reintroduce_rusts!(model::SpatialRustABM, n_rusts::Int)
     # n_rusts = max(round(Int, p * length(activecofs)), 1)
     n_rusts = min(n_rusts, length(activecofs))
     rusted_cofs = sample(model.rng, activecofs, n_rusts, replace = false)
-    nl_distr = Binomial(24, 0.05) # Merle, 2020
+    nl_distr = Binomial(model.rustpars.max_lesions - 1, 0.05)
 
     for rusted in rusted_cofs
         deposited = 0.0
@@ -362,17 +362,14 @@ function reintroduce_rusts!(model::SpatialRustABM, n_rusts::Int)
         spores = rusted.spores
 
         for _ in 1:nl
-            area = rand(model.rng)
+            area = rand(model.rng) * 0.2
+            age = round(Int, area * 100.0)
             # if area < 0.05 then the lesion is just in the "deposited" state,
             # so no changes have to be made to any of its variables
-            if 0.05 < area < 0.9
-                push!(ages, 0)
+            if 0.01 < area
+                push!(ages, age)
                 push!(areas, area)
                 push!(spores, false)
-            elseif area > 0.9
-                push!(ages, 14)
-                push!(areas, area)
-                push!(spores, true)
             else
                 deposited += 1.0
                 n_lesions -= 1

@@ -196,38 +196,38 @@ sumtoldist(sim, tol::Vector{Float64}) = 1e5
 # survival(rust::Int, cof::Int) = rust > 4 && cof > 4
 # survival(rust::Missing, cof::Missing) = false
 
-## Quantitative variables
+# ## Quantitative variables
 
-function calc_nt_dists(quantsdirname::String, empdata::DataFrame)::NTuple{2, DataFrame}
-# function calc_nt_dists(quantsdirname::String, empdata::DataFrame, vars::DataFrameRow)::NTuple{2, DataFrame}
-    ft = FileTree(string("/scratch/mvanega1/ABC/sims/", quantsdirname))
-    nt_file_tree = FileTrees.load(ft; lazy = true) do file
-        DataFrame(Arrow.Table(path(file)))
-    end
-    lazy_dists = mapvalues(x -> abs_norm_dist(x, empdata), nt_file_tree)
-    # lazy_dists = mapvalues(x -> abs_norm_dist(x, empdata, vars), nt_file_tree)
-    println("starting quants exec...")
-    flush(stdout)
-    dists_nt = exec(reducevalues(vcat, lazy_dists))
-    return select(dists_nt, :p_row, Not(r"_n")), select(dists_nt, :p_row, r"_n")
-end
+# function calc_nt_dists(quantsdirname::String, empdata::DataFrame)::NTuple{2, DataFrame}
+# # function calc_nt_dists(quantsdirname::String, empdata::DataFrame, vars::DataFrameRow)::NTuple{2, DataFrame}
+#     ft = FileTree(string("/scratch/mvanega1/ABC/sims/", quantsdirname))
+#     nt_file_tree = FileTrees.load(ft; lazy = true) do file
+#         DataFrame(Arrow.Table(path(file)))
+#     end
+#     lazy_dists = mapvalues(x -> abs_norm_dist(x, empdata), nt_file_tree)
+#     # lazy_dists = mapvalues(x -> abs_norm_dist(x, empdata, vars), nt_file_tree)
+#     println("starting quants exec...")
+#     flush(stdout)
+#     dists_nt = exec(reducevalues(vcat, lazy_dists))
+#     return select(dists_nt, :p_row, Not(r"_n")), select(dists_nt, :p_row, r"_n")
+# end
 
-function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
-    joined = leftjoin(empdata, sims, on = [:dayn, :category])
+# function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
+#     joined = leftjoin(empdata, sims, on = [:dayn, :category])
 
-    dists = DataFrame(p_row = joined[:, :p_row])
-    for var in [:nlpct, :sporepct, :latentpct]
-        dists[!, var] .= absdiff.(joined[!, var], joined[!, Symbol(var, :_dat)])
-        dists[!, Symbol(var, :_n)] .= ismissing.(joined[!, var])
-    end
+#     dists = DataFrame(p_row = joined[:, :p_row])
+#     for var in [:nlpct, :sporepct, :latentpct]
+#         dists[!, var] .= absdiff.(joined[!, var], joined[!, Symbol(var, :_dat)])
+#         dists[!, Symbol(var, :_n)] .= ismissing.(joined[!, var])
+#     end
 
-    sumdists = combine(groupby(dists, :p_row), Not(:p_row) .=> sum, renamecols = false)
+#     sumdists = combine(groupby(dists, :p_row), Not(:p_row) .=> sum, renamecols = false)
 
-    return sumdists
-end
+#     return sumdists
+# end
 
-absdiff(sim::Float64, dat::Float64) = (sim - dat)^2
-absdiff(sim::Missing, dat::Float64) = 1.0
+# absdiff(sim::Float64, dat::Float64) = (sim - dat)^2
+# absdiff(sim::Missing, dat::Float64) = 1.0
 
 # function abs_norm_dist(sims::DataFrame, empdata::DataFrame, vars::DataFrameRow)::DataFrame
 #     joined = leftjoin(empdata, sims, on = [:plot, :dayn, :age, :cycle])

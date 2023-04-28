@@ -40,7 +40,8 @@ empdata = DataFrame(Arrow.Table("data/exp_pro/v2/compare.arrow"))
 
 time_dists = @elapsed begin
     l_dists = calc_l_dists(qualsdirname, qldats)
-    nt_dists, nmissings = calc_nt_dists(quantsdirname, empdata)
+    # nt_dists, nmissings = calc_nt_dists(quantsdirname, empdata)
+
     # l_distsn, l_distsv = calc_l_dists(qualsdirname, qldats, qlvars[1,:])
     # nt_dists, nmissings = calc_nt_dists(quantsdirname, empdata, qntvars[1,:])
 end
@@ -53,12 +54,17 @@ time_joinwrite = @elapsed begin
     # scale quant dists by # obs
     # scale_dists!(nt_dists, obscounts)
     # join quant and qual dists
-    ndists = leftjoin(nt_dists, l_dists, on = :p_row)
+
+    # ndists = leftjoin(nt_dists, l_dists, on = :p_row)
+    
     # vdists = leftjoin(nt_dists, l_distsv, on = :p_row)
     # write
     # CSV.write("results/ABC/dists/sents/novar/squareddists.csv", dists)
-    CSV.write(string("results/ABC/dists/sents/", ARGS[1], "/squareddists.csv"), ndists)
+
+    # CSV.write(string("results/ABC/dists/sents/", ARGS[1], "/squareddists.csv"), ndists)
+    CSV.write(string("results/ABC/dists/sents/", ARGS[1], "/squareddists.csv"), l_dists)
+    
     # CSV.write(string("results/ABC/dists/sents/", v, "/squareddists_v.csv"), vdists)
-    CSV.write(string("results/ABC/dists/sents/", ARGS[1], "/nmissings.csv"), nmissings)
+    # CSV.write(string("results/ABC/dists/sents/", ARGS[1], "/nmissings.csv"), nmissings)
 end
 println("Join+write: $time_joinwrite")
