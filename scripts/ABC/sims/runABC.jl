@@ -58,13 +58,13 @@ println("Run: $run_time")
 flush(stdout)
 
 cat_time = @elapsed begin
-    quant_df, qual_df = reduce(cat_dfs, outputs)
+    qual_df = reduce(vcat, outputs)
     num = parse(Int, ARGS[2])
     add0s = ifelse(num < 10, "00",
         ifelse(num < 100, "0", "")
     )
     filenum = string(add0s, ARGS[2])
-    Arrow.write(string("/scratch/mvanega1/ABC/sims/", quantdirname, "/m_", filenum, ".arrow"), quant_df)
+    # Arrow.write(string("/scratch/mvanega1/ABC/sims/", quantdirname, "/m_", filenum, ".arrow"), quant_df)
     Arrow.write(string("/scratch/mvanega1/ABC/sims/", qualdirname,"/m_", filenum, ".arrow"), qual_df)
 end
 

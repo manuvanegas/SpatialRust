@@ -217,7 +217,7 @@ sumtoldist(sim, tol::Vector{Float64}) = 1e5
 
 #     dists = DataFrame(p_row = joined[:, :p_row])
 #     for var in [:nlpct, :sporepct, :latentpct]
-#         dists[!, var] .= absdiff.(joined[!, var], joined[!, Symbol(var, :_dat)])
+#         dists[!, var] .= absdiff.(joined[!, var], joined[!, Symbol(var, :_dat)], joined[!, :category])
 #         dists[!, Symbol(var, :_n)] .= ismissing.(joined[!, var])
 #     end
 
@@ -226,8 +226,8 @@ sumtoldist(sim, tol::Vector{Float64}) = 1e5
 #     return sumdists
 # end
 
-# absdiff(sim::Float64, dat::Float64) = (sim - dat)^2
-# absdiff(sim::Missing, dat::Float64) = 1.0
+# absdiff(sim::Float64, dat::Float64, cat::Int) = (sim - dat)^2 * ifelse(cat == 5 && sim == 1, 2.0, 1.0)
+# absdiff(sim::Missing, dat::Float64, cat::Int) = 1.0 * ifelse(cat == 5, 2.0, 1.0)
 
 # function abs_norm_dist(sims::DataFrame, empdata::DataFrame, vars::DataFrameRow)::DataFrame
 #     joined = leftjoin(empdata, sims, on = [:plot, :dayn, :age, :cycle])
