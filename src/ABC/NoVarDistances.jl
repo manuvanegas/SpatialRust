@@ -40,7 +40,7 @@ function diff_quals(sims::DataFrame, dats)::DataFrame
     # sims[!, :rusts] .= collect(ismissing(r) ? r : Float64.(r) for r in sims[!, :rusts])
     # sims[!, :rusts] .= Float64.(sims[!, :rusts])
     dists = DataFrame(p_row = sims[:, :p_row])
-    for var in [:P12loss, :LP, :incid, :rusts, :meanlats]
+    for var in [:P12loss, :LP, :incid, :rusts, :meanlats, :exh]
         # transform!(sims, var => ByRow(s -> sumtoldist(s, dats[var])), renamecols = false)
         dists[!, var] = sumtoldist.(sims[!, var], Ref(dats[var]))
     end

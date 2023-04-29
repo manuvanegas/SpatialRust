@@ -65,6 +65,7 @@ function sim_abc(p_row::NamedTuple)
             incid = missing,
             rusts = missing,
             meanlats = missing,
+            exh = missing,
             depsdiff = missing,
             latentdiff = missing,
             cor = missing,
@@ -104,6 +105,7 @@ function sim_abc(p_row::NamedTuple)
                 incid = missing,
                 rusts = missing,
                 meanlats = missing,
+                exh = missing,
                 depsdiff = missing,
                 latentdiff = missing,
                 cor = missing,
@@ -183,6 +185,7 @@ function sim_abc(p_row::NamedTuple)
                 incid = [predf[!, 3]],
                 rusts = [predf[!, 4]],
                 meanlats = [predf[!, 6]],
+                exh = [predf[!, 7]],
                 depsdiff = predf[1, 5] - predf[2, 5],
                 latentdiff = predf[1, 6] - predf[2, 6],
                 cor = prod_clr_cor,
@@ -254,12 +257,12 @@ function simulate_plot(
     #     cyc_df, prod_clr_df, P12o, LP, incid, rusts, meandeps, meanlatent = abc_run_sun!(model2)
     # end
 
-    prod_clr_df, P12o, LP, incid, rusts, meandeps, meanlatent = abc_obs_run!(model2)
+    prod_clr_df, P12o, LP, incid, rusts, meandeps, meanlatent, exh = abc_obs_run!(model2)
 
     P12loss = 1.0 - (P12o / P12a)
 
     # return cyc_df, prod_clr_df, (P12loss, LP, incid, rusts, meandeps, meanlatent)
-    return prod_clr_df, (P12loss, LP, incid, rusts, meandeps, meanlatent)
+    return prod_clr_df, (P12loss, LP, incid, rusts, meandeps, meanlatent, exh)
 end
 
 function abc_att_run!(model::SpatialRustABM)
@@ -293,11 +296,14 @@ function abc_obs_run!(model::SpatialRustABM)
     clr_areas!(prod_clr_df, allcofs)
     incid = sum(map(c -> c.n_lesions > 0 ||c.exh_countdown > 0, allcofs)) / ncofs
 
+    s = step_while!(model, s, 365)
+    exh = sum(map(c -> c.exh_countdown > 0, allcofs)) / ncofs
+
     s = step_while!(model, s, 730)
 
     infected = filter(:nl => >(0), les_df)
     if !model.current.withinbounds || isempty(infected)
-        return DataFrame(), missing, missing, missing, missing, missing, missing
+        return DataFrame(), missing, missing, missing, missing, missing, missing, missing
     else
         P12 = model.current.prod 
 
@@ -306,7 +312,7 @@ function abc_obs_run!(model::SpatialRustABM)
         meanlatent = sum(infected[!, :latent]) / totles
         LP = sum(infected[!, :lp]) / totles
 
-        return prod_clr_df, P12, LP, incid, sum(Float64, map(c -> c.n_lesions > 0, allcofs)), meandeps, meanlatent
+        return prod_clr_df, P12, LP, incid, sum(Float64, map(c -> c.n_lesions > 0, allcofs)), meandeps, meanlatent, exh
     end
 end
 
