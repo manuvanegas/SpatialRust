@@ -1,29 +1,13 @@
 export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, create_regshaded_farm_map
-# , Weather
-
-
-mutable struct Sentinel
-    active::Bool
-    id::Int
-    cycle::Int
-    n_lesions::Int
-    # ages::Vector{Int}
-    areas::Vector{Float64}
-    spores::Vector{Bool}
-end
 
 # Coffee agent type
-# mutable struct Coffee <: AbstractAgent
 @agent Coffee GridAgent{2} begin
     sunlight::Float64 # let through by shade trees
     veg::Float64
-    # shade_neighbors::Float64 # remember total neighboring shade trees
     storage::Float64
     production::Float64
     exh_countdown::Int
     rust_gr::Float64
-    # fungicide::Int
-    # fung_countdown::Int
 
     #Rust
     rusted::Bool
@@ -32,44 +16,27 @@ end
     n_lesions::Int
     ages::Vector{Int}
     areas::Vector{Float64}
-    # latent::Vector{Float64}
     spores::Vector{Bool}
-
-    # ABC
-    # sample_cycle::Int # cycles where coffee should be sampled
-    sentinel::Sentinel
 end
 
 # Coffee constructor
 # function Coffee(id, pos, max_lesions::Int, max_age::Int, rust_gr::Float64; # https://juliadynamics.github.io/Agents.jl/stable/api/#Adding-agents
-function Coffee(id, pos, max_lesions::Int, rust_gr::Float64;
+function coffee(id, pos, max_lesions::Int, rust_gr::Float64;
     sunlight::Float64 = 1.0, veg::Float64 = 2.0, storage::Float64 = 100.0)
 
-    # fill_n = max_lesions - length(ages)
-    
-    # Coffee(id, pos, sunlight, veg, storage, production, 0, [], deposited, n_lesions,
-    # append!(ages, fill(max_age, fill_n)), append!(areas, fill(0.0, fill_n)),
-    # append!(spores, fill(false, fill_n))) 
-    # Coffee(
-    #     id, pos, sunlight, veg, storage, 0.0, 0, rust_gr,
-    #     0.0, 0.0, 0,
-    #     fill(max_age, max_lesions), fill(0.0, max_lesions), falses(max_lesions),
-    #     sentinel(id)
-    # )
     Coffee(
         id, pos, sunlight, veg, storage, 0.0, 0, rust_gr,
-        0.0, 0.0, 0,
-        false, sizehint!(Int[], max_lesions), sizehint!(Float64[], max_lesions), sizehint!(Bool[], max_lesions),
-        sentinel(id)
+        false, 0.0, 0.0, 0,
+        sizehint!(Int[], max_lesions), sizehint!(Float64[], max_lesions), sizehint!(Bool[], max_lesions),
     )
 end
 
-# Main abm initialization function
 
 function init_spatialrust(;
     seed::Int = 0,
     start_days_at::Int = 0,
-    p_rusts::Float64 = 0.01,              # % of initial rusts (# of initial clusters, if > 1)
+    steps::Int = 500,                       # simulation steps
+    p_rusts::Float64 = 0.01,                # % of initial rusts (# of initial clusters, if > 1)
     p_row::Int = 0,                         # parameter combination number (for ABC)
     rep::Int = 0,                           # repetition number (for other exps)
 
@@ -97,36 +64,19 @@ function init_spatialrust(;
 
     # rust parameters
     max_lesions::Int64 = 25,                # maximum number of rust lesions
-    temp_cooling::Float64 = 4.0,            # temp reduction due to shade
-    max_inf::Float64 = 0.9,                 # Max infection probability
-    light_inh::Float64 = 0.1,               # UV inactivation prob under 100% sunlight 
     rain_washoff::Float64 = 0.25,           # rain wash-off " " " "; Avelino et al., 2020
-    rep_inf::Float64 = 0.3,                 # Weight of reprod growth on infection prob
     viab_loss::Float64 = 0.75,              # Deposited spore viability loss
-    rust_gr::Float64 = 0.16,                # basic rust area growth rate
-    opt_temp::Float64 = 23.0,               # optimal rust growth temp
-    rep_spo::Float64 = 1.0,                 # Effect on reprod growth on sporul
-    pdry_spo::Float64 = 0.8,                # Prob of sporulation without rain
-    temp_ampl::Float64 = 5.0,               # (max temp - optimal temp)
-    rep_gro::Float64 = 0.7,                 # resource sink effect on area growth
-    spore_pct::Float64 = 0.6,               # % of area that sporulates
     fung_inf::Float64 = 0.9,                # infection prob under fungicide mod
     fung_gro_prev::Float64 = 0.3,           # fungicide mod to growth rate on preventive fungicide
     fung_gro_cur::Float64 = 0.75,           # fungicide mod to growth rate on curative fungicide
     fung_spor_prev::Float64 = 0.0,          # fungicide mod to spor prob on preventive fungicide
     fung_spor_cur::Float64 = 0.85,          # fungicide mod to spor prob on curative fungicide
     
-    steps::Int = 500,                       # simulation steps. Included in RustPars to reset Rust ages values on exhaustion
-    rust_paras::Float64 = 0.1,              # resources taken per unit of total area
     exh_countdown::Int = 731,               # days to count after plant has been exhausted (2-3 y to resume production) 
 
     map_side::Int = 100,                    # side size
-    rain_dst::Float64 = 1.0,                # mean distance of spores dispersed by rain
     diff_splash::Float64 = 2.5,             # times rain distance due to enhanced kinetic e (shade) (Avelino et al. 2020: "Kinetic energy was twice as high"+ Gagliardi et al. 2021: TKE ~ 5xOpenness%)
-    tree_block::Float64 = 0.8,              # prob a tree will block rust dispersal
-    wind_dst::Float64 = 5.0,                # mean distance of spores dispersed by wind
     diff_wind::Float64 = 3.0,               # additional wind distance due to increased openness (Pezzopane
-    shade_block::Float64 = 0.5,             # prob of Shades blocking a wind dispersal event
 
     # farm management
     harvest_day::Int = 365,                 # 365 or 182, depending on the region
@@ -143,17 +93,16 @@ function init_spatialrust(;
     other_costs::Float64 = 1.0,             # other costs considered
     coffee_price::Float64 = 1.0,
 
-    les_surv::Float64 = 0.1,
-    post_prune::Vector{Float64} = [0.3, 0.5, 0.0],            # individual shade level after pruning
+    post_prune::Vector{Float64} = [0.3, 0.5, 0.0], # individual shade level after pruning
     inspect_effort::Float64 = 0.01,         # % coffees inspected each time
     fung_effect::Int = 30,                  # length of fungicide effect
 
     # shade parameters
-    shade_g_rate::Float64 = 0.008,           # shade growth rate
+    shade_g_rate::Float64 = 0.008,          # shade growth rate
     shade_r::Int = 3,                       # radius of influence of shades
 
     # farm map
-    farm_map::Array{Int} = Int[],              # if provided, parameters below are ignored
+    farm_map::Array{Int} = Int[],           # if provided, parameters below are ignored
     common_map::Symbol = :none,             # :fullsun or :regshaded
     row_d::Int = 2,                         # distance between rows (options: 1, 2, 3)
     plant_d::Int = 1,                       # distance between plants (options: 1, 2)
@@ -161,15 +110,30 @@ function init_spatialrust(;
     shade_pattern::Symbol = :regular,       # or :rand
     barrier_rows::Int = 2,                  # or 2 = double
     barriers::NTuple{2, Int} = (1, 0),      # barrier arrangement: 1->internal(0, 1, or 2),2->edges(0 or 1)
-    )
+
+    # keeping calibrated pars here for quick reference
+    # temp_cooling::Float64 = 3.693435,       # temp reduction due to shade
+    # max_inf::Float64 = 1.554745,            # Max infection probability
+    # light_inh::Float64 = 0.930545,          # UV inactivation prob under 100% sunlight 
+    # rep_inf::Float64 = 0.037021,            # Weight of reprod growth on infection prob
+    # rust_gr::Float64 = 0.065751,            # basic rust area growth rate
+    # opt_temp::Float64 = 22.514547,          # optimal rust growth temp
+    # rep_spo::Float64 = 0.518466,            # Effect on reprod growth on sporul
+    # pdry_spo::Float64 = 0.524761,           # Prob of sporulation without rain
+    # temp_ampl::Float64 = 4.517675,          # (max temp - optimal temp)
+    # rep_gro::Float64 = 0.224783,            # resource sink effect on area growth
+    # spore_pct::Float64 = 0.3711,            # % of area that sporulates
+    # rust_paras::Float64 = 0.023371,         # resources taken per unit of total area
+    # rain_dst::Float64 = 2.435203,           # mean distance of spores dispersed by rain
+    # tree_block::Float64 = 0.260111,         # prob a tree will block rust dispersal
+    # wind_dst::Float64 = 7.885713,           # mean distance of spores dispersed by wind
+    # shade_block::Float64 = 0.804193,        # prob of Shades blocking a wind dispersal event
+    # les_surv::Float64 = 0.394328,           # proportion of lesions surviving to next cycle
+)
 
     rng = seed == 0 ? Xoshiro() : Xoshiro(seed)
 
-    w = Weather{steps}(
-        isempty(rain_data) ? Tuple(rand(rng, steps) .< rain_prob) : Tuple(keepat!(rain_data, 1:steps)),
-        isempty(wind_data) ? Tuple(rand(rng, steps) .< wind_prob) : Tuple(keepat!(wind_data, 1:steps)),
-        isempty(temp_data) ? Tuple(rand(rng, Normal(mean_temp, 0.5), steps)) : Tuple(keepat!(temp_data, 1:steps))
-    )
+    w = noisedweather(rain_data, wind_data, temp_data, rain_prob, wind_prob, mean_temp, steps, rng)
 
     if isempty(farm_map)
         if common_map == :none
@@ -191,15 +155,15 @@ function init_spatialrust(;
     )
 
     rp = RustPars(
-        #
-        max_lesions, temp_cooling, light_inh, rain_washoff, rep_inf, viab_loss, max_inf, 
-        #
-        rust_gr, opt_temp, rep_spo, pdry_spo, -(1.0/temp_ampl^2), rep_gro, spore_pct, 
+        # Infection
+        max_lesions, 3.693435, 0.930545, rain_washoff, 0.037021, viab_loss, 1.554745, 
+        # Sporulation/Growth
+        0.065751, 22.514547, 0.518466, 0.524761, -(1.0/4.517675^2), 0.224783, 0.3711, 
         fung_inf, fung_gro_prev, fung_gro_cur, fung_spor_prev, fung_spor_cur, 
-        #
-        steps, rust_paras, exh_countdown,
-        #
-        map_side, rain_dst, diff_splash, tree_block, wind_dst, diff_wind, shade_block
+        # Parasitism
+        0.023371, exh_countdown,
+        # Dispersal
+        map_side, 2.435203, diff_splash, 0.260111, 7.885713, diff_wind, 0.804193
     )
 
     pruneskept = filter!(i -> prune_sch[i] > 0, sortperm(prune_sch))
@@ -240,7 +204,7 @@ function init_spatialrust(;
         n_coffees, inspect_cost * n_inspect, fung_cost * n_coffees,
         other_costs, coffee_price,
         #
-        les_surv, post_prune, n_inspect, fung_effect,
+        0.394328, post_prune, n_inspect, fung_effect,
         shade_g_rate, shade_r
     )
 
@@ -251,20 +215,21 @@ function init_spatialrust(;
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true
     )
 
-    return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8),
-        Set{Sentinel}()),
-        # )
-        rng,
-        p_rusts,
-    )
+    return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8)), rng, p_rusts)
 end
 
 # Definitions of the different parameter structs
 
-struct Weather{N}
-    rain_data::NTuple{N, Bool}
-    wind_data::NTuple{N, Bool}
-    temp_data::NTuple{N, Float64}
+# struct Weather{N}
+#     rain_data::NTuple{N, Bool}
+#     wind_data::NTuple{N, Bool}
+#     temp_data::NTuple{N, Float64}
+# end
+
+struct Weather
+    rain_data::Vector{Bool}
+    wind_data::Vector{Bool}
+    temp_data::Vector{Float64}
 end
 
 struct CoffeePars
@@ -292,15 +257,11 @@ struct RustPars
     viab_loss::Float64
     max_inf::Float64
     rust_gr::Float64
-    # opt_g_temp::Float64
     opt_temp::Float64
-    # host_spo_inh::Float64
     rep_spo::Float64
     pdry_spo::Float64
-    # max_g_temp::Float64
     temp_ampl_c::Float64
     rep_gro::Float64
-    # veg_gro::Float64
     spore_pct::Float64
     fung_inf::Float64 
     fung_gro_prev::Float64
@@ -308,20 +269,14 @@ struct RustPars
     fung_spor_prev::Float64
     fung_spor_cur::Float64 
     # parasitism
-    steps::Int
-    # reset_age::Int
     rust_paras::Float64
-    # exh_threshold::Float64
-    # exh_thresh::Float64
     exh_countdown::Int
     # dispersal
     map_side::Int
-    rain_distance::Float64
-    # rain_dst::Float64
+    rain_dst::Float64
     diff_splash::Float64
     tree_block::Float64
-    wind_distance::Float64
-    # wind_dst::Float64
+    wind_dst::Float64
     diff_wind::Float64
     shade_block::Float64
 end
@@ -358,8 +313,6 @@ end
 mutable struct Books
     days::Int                               # same as ticks unless start_days_at != 0
     ticks::Int                              # initialized as 0 but the 1st thing that happens is +=1, so it effectvly starts at 1
-    # cycle::Vector{Int}
-    # rusts::Set{Coffee}
     ind_shade::Float64
     temperature:: Float64
     rain::Bool
@@ -385,11 +338,43 @@ struct Props
     farm_map::Array{Int, 2}
     shade_map::Array{Float64}
     outpour::Vector{Float64}
-    # rusts::Set{Coffee}
-    sentinels::Set{Sentinel}
     # 8 positions, one per direction the spores can leave the farm (from (0,0) which is the farm)
     # indexing is weird (also remember, julia goes column-first): 
     # 1 -> (0,-1), 2 -> (0,1), 3 -> (-1,0), 4 -> (-1,-1), 5 -> (-1,1), 6 -> (1,0), 7 -> (1,-1), 8 ->(1,1)
+end
+
+# Other fncs
+
+function createweather(rain_prob, wind_prob, mean_temp, steps, rng)
+    raindata = rand(rng, steps) .< rain_prob
+    return Weather(
+        raindata,
+        rand(rng, steps) .< ifelse.(raindata, wind_prob - 0.1, wind_prob + 0.1),
+        round.(rand(rng, Normal(mean_temp, 0.75), steps), digits = 2)
+    )
+end
+
+function noisedweather(rain_data, wind_data, temp_data, rain_prob, wind_prob, mean_temp, steps, rng)
+    raindata = isempty(rain_data) ? rand(rng, steps) .< rain_prob : addnoise(rain_data, steps, rng)
+    wpdn = wind_prob - 0.1
+    wpup = wind_prob + 0.1
+    return Weather(
+        raindata,
+        isempty(wind_data) ? rand(rng, steps) .< ifelse.(raindata, wpdn, wpup) : addnoise(wind_data, steps, rng),
+        isempty(temp_data) ? rand(rng, Normal(mean_temp, 0.5), steps) : addqnoise(temp_data, steps, rng)
+    )
+end
+
+function addnoise(v::Vector{Bool}, steps, rng)
+    @inbounds for (i, b) in enumerate(v)
+        rand(rng) < 0.05 && (v[i] = !b)
+    end
+    return resize!(v, steps)
+end
+
+function addqnoise(v::Vector{Float64}, steps, rng)
+    resize!(v, steps)
+    return v .+ rand(rng, Normal(0, 0.05), steps)
 end
 
 # Calculate initial ind_shade
@@ -418,4 +403,3 @@ function ind_shade_i(
         return 0.8 * (pruned_to / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune))))
     end
 end
-

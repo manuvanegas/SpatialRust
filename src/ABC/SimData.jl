@@ -37,15 +37,3 @@ end
 #     )
 # end
 
-#meantemp 22
-#rainprob 0.8
-#windprob 0.75
-function createweather(rain_prob, wind_prob, mean_temp, steps, rng)
-    raindata = rand(rng, steps) .< rain_prob
-    return Weather(
-        raindata,
-        rand(rng, steps) .< ifelse.(raindata, wind_prob - 0.1, wind_prob + 0.1),
-        round.(rand(rng, Normal(mean_temp, 0.75), steps), digits = 2)
-    )
-end
-

@@ -241,15 +241,6 @@ function init_spatialrust(;
     return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8)), rng, p_rusts)
 end
 
-function addnoise(v::Vector{Bool}, rng)
-    @inbounds for (i, b) in enumerate(v)
-        rand(rng) < 0.05 && (v[i] = !b)
-    end
-    return v
-end
-
-addqnoise(v::Vector{Float64}, steps, rng) = v .+ rand(rng, Normal(0, 0.05), steps)
-
 # Definitions of the different parameter structs
 
 struct Weather
@@ -283,15 +274,11 @@ struct RustPars
     viab_loss::Float64
     max_inf::Float64
     rust_gr::Float64
-    # opt_g_temp::Float64
     opt_temp::Float64
-    # host_spo_inh::Float64
     rep_spo::Float64
     pdry_spo::Float64
-    # max_g_temp::Float64
     temp_ampl_c::Float64
     rep_gro::Float64
-    # veg_gro::Float64
     spore_pct::Float64
     fung_inf::Float64 
     fung_gro_prev::Float64
@@ -299,20 +286,14 @@ struct RustPars
     fung_spor_prev::Float64
     fung_spor_cur::Float64 
     # parasitism
-    # steps::Int
-    # reset_age::Int
     rust_paras::Float64
-    # exh_threshold::Float64
-    # exh_thresh::Float64
     exh_countdown::Int
     # dispersal
     map_side::Int
-    rain_distance::Float64
-    # rain_dst::Float64
+    rain_dst::Float64
     diff_splash::Float64
     tree_block::Float64
-    wind_distance::Float64
-    # wind_dst::Float64
+    wind_dst::Float64
     diff_wind::Float64
     shade_block::Float64
 end
@@ -381,6 +362,26 @@ struct Props
     # 1 -> (0,-1), 2 -> (0,1), 3 -> (-1,0), 4 -> (-1,-1), 5 -> (-1,1), 6 -> (1,0), 7 -> (1,-1), 8 ->(1,1)
 end
 
+# Other fncs
+
+function createweather(rain_prob, wind_prob, mean_temp, steps, rng)
+    raindata = rand(rng, steps) .< rain_prob
+    return Weather(
+        raindata,
+        rand(rng, steps) .< ifelse.(raindata, wind_prob - 0.1, wind_prob + 0.1),
+        round.(rand(rng, Normal(mean_temp, 0.75), steps), digits = 2)
+    )
+end
+
+function addnoise(v::Vector{Bool}, rng)
+    @inbounds for (i, b) in enumerate(v)
+        rand(rng) < 0.05 && (v[i] = !b)
+    end
+    return v
+end
+
+addqnoise(v::Vector{Float64}, steps, rng) = v .+ rand(rng, Normal(0, 0.05), steps)
+
 # Calculate initial ind_shade
 function ind_shade_i(
     shade_g_rate::Float64,
@@ -407,4 +408,3 @@ function ind_shade_i(
         return 0.8 * (pruned_to / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune))))
     end
 end
-

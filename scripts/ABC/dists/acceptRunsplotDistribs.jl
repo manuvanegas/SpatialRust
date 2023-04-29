@@ -9,7 +9,7 @@ include("../../../src/ABC/AcceptRuns.jl")
 include("../../../src/ABC/DistributionPlots.jl")
 include("../../../src/ABC/CustomRainclouds.jl")
 
-v = 12
+v = 15
 vv = string("q", v)
 
 parameterpriors = DataFrame(Arrow.Table(string("data/ABC/parameters_", v, ".arrow")))
@@ -19,8 +19,8 @@ scaledparams = scale_params(parameterpriors, prior_medians)
 dists = CSV.read(string("results/ABC/dists/sents/", vv, "/squareddists.csv"), DataFrame)
 
 sortedrows = best_100(dists, true,
-    [:P12loss, :LP, :incid, :rusts, :meandeps, :meanlatent, :cor],
-    [:nlpct, :sporepct, :latentpct]
+    [:P12loss, :LP, :incid, :rusts, :exh, :depsdiff, :cor],
+    Symbol[]
 )
 
 selectedscaled = get_params_rows(scaledparams, sortedrows.p_row)
@@ -43,14 +43,14 @@ save("plots/ABC/all_stats1400.pdf", fig14, pt_per_unit = 1)
 save("plots/ABC/all_stats1200.svg", fig12)
 save("plots/ABC/all_stats1400.svg", fig14)
 
-# get real param values (not scaled) of best 5 rows, preserving sorted order, rounding to 6 digits
+# get real param values (not scaled) of best 3 rows, preserving sorted order, rounding to 6 digits
 # re-run ABC simulations 
 # test behavior over 8 years (plotting eg lines(df.dayn, df.sumarea))
-top52 = top_n_rows(parameterpriors, sortedrows.p_row, 5)
-tcycdf, tglobdf = reduce(cat_dfs, map(sim_abc, Tables.namedtupleiterator(top5)))
-testruns = test_params(top5, 3)
+toprows = top_n_rows(parameterpriors, sortedrows.p_row, 3)
+tcycdf, tglobdf = reduce(cat_dfs, map(sim_abc, Tables.namedtupleiterator(toprows)))
+testruns = test_params(toprows, 3)
 
 # get and write real param values (not scaled): best point estimate, median of accepted, all accepted, 100 sample of rejected
-dfs = get_best_accept_reject(parameterpriors, sortedrows.p_row, 3)
+dfs = get_best_accept_reject(parameterpriors, sortedrows.p_row, 1)
 mkpath(string("results/ABC/params/sents/", vv))
 write_dfs(dfs, "cor", vv)
