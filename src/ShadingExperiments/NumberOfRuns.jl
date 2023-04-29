@@ -39,11 +39,11 @@ function cv_n_sims(a_ns::Vector{Int}, mtemp::Float64, rainp::Float64, windp::Flo
     #     push!(df, one_cv_sim(pars, map))
     # end
 
-    # rtime = @elapsed begin
-    #     wp = CachingPool(workers())
-    #     dfs = pmap(x -> one_cv_sim(fmap, wtemp, wrain, wwind, ss, x), wp, run_ns)
-    # end
-    rtime = @elapsed dfs = map(x -> one_cv_sim(fmap, wtemp, wrain, wwind, ss, x), run_ns)
+    rtime = @elapsed begin
+        wp = CachingPool(workers())
+        dfs = pmap(x -> one_cv_sim(fmap, wtemp, wrain, wwind, ss, x), wp, run_ns)
+    end
+    # rtime = @elapsed dfs = map(x -> one_cv_sim(fmap, wtemp, wrain, wwind, ss, x), run_ns)
 
     println("took $rtime to run $(length(run_ns)) (n was $(maximum(a_ns)))")
     flush(stdout)
