@@ -36,6 +36,7 @@ function step_n!(model::SpatialRustABM, n::Int)
         step_model!(model)
         s += 1
     end
+    return s
 end
 
 function step_while!(model::SpatialRustABM, s::Int, n::Int)

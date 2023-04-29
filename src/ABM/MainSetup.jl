@@ -1,4 +1,4 @@
-export Coffee, init_spatialrust, create_farm_map, create_fullsun_farm_map, create_regshaded_farm_map
+export Coffee, init_spatialrust, createweather, create_farm_map, step_n!
 
 # Coffee agent type
 @agent Coffee GridAgent{2} begin
