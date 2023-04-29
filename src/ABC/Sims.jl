@@ -64,8 +64,9 @@ function sim_abc(p_row::NamedTuple)
             LP = missing,
             incid = missing,
             rusts = missing,
-            meandeps = missing,
-            meanlatent = missing,
+            meanlats = missing,
+            depsdiff = missing,
+            latentdiff = missing,
             cor = missing,
         )
     else
@@ -102,8 +103,9 @@ function sim_abc(p_row::NamedTuple)
                 LP = missing,
                 incid = missing,
                 rusts = missing,
-                meandeps = missing,
-                meanlatent = missing,
+                meanlats = missing,
+                depsdiff = missing,
+                latentdiff = missing,
                 cor = missing,
             )
         else
@@ -180,8 +182,9 @@ function sim_abc(p_row::NamedTuple)
                 LP = [predf[!, 2]],
                 incid = [predf[!, 3]],
                 rusts = [predf[!, 4]],
-                meandeps = predf[1, 5] - predf[2, 5],
-                meanlatent = predf[1, 6] - predf[2, 6],
+                meanlats = [predf[!, 6]],
+                depsdiff = predf[1, 5] - predf[2, 5],
+                latentdiff = predf[1, 6] - predf[2, 6],
                 cor = prod_clr_cor,
             )
         end
@@ -198,10 +201,6 @@ function simulate_plot(
     wind_data::Vector{Bool},
     type::Symbol
 )
-
-    meantemp = 22.0
-    rain_prob = 0.8
-    wind_prob = 0.7
     steps = 730
     iday = 0
     # sampled_blocks = 125
@@ -210,9 +209,9 @@ function simulate_plot(
         steps = steps,
         start_days_at = iday, 
         common_map = type,
-        rain_data = rain_data,
-        wind_data = wind_data,
-        temp_data = temp_data,
+        rain_data = copy(rain_data),
+        wind_data = copy(wind_data),
+        temp_data = copy(temp_data),
         # rain_prob = rain_prob,
         # wind_prob = wind_prob,
         # mean_temp = meantemp,
@@ -232,9 +231,9 @@ function simulate_plot(
         steps = steps,
         start_days_at = iday, 
         common_map = type,
-        rain_data = rain_data,
-        wind_data = wind_data,
-        temp_data = temp_data,
+        rain_data = copy(rain_data),
+        wind_data = copy(wind_data),
+        temp_data = copy(temp_data),
         # rain_prob = rain_prob,
         # wind_prob = wind_prob,
         # mean_temp = meantemp,

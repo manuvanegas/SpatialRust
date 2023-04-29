@@ -155,7 +155,7 @@ function init_spatialrust(;
     w = Weather(
         addnoise(rain_data, rng),
         addnoise(wind_data, rng),
-        addqnoise(temp_data, rng),
+        addqnoise(temp_data, steps, rng),
     )
 
     if isempty(farm_map)
@@ -248,7 +248,7 @@ function addnoise(v::Vector{Bool}, rng)
     return v
 end
 
-addqnoise(v::Vector{Float64}, rng) = v .+ rand(rng, Normal(0, 0.05))
+addqnoise(v::Vector{Float64}, steps, rng) = v .+ rand(rng, Normal(0, 0.05), steps)
 
 # Definitions of the different parameter structs
 

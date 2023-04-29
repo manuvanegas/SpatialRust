@@ -16,8 +16,9 @@ qldats = (
     LP = [25.0, 65.0],
     incid = [0.7, 1.01],
     rusts = [10.0, 5001.0],
-    meandeps = [-10.0, 0.001],
-    meanlatent = [-0.001, 10.0], ##
+    meanlats = [0.0, 0.1],
+    depsdiff = [-10.0, 0.001],
+    latentdiff = [-0.001, 10.0], ##
     cor = [0.2, 0.95], # ##
 )
 # qldats = DataFrame(
