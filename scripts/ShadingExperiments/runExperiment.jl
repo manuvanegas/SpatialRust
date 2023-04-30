@@ -3,7 +3,7 @@
     Pkg.activate(".")
 end
 @everywhere begin
-    using Agents, CSV, DataFrames, SpatialRust
+    using Agents, CSV, DataFrames, Random, SpatialRust
     using Statistics: std, mean
     include("../../src/ShadingExperiments/Shading.jl")
 end
@@ -23,14 +23,12 @@ filepath = joinpath(p, "r-$reps-$shade_placemnt-$(years)y.csv")
 
 steps = years * 365
 
-singlevals = hcat(DataFrame(
-        common_map = :none,
-        inspect_period = steps,
-        fungicide_sch = [Int[]],
-        shade_g_rate = 0.008,
-        steps = steps,
-    ),
-    abcpars
+singlevals = DataFrame(
+    common_map = :none,
+    inspect_period = steps,
+    fungicide_sch = [Int[]],
+    shade_g_rate = 0.008,
+    steps = steps,
 )
 
 pruningopts = crossjoin(
@@ -70,7 +68,7 @@ printinfo = """
 println(printinfo)
 flush(stdout)
 
-results = shading_experiment(conds, rain, wind, temp)
+results = shading_experiment(conds, rain_prob, wind_prob, mean_temp)
 
 println("Total sims: $(nrow(results))")
 

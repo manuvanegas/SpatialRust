@@ -4,13 +4,13 @@ function coeff_vars(n::Int, mtemp::Float64, rainp::Float64, windp::Float64, y::I
     # if n == 100
     #    ns = collect(20:20:100)
     # end
-    a_ns = filter(x -> x .<= n, ns)
+    a_ns = n == 350 ? [150, 250, 350] : filter(x -> x .<= n, ns)
 
     df = cv_n_sims(a_ns, mtemp, rainp, windp, y)
 
     # CSV.write("results/Shading/ABCests/CV/raw-$(y)y.csv", df)
 
-    coeff_vars = combine(groupby(df, :n), [:totprod, :maxA, :maxS, :maxnl, :maxE] =>
+    coeff_vars = combine(groupby(df, :n), [:totprod, :maxA, :maxS, :maxN, :maxE] =>
         ((p, a, s, n, e) -> (
             prod = (std(p) / mean(p)),
             area = (std(a) / mean(a)),

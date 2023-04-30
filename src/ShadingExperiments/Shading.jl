@@ -20,7 +20,7 @@ function run_par_combination(pars::DataFrameRow, w)
     mdf = custom_run!(model)
 
     return hcat(
-        DataFrame(pars[[:rep, :barriers, :shade_d, :post_prune, :prune_sch, :mean_temp, :rain_prob]]),
+        DataFrame(pars[[:rep, :barriers, :shade_d, :post_prune, :prune_sch]]),
         mdf
     )
 end
