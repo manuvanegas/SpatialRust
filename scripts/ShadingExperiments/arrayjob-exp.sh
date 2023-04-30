@@ -23,7 +23,7 @@ module load julia/1.8.2
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 echo `date +%F-%T`
 julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/ShadingExperiments/runExperiment.jl 10 23.0 0.8 $SLURM_ARRAY_TASK_ID 4
+~/SpatialRust/scripts/ShadingExperiments/runExperiment.jl 10 22.0 0.8 0.7 $SLURM_ARRAY_TASK_ID 4
 # ~/SpatialRust/scripts/ShadingExperiments/runExperiment.jl 200 22.5 0.55 $SLURM_ARRAY_TASK_ID
-#ARGs: repetitions, mean temp, rain prob, array ID -> shade_placements
+#ARGs: repetitions, mean temp, rain prob, wind prob, array ID -> shade_placements, sim years
 # 1 -> 29, 2 or 3 -> 42 # need to update #s

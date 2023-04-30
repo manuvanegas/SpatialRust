@@ -10,11 +10,12 @@ function coeff_vars(n::Int, mtemp::Float64, rainp::Float64, windp::Float64, y::I
 
     # CSV.write("results/Shading/ABCests/CV/raw-$(y)y.csv", df)
 
-    coeff_vars = combine(groupby(df, :n), [:totprod, :maxA, :maxS, :maxE] =>
-        ((p, a, s, e) -> (
+    coeff_vars = combine(groupby(df, :n), [:totprod, :maxA, :maxS, :maxnl, :maxE] =>
+        ((p, a, s, n, e) -> (
             prod = (std(p) / mean(p)),
             area = (std(a) / mean(a)),
             spore = (std(s) / mean(s)),
+            nls = (std(n) / mean(n)),
             exh = (std(e) / mean(e)))
         ) => AsTable,
         nrow)
@@ -47,7 +48,6 @@ end
 
 function one_cv_sim(fmap::Array{Int,2}, tempd::Vector{Float64}, raind::Vector{Bool}, windd::Vector{Bool}, ss::Int, n::Int)::DataFrame
     model = init_spatialrust(
-        seed = rand(Int),
         steps = ss,
         inspect_period = ss,
         fungicide_sch = Int[],
@@ -67,31 +67,38 @@ function custom_run!(model::SpatialRustABM, n::Int, ss::Int)
     ncofs = length(allcofs)
     maxareas = 0.0
     maxspores = 0.0
+    maxnl = 0.0
     maxexh = 0.0
 
     s = 0
-    myaupcA = 0.0
-    myaupcS = 0.0
-    myaupcE = 0.0
+    myaudpcA = 0.0
+    myaudpcS = 0.0
+    myaudpcN = 0.0
+    myaudpcE = 0.0
     while s < ss
         s += step_n!(model, 5)
         active = Iterators.filter(c -> c.exh_countdown == 0, allcofs)
-        myaupcA += mean(map(r -> sum(r.areas), active))
-        myaupcS += mean(map(r -> sum(r.spores), active))
-        myaupcE += 1.0 - sum(allof, active) / ncofs
+        myaudpcA += mean(map(r -> sum(r.areas), active))
+        myaudpcS += mean(map(r -> sum(r.spores), active))
+        myaudpcN += mean(map(r -> r.n_lesions, active))
+        myaudpcE += 1.0 - sum(allof, active) / ncofs
         if s % 365 == 0
-            if myaupcA > maxareas
-                maxareas = myaupcA
+            if myaudpcA > maxareas
+                maxareas = myaudpcA
             end
-            if myaupcS > maxspores
-                maxspores = myaupcS
+            if myaudpcS > maxspores
+                maxspores = myaudpcS
             end
-            if myaupcE > maxexh
-                maxexh = myaupcE
+            if myaudpcN > maxnl
+                maxnl = myaudpcN
             end
-            myaupcA = 0.0
-            myaupcS = 0.0
-            myaupcE = 0.0
+            if myaudpcE > maxexh
+                maxexh = myaudpcE
+            end
+            myaudpcA = 0.0
+            myaudpcS = 0.0
+            myaudpcN = 0.0
+            myaudpcE = 0.0
         end
     end
 
@@ -99,6 +106,7 @@ function custom_run!(model::SpatialRustABM, n::Int, ss::Int)
         totprod = model.current.prod,
         maxA = maxareas,
         maxS = maxspores,
+        maxN = maxnl,
         maxE = maxexh,
         n = n
     )
