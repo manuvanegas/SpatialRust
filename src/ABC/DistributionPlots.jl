@@ -1,4 +1,4 @@
-isnormalpar(v::String) = v == "max_g_temp" || v == "opt_g_temp"
+isnormalpar(v::String) = v == "temp_ampl" || v == "opt_temp"
 
 dodged_rainclouds(params::DataFrame, selected::DataFrame, nnorms::Int, randpars::Vector{Int}, ndots::Int; kwargs...) =
 dodged_rainclouds(params[randpars, :], selected, nnorms, ndots; kwargs...)
@@ -7,9 +7,15 @@ dodged_rainclouds(params[randpars, :], selected, nnorms, ndots; kwargs...)
 function dodged_rainclouds(wideparams::DataFrame, wideselected::DataFrame, nnorms::Int, ndots::Int;
     height = 1200, width = 600)
 
-    params = stack(wideparams)
-    selected = stack(wideselected)
-    normsvstot = nnorms/(ncol(wideselected) - 1)
+    # wideparamsc = select(wideparams, Not([:wind_distance, :res_commit, :µ_prod]))
+    # wideselectedc = select(wideselected, Not([:wind_distance, :res_commit, :µ_prod]))
+    wideparamsc = wideparams
+    wideselectedc = wideselected
+
+    normsvstot = nnorms/(ncol(wideselectedc) - 1)
+
+    params = stack(wideparamsc)
+    selected = stack(wideselectedc)
 
     cloud_w_p = 1.0
     cloud_w_s = 1.0
@@ -28,8 +34,8 @@ function dodged_rainclouds(wideparams::DataFrame, wideselected::DataFrame, nnorm
 
     nparams = filter(:variable => v -> isnormalpar(v), params)
     nselected = filter(:variable => v -> isnormalpar(v), selected)
-    uparams = filter(:variable => v -> !isnormalpar(v) && v != "wind_distance", params)
-    uselected = filter(:variable => v -> !isnormalpar(v) && v != "wind_distance", selected)
+    uparams = filter(:variable => v -> !isnormalpar(v), params)
+    uselected = filter(:variable => v -> !isnormalpar(v), selected)
 
     fbox = Figure(resolution = (width, height));
     # fbox = Figure(resolution = (72 .* (5, 10)), fontsize = 11);
@@ -72,6 +78,7 @@ function tworainclouds!(
     )
     
     rcp = lessscatterrainclouds!(
+        # rcp = rainclouds!(
         ax,
         pvariables, pvalues,
         color = (color_p, alpha_p),

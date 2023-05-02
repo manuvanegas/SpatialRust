@@ -1,21 +1,84 @@
 # Pkg.activate("src/ShadingExperiments/.")
 using CairoMakie, CSV, DataFrames
 using Statistics
-include("../../src/ShadingExperiments/Plots.jl")
+using AlgebraOfGraphics
+include("../../src/ShadingExperiments/Heatmaps.jl")
+include("../../src/ShadingExperiments/Scatterplots.jl")
 
 
 ## base scenario: 22.5 T, 0.8 rain
-temp = 23.0
+temp = 22.0
 rain = 0.8
-bfiles = readdir(string("results/Shading/ABCests/exp-$temp-$rain/"), join = true)
-basedf = reduce(vcat, [CSV.read(f, DataFrame) for f in bfiles])
-add_useful_cols!(basedf)
+wind = 0.7
+reps = 25
+savefigs = false
+bfiles = readdir(string("results/Shading/ABCests/exp-22.0-0.8-0.7/"), join = true);
+basedf = reduce(vcat, [CSV.read(f, DataFrame) for f in bfiles if contains(f, "r-$reps")])
+# ndf = CSV.read("results/Shading/ABCests/exp-22.0-0.8-0.7/r-25-2-4y-2.csv", DataFrame)
+
+function shadeval(st,n)
+    if st == "Float64[]"
+        n == 0 ? (return 0.0) : (return 0.8)
+    else
+        return parse(Float64, split(st[2:end-1],",")[1])
+    end
+end
+transform!(basedf,
+        [:obsprod, :attprod] => ByRow((o,e) -> (1.0 - o / e)) => :loss,
+        [:post_prune, :n_shades] => ByRow(shadeval) => :shade_val,
+        [:obsprod, :n_coffees] => ByRow((p,c) -> p/c) => :prod_cof
+)
 # describe(res)
 describe(basedf)
 hist(basedf.maxA)
-hist(basedf.totprod)
-scatter(basedf.maxA, basedf.totprod)
-scatter(basedf.maxA, basedf.prod_cof)
+hist(basedf.maxN)
+hist(basedf.loss)
+scatter(basedf.maxA, basedf.obsprod)
+scatter(basedf.maxS, basedf.loss)
+scatter(basedf.maxA, basedf.obsprod)
+scatter(basedf.maxS, basedf.loss)
+
+meanshading = combine(groupby(basedf, [:n_shades, :prunes_year, :shade_val]),
+    :shading => mean => :meanshade,
+    [:obsprod, :loss, :maxA, :maxS, :maxN, :maxE] .=> mean .=> [:prod, :loss, :maxA, :maxS, :maxN, :maxE],
+)
+
+hmfig = shade_heatmap(meanshading)
+# hmfigr = shade_heatmap_rot(meanshading)
+
+savefigs && savehere("shadehm2.png", hmfig)
+savefigs && savediss("shadehm2.png", hmfig)
+
+varsbyshading = combine(groupby(basedf, [:n_shades, :prunes_year, :shade_val]),
+    [:barriers, :shade_d] .=> first .=> [:barriers, :shade_d],
+    :shading => mean => :meanshade,
+    [:obsprod, :prod_cof, :loss, :maxA, :maxS, :maxN, :maxE] .=> mean .=> [:prod, :prod_cof, :loss, :maxA, :maxS, :maxN, :maxE],
+    :attprod => mean => :attprod
+)
+# basescattershade(varsbyshading, :prod, :shade_val)
+# basescattershade(varsbyshading, :loss, :barriers)
+# basescattershade(varsbyshading, :maxA, :barriers)
+# basescattershade(varsbyshading, :maxS, :barriers)
+# basescattershade(varsbyshading, :maxN, :barriers)
+# basescattershade(varsbyshading, :maxE, :barriers)
+# basescattershade(varsbyshading, :attprod, :barriers)
+
+scloss = scbyprunefreqbarr(varsbyshading, :loss, "Production Loss (%)")
+scprod = scbyprunefreqbarr(varsbyshading, :prod, "Total Farm Production")
+scmaxa = scbyprunefreqbarr(varsbyshading, :maxA, "Maximum Latent Area Accumulation")
+scmaxs = scbyprunefreqbarr(varsbyshading, :maxS, "Maximum Inoculum Accumulation")
+
+# sclossd = scbyshadedistbarr(varsbyshading, :loss)
+# add_legend!(scloss)
+# lf = get_legend(Figure())
+# scloss = drawsc!(Figure(), varsbyshading, :loss)
+
+savediss("lossbydist.png", scloss)
+
+
+
+
+
 
 w_b_areas, w_b_prod, w_b_prod_c = wide_plot_dfs(basedf)
 

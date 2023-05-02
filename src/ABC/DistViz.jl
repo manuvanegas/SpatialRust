@@ -1,11 +1,15 @@
 using GLMakie, DataFrames
 
 
-function myinterplot(df::DataFrame)
+function myinterplot(dfin::DataFrame)
+    # df = select(dfin, :p_row, Not(:p_row) .=> ByRow(sqrt), renamecols = false)
+    df = dfin
+    # df[!, :exclude] .= false
     fig = Figure(resolution = (1000, 800))
     ranges = [0.0;0.00005;0.0001; collect(0.001:0.001:0.01); collect(0.02:0.01:0.1); collect(0.2:0.1:1.0); collect(1.0:28.0)]
 
-    scorenames = names(df[:, Not(1)])
+    scorenames = names(df[:, Not(:p_row)])
+    # scorenames = names(df[:, Not([:p_row, :exclude])])
     x_dropdown = Menu(fig, options = scorenames, default = scorenames[1])
     y_dropdown = Menu(fig, options = scorenames, default = scorenames[2])
     c_dropdown = Menu(fig, options = [scorenames; "p_row"], default = scorenames[3])
@@ -17,7 +21,8 @@ function myinterplot(df::DataFrame)
         x_dropdown,
         Label(fig, "color", width = nothing),
         c_dropdown;
-        tellheight = false, width = 150, valign = :top)
+        tellheight = false, width = 150, valign = :top
+    )
 
 
     xcurr = Observable{String}(scorenames[1])
@@ -29,11 +34,15 @@ function myinterplot(df::DataFrame)
     cs = @lift(df[!, $ccurr])
     rangesx = lift(xs) do xs
         maxx = maximum(xs)
-        push!(filter(<=(maxx), ranges), maxx, maxx * 1.1)
+        xvals = filter(<=(maxx), ranges)
+        push!(xvals, maxx, maxx * 1.1)
+        pushfirst!(xvals, maxx * -0.001)
     end
     rangesy = lift(ys) do ys
         maxy = maximum(ys)
-        push!(filter(<=(maxy), ranges), maxy, maxy * 1.1)
+        yvals = filter(<=(maxy), ranges)
+        push!(yvals, maxy, maxy * 1.1)
+        pushfirst!(yvals, maxy * -0.001)
     end
 
     ax = Axis(fig[1, 2], xlabel = xcurr, ylabel = ycurr)
@@ -44,8 +53,10 @@ function myinterplot(df::DataFrame)
     # rangesc = push!(filter(r -> r <= maxc, ranges), maxc)
     # sl_c = Slider(fig[1, 5], range = rangesc, startvalue = maxc, horizontal = false)
 
-    scat = scatter!(ax, xs, ys, markersize = 4px, color = cs)#, colorrange = (0,5), highclip = :transparent)
-    cb = Colorbar(fig[1, 4], scat, label = ccurr)#, highclip = :transparent)
+    scat = scatter!(ax, xs, ys, markersize = 4.0, color = cs)#(cs[] .* ifelse.(df.exclude, -1, 1)), colorrange = (0,maximum(cs[])), lowclip = :white)
+    cb = Colorbar(fig[1, 4], scat, label = ccurr)#, lowclip = :white)
+    # scat = scatter!(ax, xs, ys, markersize = 3px)#, colorrange = (0,5), highclip = :transparent)
+    # # cb = Colorbar(fig[1, 4], scat, label = ccurr)#, highclip = :transparent)
 
     on(x_dropdown.selection) do s
         xcurr[] = s
@@ -71,16 +82,17 @@ function myinterplot(df::DataFrame)
         ylims!(ax, ym)
     end
     # lift(sl_c.value) do cval
-    #     newdf = filter(ccurr[] => <(cval), df)
-    #     nxs = newdf[!, xcurr[]]
-    #     nys = newdf[!, ycurr[]]
-    #     ncs = newdf[!, ccurr[]]
-    #     nscat = scatter!(ax, nxs, nys, markersize = 4px, color = ncs)
+    #     # newdf = filter(ccurr[] => <(cval), df)
+    #     # nxs = newdf[!, xcurr[]]
+    #     # nys = newdf[!, ycurr[]]
+    #     # ncs = newdf[!, ccurr[]]
+    #     df.exclude .= df[!, ccurr[]] .> cval
+    #     nscat = scatter!(ax, xs, ys, markersize = 4.0 , color = (cs[] .* ifelse.(df.exclude, -1, 1)), colorrange = (minimum(cs[]),maximum(cs[])), lowclip = :white)
     # end
 
     fig
 end
 
 
-ifig = myinterplot(sdists)
-DataInspector(ifig)
+# ifig = myinterplot(sdists)
+# DataInspector(ifig)

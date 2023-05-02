@@ -17,8 +17,8 @@ function pa_plot(df::DataFrame, ylab::String, temp::Float64, rain::Float64)
     linkaxes!(axF, axT)
     for c in names(df)[3:end]
         scatterlines!(fig[1,1],
-            df[df.usedbarriers .== false, :target_shade],
-            df[df.usedbarriers .== false, c],
+            df[df.barriers .== false, :post_prune],
+            df[df.barriers .== false, c],
             marker = col_marker(c),
             markersize = col_markersize(c),
             color = col_color(c),
@@ -26,8 +26,8 @@ function pa_plot(df::DataFrame, ylab::String, temp::Float64, rain::Float64)
     end
     for c in names(df)[3:end]
         scatterlines!(fig[1,2],
-            df[df.usedbarriers .== true, :target_shade],
-            df[df.usedbarriers .== true, c],
+            df[df.barriers .== true, :post_prune],
+            df[df.barriers .== true, c],
             marker = col_marker(c),
             markersize = col_markersize(c),
             color = col_color(c),
@@ -40,12 +40,12 @@ function pa_plot(df::DataFrame, ylab::String, temp::Float64, rain::Float64)
             [:xcross, :circle, :utriangle], [nothing, nothing, :dash]
         )
     ]
-    group_color = [PolyElement(color = color) for color in [:teal, :orange, :olivedrab]]
+    group_color = [PolyElement(color = color) for color in [:red, :orange, :teal, :olivedrab]]
 
     Legend(fig[1,3],
         [group_marker_size_line, group_color],
-        [["Never", "Yearly", "Biannual"], ["0", "100", "289"]],
-        ["Pruning Regime", "Shade Trees"])
+        [["0", "2", "3"], ["Absent Grid", "12", "9", "6"]],
+        ["Prunings per Year", "Shade Grid Distance"])
 
     hideydecorations!(axT, grid = false)
 
@@ -67,9 +67,9 @@ function prod_c_boxplot(df::DataFrame)
 
     fig = Figure(resolution = (800, 400))
     ax = Axis(fig[1,1],
-        xlabel = "Number of Regularly Spaced Shade Trees",
+        xlabel = "Shade Grid Distance",
         ylabel = "Median Production per Coffee",
-        xticks = (1:3, ["0", "100", "289"]))
+        xticks = (1:4, ["Grid Absent", "6", "9", "12"]))
 
     # wbarr = subset(df, :usedbarriers)
     # wobarr = subset(df, :usedbarriers => ByRow(!))
@@ -79,8 +79,8 @@ function prod_c_boxplot(df::DataFrame)
     # boxplot!(ax, wbarr.boxplot_pos,wbarr.prod_cof,
     #     dodge = fill(2, length(wbarr.prod_cof)), width = 0.5, label = "Present")
     bx = boxplot!(ax, df.boxplot_pos, df.prod_cof,
-        dodge = barr_to_dodge.(df.usedbarriers), width = 0.5,
-        label = barr_to_label.(df.usedbarriers), color = barr_to_color.(df.usedbarriers))
+        dodge = barr_to_dodge.(df.barriers), width = 0.5,
+        label = barr_to_label.(df.barriers), color = barr_to_color.(df.barriers))
 
     Legend(fig[1,1],
         [MarkerElement(marker = :circle, markersize = 15, color = color) for color in [:teal, :orange]],
@@ -98,40 +98,42 @@ end
 
 ## Scatter plot helpers
 function col_marker(st::String)
-    if occursin("_1461_", st)
-        return :xcross
-    elseif occursin("_365_", st)
+    if occursin("15,", st)
+        return :utriangle
+    elseif occursin("74,", st)
         return :circle
     else
-        return :utriangle
+        return :xcross
     end
 end
 
 function col_markersize(st::String)
-    if occursin("_1461_", st)
-        return 18
-    elseif occursin("_365_", st)
+    if occursin("15,", st)
+        return 15
+    elseif occursin("74,", st)
         return 12
     else
-        return 15
+        return 18
     end
 end
 
 function col_line(st::String)
-    if occursin("_1461_", st)
-        return nothing
-    elseif occursin("_365_", st)
+    if occursin("15,", st)
+        return :dash
+    elseif occursin("75,", st)
         return nothing
     else
-        return :dash
+        return nothing
     end
 end
 
 function col_color(st::String)
-    if occursin("_0", st)
-        return :teal
+    if occursin("_100", st)
+        return :red
     elseif occursin("_6", st)
         return :olivedrab
+    elseif occursin("_9", st)
+        return :teal
     else
         return :orange
     end
@@ -158,34 +160,44 @@ end
 
 function wide_plot_dfs(df::DataFrame)
 
-    gdf = groupby(df, [:target_shade, :usedbarriers, :prune_period, :shade_d])
+    "prune period was replaced by prune_sch (SVector of days)"
+    gdf = groupby(df, [:post_prune, :barriers, :prune_sch, :shade_d])
 
     # b_areas = combine(gbasedf, [:maxA] => (x -> (maxA_mean = mean(x), sd = std(x))) => AsTable)
     df_areas = combine(gdf, [:maxA] => mean)
-    transform!(df_areas, [:prune_period, :shade_d] => ByRow((x,y) -> string("s_", x, "_", y)) => :shade_i)
-    w_df_areas = unstack(df_areas, [:target_shade, :usedbarriers], :shade_i, :maxA_mean)
+    "prune period was replaced by prune_sch (SVector of days)"
+    transform!(df_areas, [:prune_sch, :shade_d] => ByRow((x,y) -> string("s_", x, "_", y)) => :shade_i)
+    w_df_areas = unstack(df_areas, [:post_prune, :barriers], :shade_i, :maxA_mean)
 
     df_prod = combine(gdf, [:totprod] => median)
-    transform!(df_prod, [:prune_period, :shade_d] => ByRow((x,y) -> string("s_", x, "_", y)) => :shade_i)
-    w_df_prod = unstack(df_prod, [:target_shade, :usedbarriers], :shade_i, :totprod_median)
+    transform!(df_prod, [:prune_sch, :shade_d] => ByRow((x,y) -> string("s_", x, "_", y)) => :shade_i)
+    w_df_prod = unstack(df_prod, [:post_prune, :barriers], :shade_i, :totprod_median)
 
     df_prod_cof = combine(gdf, [:prod_cof] => median)
-    transform!(df_prod_cof, [:prune_period, :shade_d] => ByRow((x,y) -> string("s_", x, "_", y)) => :shade_i)
-    w_df_prod_cof = unstack(df_prod_cof, [:target_shade, :usedbarriers], :shade_i, :prod_cof_median)
+    transform!(df_prod_cof, [:prune_sch, :shade_d] => ByRow((x,y) -> string("s_", x, "_", y)) => :shade_i)
+    w_df_prod_cof = unstack(df_prod_cof, [:post_prune, :barriers], :shade_i, :prod_cof_median)
 
     return w_df_areas, w_df_prod, w_df_prod_cof
 end
 
-function n_coffees(shade_d::Int, used::Bool)::Int
-    if used
-        return (5000 - (149 + n_inter_shades(shade_d)))
-    else
-        return (5000 - n_inter_shades(shade_d))
-    end
+n_inter_shades(shade_d::Int) = if shade_d == 100
+    0
+elseif shade_d == 12
+    70
+elseif shade_d == 9
+    123
+else
+    278
 end
 
-n_inter_shades(shade_d::Int) = ifelse(shade_d == 10, 100, ifelse(shade_d == 6, 289, 0))
-
-boxplot_pos(shade_d::Int) = ifelse(shade_d == 6, 3, ifelse(shade_d == 10, 2, 1))
+boxplot_pos(shade_d::Int) = if shade_d == 100
+    1
+elseif shade_d == 12
+    4
+elseif shade_d == 9
+    3
+else
+    2
+end
 
 # n_barr_shades(used::Bool) = ifelse(used, 196, 0)

@@ -8,15 +8,45 @@ using CairoMakie
 # cvs3 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1001.csv"), DataFrame)
 # cvs4 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-r1002.csv"), DataFrame)
 # cvs5 = CSV.read(projectdir("results/Shading/CVs-22.5-0.8-1003.csv"), DataFrame)
+p = "results/Shading/ABCests/CV"
+temp = 22.0
+rain = 0.8
+maxreps = 500
+ys = 4
+r50s = 450
+# cvs = CSV.read(joinpath(p, "CVs-$temp-$rain-$(maxreps)-$(ys)y-a.csv"), DataFrame)
+# cvs50 = CSV.read(joinpath(p, "CVs-$temp-$rain-$(r50s)-$(ys)y.csv"), DataFrame)
+# append!(cvs, cvs50)
+# sort!(cvs, :n)
+# CSV.write(joinpath(p, "CVs-$temp-$rain-500-450-$(ys)y.csv"), cvs)
+cvs = CSV.read(joinpath(p, "CVs-$temp-$rain-$(maxreps)-$(r50s)-$(ys)y.csv"), DataFrame)
 
-cvs = CSV.read("results/Shading/ABCests/CVs-byaroccincid-23.0-0.8-600.csv", DataFrame)
 
 fig = Figure();
-ax = Axis(fig[1,1], xlabel = "Number of runs", ylabel = "CV");
-lines!(ax, cvs.n, cvs.prod, label = "Coffee Production CV");
-lines!(ax, cvs.n, cvs.area, label = "Max Rust Area CV");
+ax = Axis(fig[1,1], xlabel = "Number of runs", ylabel = "Coefficient of Variation",
+xticks = collect(100:100:500));
+lines!(ax, cvs.n, cvs.loss, label = "Coffee Production Loss");
+lines!(ax, cvs.n, cvs.area, label = "Max Latent Area");
+lines!(ax, cvs.n, cvs.spore, label = "Max Spore Area");
+lines!(ax, cvs.n, cvs.nls, label = "Max N Lesions");
+lines!(ax, cvs.n, cvs.exh, label = "Max Exhausted");
 axislegend()
 fig
+
+cvsd = mapcols(diff, cvs[!, Not([:n, :nrow])])
+cvsd.n = cvs.n[2:end]
+cvs = CSV.read(joinpath(p, "CVs-$temp-$rain-$(maxreps)-$(r50s)-$(ys)y.csv"), DataFrame)
+
+fig2 = Figure();
+ax2 = Axis(fig2[1,1], xlabel = "Number of runs", ylabel = "Coefficient of Variation Difference",
+xticks = collect(100:100:500));
+lines!(ax2, cvsd.n, cvsd.loss, label = "Coffee Production Loss");
+lines!(ax2, cvsd.n, cvsd.area, label = "Max Latent Area");
+lines!(ax2, cvsd.n, cvsd.spore, label = "Max Spore Area");
+lines!(ax2, cvsd.n, cvsd.nls, label = "Max N Lesions");
+lines!(ax2, cvsd.n, cvsd.exh, label = "Max Exhausted");
+# axislegend()
+fig2
 
 fig2 = Figure()
 ax = Axis(fig2[1,1], xlabel = "Number of runs", ylabel = "CV")
