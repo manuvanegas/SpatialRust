@@ -33,7 +33,7 @@ singlevals = DataFrame(
 
 pruningopts = crossjoin(
     DataFrame(post_prune = collect(fill(t, 3) for t in 0.1:0.15:0.7)),
-    DataFrame(prune_sch = [[74, 227], [74, 196, 319]]),
+    DataFrame(prune_sch = [[74], [74, 227], [74, 196, 319]]),
 )
 
 noprunings = DataFrame(

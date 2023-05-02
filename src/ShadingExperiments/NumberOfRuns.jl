@@ -1,18 +1,20 @@
 function coeff_vars(n::Int, mtemp::Float64, rainp::Float64, windp::Float64, y::Int)
 
-    ns = [25; 50; 75; 100:100:1000]
+    ns = [25; 50:50:500; 600:100:1000]
     # if n == 100
     #    ns = collect(20:20:100)
     # end
-    a_ns = n == 350 ? [150, 250, 350] : filter(x -> x .<= n, ns)
+    a_ns = n == 450 ? [10, 125, 150, 250, 350, 450] : filter(x -> x .<= n, ns)
 
     df = cv_n_sims(a_ns, mtemp, rainp, windp, y)
 
     # CSV.write("results/Shading/ABCests/CV/raw-$(y)y.csv", df)
+    transform!(df, [:obsprod, :attprod] => ByRow((o, e) -> (1.0 - o / e)) => :loss)
 
-    coeff_vars = combine(groupby(df, :n), [:totprod, :maxA, :maxS, :maxN, :maxE] =>
-        ((p, a, s, n, e) -> (
+    coeff_vars = combine(groupby(df, :n), [:obsprod, :loss, :maxA, :maxS, :maxN, :maxE] =>
+        ((p, l, a, s, n, e) -> (
             prod = (std(p) / mean(p)),
+            loss = (std(l) / mean(l)),
             area = (std(a) / mean(a)),
             spore = (std(s) / mean(s)),
             nls = (std(n) / mean(n)),
@@ -58,8 +60,21 @@ function one_cv_sim(fmap::Array{Int,2}, tempd::Vector{Float64}, raind::Vector{Bo
         rain_data = copy(raind),
         wind_data = copy(windd),
         temp_data = copy(tempd))
+        
+    attmodel = init_spatialrust(
+        p_rusts = 0.0,
+        steps = ss,
+        inspect_period = ss,
+        fungicide_sch = Int[],
+        prune_sch = [74, 227, -1], 
+        post_prune = [0.4, 0.4, -1],
+        shade_g_rate = 0.008,
+        farm_map = copy(fmap),
+        rain_data = copy(raind),
+        wind_data = copy(windd),
+        temp_data = copy(tempd))
 
-    return custom_run!(model, n, ss)
+    return hcat(custom_run!(model, n, ss), att_run!(attmodel, ss))
 end
 
 function custom_run!(model::SpatialRustABM, n::Int, ss::Int)
@@ -103,7 +118,7 @@ function custom_run!(model::SpatialRustABM, n::Int, ss::Int)
     end
 
     return DataFrame(
-        totprod = model.current.prod,
+        obsprod = model.current.prod,
         maxA = maxareas,
         maxS = maxspores,
         maxN = maxnl,
@@ -113,3 +128,8 @@ function custom_run!(model::SpatialRustABM, n::Int, ss::Int)
 end
 
 allof(c::Coffee) = true
+
+function att_run!(model::SpatialRustABM, ss::Int)
+    step_n!(model, ss)
+    return DataFrame(attprod = model.current.prod)
+end

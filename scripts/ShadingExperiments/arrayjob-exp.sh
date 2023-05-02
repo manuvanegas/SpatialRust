@@ -24,5 +24,5 @@ echo `date +%F-%T`
 echo $SLURM_JOB_ID
 echo $SLURM_JOB_NODELIST
 julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/ShadingExperiments/runExperiment.jl 20 22.0 0.8 0.7 $SLURM_ARRAY_TASK_ID 4
+~/SpatialRust/scripts/ShadingExperiments/runExperiment.jl 200 22.0 0.8 0.7 $SLURM_ARRAY_TASK_ID 4
 #ARGs: repetitions, mean temp, rain prob, wind prob, array ID -> shade_placements, sim years
