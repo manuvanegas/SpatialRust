@@ -1,7 +1,7 @@
 module SpatialRust
 
 using Agents, DataFrames, Distributions, Random
-using DrWatson: srcdir, datadir
+# using DrWatson: srcdir, datadir
 using StatsBase: sample, weights
 
 # include(srcdir("ABC/ABCMainSetup.jl"))
@@ -29,26 +29,26 @@ using StatsBase: sample, weights
 
 
 
-include(srcdir("ABM/MainSetup.jl"))
+include("ABM/MainSetup.jl")
 
 const SpatialRustABM = Agents.SingleContainerABM{
     Agents.GridSpaceSingle{2, false}, Coffee, Vector{Coffee},
     typeof(Agents.Schedulers.fastest), SpatialRust.Props, Random.Xoshiro
 }
 
-include(srcdir("ABM/CreateABM.jl"))
-include(srcdir("ABM/FarmMap.jl"))
-include(srcdir("ABM/ShadeMap.jl"))
+include("ABM/CreateABM.jl")
+include("ABM/FarmMap.jl")
+include("ABM/ShadeMap.jl")
 
-include(srcdir("ABM/MainStep.jl"))
-include(srcdir("ABM/ShadeSteps.jl"))
-include(srcdir("ABM/CoffeeSteps.jl"))
-include(srcdir("ABM/RustGrowth.jl"))
-include(srcdir("ABM/RustDispersal.jl"))
-include(srcdir("ABM/CGrowerSteps.jl"))
+include("ABM/MainStep.jl")
+include("ABM/ShadeSteps.jl")
+include("ABM/CoffeeSteps.jl")
+include("ABM/RustGrowth.jl")
+include("ABM/RustDispersal.jl")
+include("ABM/CGrowerSteps.jl")
 
-include(srcdir("QuickRuns.jl"))
-include(srcdir("QuickMetrics.jl"))
+include("QuickRuns.jl")
+include("QuickMetrics.jl")
 
 export SpatialRustABM
 
