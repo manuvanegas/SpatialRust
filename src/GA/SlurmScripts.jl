@@ -7,13 +7,13 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     #SBATCH --mem=1G
     #SBATCH --ntasks=1
     #SBATCH -p htc
-    #SBATCH -q debug
-    #SBATCH -J debug-GA-ind-$gen
-    #SBATCH -t 0-00:15:00
-    # #SBATCH -J GA-ind-$gen
-    # #SBATCH -t 0-01:00:00
-    #SBATCH -o logs/GA/g-%A.o
-    #SBATCH -e logs/GA/g-%A.e
+    # #SBATCH -q debug
+    # #SBATCH -J debug-GA-ind-$gen
+    # #SBATCH -t 0-00:15:00
+    #SBATCH -J GA-ind-g$gen
+    #SBATCH -t 0-00:20:00
+    #SBATCH -o logs/GA/ind/g-%A.o
+    #SBATCH -e logs/GA/ind/g-%A.e
     #SBATCH --mail-type=ALL
     #SBATCH --mail-user=mvanega1@asu.edu
 
@@ -21,9 +21,9 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     module load julia/1.8.2
 
     echo `date +%F-%T`
-    echo $SLURM_JOB_ID
+    echo \$SLURM_JOB_ID
     julia ~/SpatialRust/scripts/GA/testIndividual.jl \
-    $SLURM_ARRAY_TASK_ID $gen $reps $steps $cprice $expfolder
+    \$SLURM_ARRAY_TASK_ID $gen $reps $steps $cprice $expfolder
     """)
     return fpath
 end
@@ -37,12 +37,12 @@ function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, step
     #SBATCH --ntasks=1
     #SBATCH -p htc
     #SBATCH -q debug
-    #SBATCH -J debug-GA-gen-$gen
+    #SBATCH -J debug-GA-gen-$(gen + 1)
     #SBATCH -t 0-00:15:00
-    # #SBATCH -J GA-gen-$gen
-    # #SBATCH -t 0-01:00:00
-    #SBATCH -o logs/GA/g-%A.o
-    #SBATCH -e logs/GA/g-%A.e
+    # #SBATCH -J GA-gen-$(gen + 1)
+    # #SBATCH -t 0-00:10:00
+    #SBATCH -o logs/GA/gen/g-%A.o
+    #SBATCH -e logs/GA/gen/g-%A.e
     #SBATCH --mail-type=ALL
     #SBATCH --mail-user=mvanega1@asu.edu
 

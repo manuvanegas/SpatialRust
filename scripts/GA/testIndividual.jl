@@ -1,3 +1,5 @@
+import Pkg
+Pkg.activate(".")
 using DelimitedFiles, SpatialRust
 using Statistics: mean
 
@@ -29,7 +31,7 @@ transcripts = readdlm(joinpath(expfolder, "transcs/", filename), ',', Int)
 pheno = ints_to_pars(transcripts, steps, coffee_price)
 
 # produce individual fitness
-fitness = sptlrust_profit_fitness(pheno, reps)
+fitness = sptlrust_profit_fitness(pheno, reps, steps, coffee_price)
 
 # write fitness
 writedlm(joinpath(expfolder, "fitns/", filename), fitness, ',')

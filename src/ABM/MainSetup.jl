@@ -167,8 +167,8 @@ function init_spatialrust(;
     )
 
     pruneskept = filter!(i -> prune_sch[i] > 0, sortperm(prune_sch))
-    keepat!(prune_sch, pruneskept)
-    keepat!(post_prune, pruneskept)
+    prune_sch = prune_sch[pruneskept]
+    post_prune = post_prune[pruneskept]
     if (l = length(prune_sch) == 2) && !allunique(prune_sch)
         prune_sch = keepat!(prune_sch, 1)
         post_prune = minimum(post_prune)
