@@ -29,7 +29,6 @@ transcripts = readdlm(joinpath(expfolder, "transcs/", filename), ',', Int)
 
 # "phenotype"
 pheno = ints_to_pars(transcripts, steps, coffee_price)
-
 # produce individual fitness
 fitness = sptlrust_profit_fitness(pheno, reps, steps, coffee_price)
 

@@ -87,10 +87,10 @@ function init_spatialrust(;
     incidence_thresh::Float64 = 0.1,        # incidence that triggers fungicide use (10% from Cenicafe's Boletin 36)
     max_fung_sprayings::Int = 3,            # maximum fung treatments per year
 
-    prune_cost::Float64 = 1.0,              # per shade
-    inspect_cost::Float64 = 1.0,            # per coffee inspected
-    fung_cost::Float64 = 1.0,               # per coffee
-    other_costs::Float64 = 1.0,             # other costs considered
+    prune_cost::Float64 = 7.25,             # per shade
+    inspect_cost::Float64 = 0.14,           # per coffee inspected
+    fung_cost::Float64 = 0.7,               # per coffee
+    other_costs::Float64 = 0.41,            # other costs considered (weeding)
     coffee_price::Float64 = 1.0,
 
     post_prune::Vector{Float64} = [0.3, 0.5, 0.0], # individual shade level after pruning
@@ -98,7 +98,7 @@ function init_spatialrust(;
     fung_effect::Int = 30,                  # length of fungicide effect
 
     # shade parameters
-    shade_g_rate::Float64 = 0.008,          # shade growth rate
+    shade_g_rate::Float64 = 0.02,           # shade growth rate
     shade_r::Int = 3,                       # radius of influence of shades
 
     # farm map
@@ -200,9 +200,9 @@ function init_spatialrust(;
         inspect_period, fungicide_sch,
         incidence_as_thr, incidence_thresh, max_fung_sprayings,
         #
-        n_shades, prune_cost * n_shades,
-        n_coffees, inspect_cost * n_inspect, fung_cost * n_coffees,
-        other_costs, coffee_price,
+        n_shades, rand(rng, Normal(prune_cost, prune_cost * 0.05)) * n_shades,
+        n_coffees, rand(rng, Normal(inspect_cost, inspect_cost * 0.05)) * n_inspect, rand(rng, Normal(fung_cost, fung_cost * 0.05)) * n_coffees,
+        rand(rng, Normal(other_costs, other_costs * 0.05)), coffee_price,
         #
         0.394328, post_prune, n_inspect, fung_effect,
         shade_g_rate, shade_r
@@ -212,7 +212,7 @@ function init_spatialrust(;
 
     b = Books(
         doy, 0, ind_shade_i(shade_g_rate, doy, post_prune, prune_sch),
-        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true
+        0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true, 0.0
     )
 
     return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8)), rng, p_rusts)
@@ -325,6 +325,7 @@ mutable struct Books
     prod::Float64
     inbusiness::Bool
     withinbounds::Bool
+    shadeacc::Float64
     # net_rev::Float64
     # max_rust::Float64
 end

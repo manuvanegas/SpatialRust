@@ -1,5 +1,16 @@
 function harvest!(model::SpatialRustABM)
     model.current.prod += sum(map(c -> c.production, model.agents))
+    cost = model.current.costs += model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.032
+    model.current.shadeacc = 0.0
+    
+    if sum(active, model.agents)/length(model.agents) < 0.1
+        model.current.inbusiness = false
+    elseif (years = div(model.current.days, model.mngpars.harvest_day)) > 1
+        tot_in = model.current.prod * model.mngpars.coffee_price
+        if (cost - tot_in) > (0.5 * tot_in * inv(years))
+            model.current.inbusiness = false
+        end
+    end
 
     # if (years = div(model.current.days, model.mngpars.harvest_day)) > 1
     #     tot_in = model.current.prod * model.mngpars.coffee_price
@@ -9,8 +20,8 @@ function harvest!(model::SpatialRustABM)
     # end
 
     model.current.fung_count = 0
-    new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive)
-    # map(a -> new_harvest_cycle!(a, model.mngpars.les_surv), model.agents)
+    # new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive)
+    map(a -> new_harvest_cycle!(a, model.mngpars.lesion_survive), model.agents)
     return nothing
 end
 
@@ -88,21 +99,15 @@ function inspect!(model::SpatialRustABM)
         if c.exh_countdown > 0
             n_infected += 1
         # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
-        elseif any(c.areas .> 0.1) && (rand(model.rng) < maximum(c.areas))
+        elseif any(c.areas .> 0.1) && (1.0 < maximum(c.areas) || rand(model.rng) < maximum(c.areas))
             n_infected += 1
-            spotted = unique!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), 5))
+            spotted = unique!(sort!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), 5)))
             deleteat!(c.ages, spotted)
             deleteat!(c.areas, spotted)
             deleteat!(c.spores, spotted)
             c.n_lesions -= length(spotted)
-            # fill_n = length(spotted)
-            # c.n_lesions -= fill_n
-            # c.ages = append!(c.ages[Not(spotted)], fill(model.rustpars.reset_age, fill_n))
-            # c.areas = append!(c.areas[Not(spotted)], zeros(fill_n))
-            # c.spores = append!(c.spores[Not(spotted)], fill(false, fill_n))
             if c.n_lesions == 0 && (c.deposited < 0.05)
                 c.deposited == 0.0
-                # delete!(model.rusts, c)
                 c.rusted = false
             end
         end

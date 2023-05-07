@@ -1,8 +1,8 @@
 
-DoY(x::Int) = round(Int, 365 * x * inv(32))
-propto08(x::Int) = (x + 1) * 0.75 * inv(32)
-perioddays(x::Int) = (x + 1) * 4
-proportion(x::Int) = (x + 1) * inv(32)
+DoY(x::Int) = round(Int, 365 * x * inv(64))
+propto08(x::Int) = (x + 1) * 0.75 * inv(64)
+perioddays(x::Int) = (x + 1) * 2
+proportion(x::Int) = (x + 1) * inv(128) # (*inv(64) * 0.5) 
 
 function ints_to_pars(transcr::Matrix{Int}, steps, cprice)
     return (
@@ -40,32 +40,34 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64)
     shadetracker = 0.0
     s = 0
     
-    shade_n = 0
-    while s < 365
-        s += step_n!(model, 5)
-        shadetracker += model.current.ind_shade
-        shade_n += 1
-    end
+    # shade_n = 0
+    # while s < 365
+    #     s += step_n!(model, 5)
+    #     shadetracker += model.current.ind_shade
+    #     shade_n += 1
+    # end
 
-    avsunlight = 1.0 -  (shadetracker / shade_n) * mean(model.shade_map)
-    model.current.costs += model.mngpars.other_costs * avsunlight - 0.07
+    # avsunlight = 1.0 -  (shadetracker / shade_n) * mean(model.shade_map)
+    # model.current.costs += model.mngpars.other_costs * avsunlight - 0.032
 
     everyn = 7 # (7*4*13=364)
     while s <= (steps - 1) && model.current.inbusiness
         s += step_n!(model, everyn)
         if s % 365 == 364
-            model.current.costs += model.mngpars.other_costs * avsunlight - 0.07
+            # model.current.costs += model.mngpars.other_costs * avsunlight - 0.032
             step_model!(model)
             s += 1
         end
     end
 
-    #if model.current.inbusiness
-    #    score = (model.current.prod) * cprice - model.current.costs
+    #if !model.current.inbusiness
+    #    score = -1e8 #(model.current.prod) * cprice - model.current.costs
     #else
-    #    y_lost = 1.0 - s * inv(steps)
-    #    score = -(1.0 + y_lost) * (model.current.prod) * cprice - model.current.costs
+    #    # y_lost = 1.0 - s * inv(steps)
+    #    score = (model.current.prod) * cprice - model.current.costs # -(1.0 + y_lost) * (model.current.prod) * cprice - model.current.costs
     #end
 
+    #return score
     return (model.current.prod) * cprice - model.current.costs
+    # return model.current.prod
 end

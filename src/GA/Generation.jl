@@ -13,10 +13,11 @@ function tourn_select(pop::BitMatrix, fitnesses::Vector{Float64}, popsize::Int, 
     # (length(fitnesses) == size(pop)[2] == popsize) || error("population and fitnesses dont match. fitn = $(length(fitnesses)), size(pop) = $(size(pop)), popsize = $popsize")
     selected = zeros(Int, popsize)
     # pair_select.(repr, Ref(fitnesses), n)
-    @inbounds for i in 1:(popsize - 1) # set one slot aside for elitism
+    @inbounds for i in 1:(popsize - 5) # set one slot aside for elitism and 4 for random indivs
         c1, c2 = sample(rng, 1:popsize, 2, replace = false)
         selected[i] = fitnesses[c1] > fitnesses[c2] ? c1 : c2
     end
+    @inbounds selected[popsize-4:popsize-1] = sample(rng, 1:popsize, 4, replace = false)
     @inbounds selected[popsize] = argmax(fitnesses)
     shuffle!(selected) # to allow xover to operate over contiguous pairs
     return pop[:, selected]
@@ -43,7 +44,8 @@ end
 
 function transcribe(pop::BitMatrix, trfolder::String)
     # starts, stops = startstops()
-    loci = [1:2, 3:3, 4:5, 6:6, 7:7, 8:12, 13:17, 18:22, 23:27, 28:32, 33:37, 38:41, 42:46, 47:51, 52:56, 57:61, 62:62, 63:67]
+    # loci = [1:2, 3:3, 4:5, 6:6, 7:7, 8:12, 13:17, 18:22, 23:27, 28:32, 33:37, 38:41, 42:46, 47:51, 52:56, 57:61, 62:62, 63:67]
+    loci = [1:2, 3:3, 4:5, 6:6, 7:7, 8:13, 14:19, 20:25, 26:31, 32:37, 38:43, 44:48, 49:54, 55:60, 61:66, 67:72, 73:73, 74:79]
     for (i,indiv) in enumerate(eachcol(pop))
         transcripts = [bits_to_int(indiv[l]) for l in loci]
         transcripts[[1:3; 5]] .+= 1

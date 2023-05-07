@@ -37,7 +37,7 @@ if pastgen < maxgens # || end condition?
 
     # progeny
     newpop = tourn_select(pastpop, fitns, popsize, rng)
-    xover!(newpop, pcross, popsize, 67, rng)
+    xover!(newpop, pcross, popsize, 79, rng)
     mutate!(newpop, pmut, rng)
 
     # write new gen's pop
@@ -53,8 +53,6 @@ if pastgen < maxgens # || end condition?
     depend = readchomp(`sbatch --parsable $arraypath`)
     # sbatch afterok for next progeny
     run(`sbatch --dependency=afterok:$depend $newgenpath`, wait = false)
-
-    println("Running gen $gen")
 else
     # read past gen's fitnesses to copy them in a single file
     fitnfiles = readdir(joinpath(expfolder,"fitns", string("g-", pastgen0s,"/")), join = true)
@@ -73,6 +71,5 @@ else
         hfitns[g] = vec(readdlm(f, ',', Float64))
     end
     histfitness = reduce(hcat, hfitns)
-    # histfitness = reduce(hcat, [read(f, ',', Float64) for f in hfitnsfiles])
     writedlm(joinpath(p,"fitnesshistory.csv"), hfitns, ',')
 end

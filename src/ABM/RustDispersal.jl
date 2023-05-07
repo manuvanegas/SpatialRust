@@ -310,8 +310,8 @@ function starting_pos(rng, side::Int, q::Int)
 end
 
 function reintroduce_rusts!(model::SpatialRustABM, n_rusts::Int)
-    activecofs = filter(c -> c.exh_countdown == 0, model.agents)
-    n_rusts = min(n_rusts, length(activecofs))
+    activecofs = filter(active, model.agents)
+    # n_rusts = min(n_rusts, length(activecofs))
     rusted_cofs = sample(model.rng, activecofs, n_rusts, replace = false)
     nl_distr = Binomial(model.rustpars.max_lesions - 1, 0.05)
 

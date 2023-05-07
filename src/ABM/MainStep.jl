@@ -27,13 +27,9 @@ function pre_step!(model::SpatialRustABM)
         model.current.wind_h = rand(model.rng) * 360.0
     end
 
-    # if t % 60 == 0 && sum(map(c -> c.rusted, model.agents)) == 0
-    #     if sum(model.outpour) == 0.0
-    #         reintroduce_rusts!(model, 10)
-    #     else
-    #         reintroduce_rusts!(model, 1)
-    #     end
-    # end
+    if t % 60 == 0 && sum(activeRust, model.agents) == 0 && sum(active, model.agents) > 400
+        reintroduce_rusts!(model, 5)
+    end
     return nothing
 end
 
@@ -187,21 +183,21 @@ function farmer_step!(model)
         prune_shades!(model, model.mngpars.post_prune[prune_i])
     end
 
-    # the following is commented out for ABC. TODO: uncomment it when calibration is done
+    if model.current.days % model.mngpars.inspect_period == 0
+        inspect!(model)
+    end
 
-    # if model.current.days % model.mngpars.inspect_period == 0
-    #     inspect!(model)
-    # end
-
-    # if model.current.fungicide > 0
-    #     model.current.fungicide -= 1
-    # elseif model.mngpars.incidence_as_thr
-    #     if model.current.fung_count < 4 && model.current.obs_incidence > model.mngpars.incidence_thresh
-    #         fungicide!(model)
-    #     end
-    # elseif doy in model.mngpars.fungicide_sch
-    #     fungicide!(model)
-    # end
+    if model.current.fungicide > 0
+        model.current.fungicide -= 1
+    elseif model.mngpars.incidence_as_thr
+        if model.current.fung_count < 4 && model.current.obs_incidence > model.mngpars.incidence_thresh
+            fungicide!(model)
+        end
+    elseif doy in model.mngpars.fungicide_sch
+        fungicide!(model)
+    end
+    
+    model.current.shadeacc += model.current.ind_shade
     
     return nothing
 end

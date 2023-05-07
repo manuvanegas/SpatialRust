@@ -22,7 +22,7 @@ mkpath(joinpath(expfolder, "histftns"))
 mkpath(joinpath(expfolder, "scripts"))
 
 # init and save pop
-pop = bitrand(67, popsize)
+pop = bitrand(79, popsize)
 writedlm(joinpath(poppath, "g-001.csv"), pop, ',')
 
 # create fitness folder
