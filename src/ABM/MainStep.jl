@@ -2,7 +2,7 @@ export step_model!
 
 function step_model!(model::SpatialRustABM)
     pre_step!(model)
-    grow_shades!(model.current, model.mngpars.shade_g_rate)
+    grow_shades!(model.current, model.mngpars.shade_g_rate, model.mngpars.max_shade)
     coffee_step!(model)
     rust_step!(model)
     farmer_step!(model)

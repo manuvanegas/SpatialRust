@@ -134,32 +134,33 @@ function pre_run365!(model::SpatialRustABM, mngpars::MngPars)
     end
 
     g_rate = mngpars.shade_g_rate
+    maxsh = mngpars.max_shade
 
     s = 0
     while s < p1
         model.current.days += 1
-        grow_shades!(model.current, g_rate)
+        grow_shades!(model.current, g_rate, maxsh)
         coffee_step!(model)
         s += 1
     end
     prune1(model, t1)
     while s < p2
         model.current.days += 1
-        grow_shades!(model.current, g_rate)
+        grow_shades!(model.current, g_rate, maxsh)
         coffee_step!(model)
         s += 1
     end
     prune2(model, t2)
     while s < p3
         model.current.days += 1
-        grow_shades!(model.current, g_rate)
+        grow_shades!(model.current, g_rate, maxsh)
         coffee_step!(model)
         s += 1
     end
     prune3(model, t3)
     while s < 365
         model.current.days += 1
-        grow_shades!(model.current, g_rate)
+        grow_shades!(model.current, g_rate, maxsh)
         coffee_step!(model)
         s += 1
     end
@@ -167,28 +168,28 @@ function pre_run365!(model::SpatialRustABM, mngpars::MngPars)
 
     while s < 365 + p1
         model.current.days += 1
-        grow_shades!(model.current, g_rate)
+        grow_shades!(model.current, g_rate, maxsh)
         coffee_step!(model)
         s += 1
     end
     prune1(model, t1)
     while s < 365 + p2
         model.current.days += 1
-        grow_shades!(model.current, g_rate)
+        grow_shades!(model.current, g_rate, maxsh)
         coffee_step!(model)
         s += 1
     end
     prune2(model, t2)
     while s < 365 + p3
         model.current.days += 1
-        grow_shades!(model.current, g_rate)
+        grow_shades!(model.current, g_rate, maxsh)
         coffee_step!(model)
         s += 1
     end
     prune3(model, t3)
     while s < 730
         model.current.days += 1
-        grow_shades!(model.current, g_rate)
+        grow_shades!(model.current, g_rate, maxsh)
         coffee_step!(model)
         s += 1
     end

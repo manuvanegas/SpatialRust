@@ -68,6 +68,6 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64)
     #end
 
     #return score
-    return (model.current.prod) * cprice - model.current.costs
+    return 0.48 * (model.current.prod) * cprice - model.current.costs
     # return model.current.prod
 end

@@ -1,6 +1,6 @@
 function harvest!(model::SpatialRustABM)
     model.current.prod += sum(map(c -> c.production, model.agents))
-    cost = model.current.costs += model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.032
+    cost = model.current.costs += model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.01
     model.current.shadeacc = 0.0
     
     if sum(active, model.agents)/length(model.agents) < 0.1

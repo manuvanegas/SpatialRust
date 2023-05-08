@@ -87,10 +87,10 @@ function init_spatialrust(;
     incidence_thresh::Float64 = 0.1,        # incidence that triggers fungicide use (10% from Cenicafe's Boletin 36)
     max_fung_sprayings::Int = 3,            # maximum fung treatments per year
 
-    prune_cost::Float64 = 7.25,             # per shade
-    inspect_cost::Float64 = 0.14,           # per coffee inspected
-    fung_cost::Float64 = 0.7,               # per coffee
-    other_costs::Float64 = 0.41,            # other costs considered (weeding)
+    prune_cost::Float64 = 2.13,             # per shade
+    inspect_cost::Float64 = 0.02,           # per coffee inspected
+    fung_cost::Float64 = 0.25,              # per coffee
+    other_costs::Float64 = 0.15,            # other costs considered (weeding)
     coffee_price::Float64 = 1.0,
 
     post_prune::Vector{Float64} = [0.3, 0.5, 0.0], # individual shade level after pruning
@@ -98,7 +98,8 @@ function init_spatialrust(;
     fung_effect::Int = 30,                  # length of fungicide effect
 
     # shade parameters
-    shade_g_rate::Float64 = 0.02,           # shade growth rate
+    max_shade::Float64 = 0.8,               # maximum individual shade
+    shade_g_rate::Float64 = 0.01,           # shade growth rate
     shade_r::Int = 3,                       # radius of influence of shades
 
     # farm map
@@ -205,13 +206,13 @@ function init_spatialrust(;
         rand(rng, Normal(other_costs, other_costs * 0.05)), coffee_price,
         #
         0.394328, post_prune, n_inspect, fung_effect,
-        shade_g_rate, shade_r
+        max_shade, shade_g_rate, shade_r
     )
 
     doy = start_days_at == 0 ? veg_d - 1 : start_days_at
 
     b = Books(
-        doy, 0, ind_shade_i(shade_g_rate, doy, post_prune, prune_sch),
+        doy, 0, ind_shade_i(shade_g_rate, max_shade, doy, post_prune, prune_sch),
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true, 0.0
     )
 
@@ -306,6 +307,7 @@ struct MngPars{N,M}
     n_inspected::Int
     fung_effect::Int
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
+    max_shade::Float64
     shade_g_rate::Float64
     shade_r::Int
 end
@@ -381,12 +383,13 @@ end
 # Calculate initial ind_shade
 function ind_shade_i(
     shade_g_rate::Float64,
+    max_shade::Float64,
     start_day_at::Int,
     post_prune::NTuple{N, Float64},
     prune_sch::NTuple{N, Int}) where {N}
 
     if isempty(prune_sch)
-        return 0.8
+        return max_shade
     else
         day = start_day_at > 0 ? start_day_at : 1
         # calculate elapsed days since last prune
@@ -401,6 +404,6 @@ function ind_shade_i(
             pruned_to = post_prune[prune_i]
         end
         # logistic equation to determine starting shade level
-        return 0.8 * (pruned_to / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune))))
+        return max_shade * (pruned_to / (pruned_to + (max_shade - pruned_to) * exp(-(shade_g_rate * last_prune))))
     end
 end
