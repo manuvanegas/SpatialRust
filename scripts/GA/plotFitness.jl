@@ -3,7 +3,7 @@ using CairoMakie, CSV, DataFrames, Statistics
 include("../../src/GA/Plots.jl")
 
 obj = "shorttprofit"
-obj = "longtprofit"
+obj = "longtermprofit"
 pcross = 0.5
 pmut = 0.02
 

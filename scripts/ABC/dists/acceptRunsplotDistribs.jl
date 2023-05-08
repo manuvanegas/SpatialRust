@@ -1,6 +1,7 @@
 using Arrow, CSV, DataFrames, Random, Statistics
 # using StatsBase: denserank
-using GLMakie #CairoMakie
+# using GLMakie
+using CairoMakie
 
 # Time-to-first-plot still too long...
 rainclouds(["a","b","a","b"], [1.0,1.0,2.0,2.0])
@@ -27,14 +28,17 @@ selectedscaled = get_params_rows(scaledparams, sortedrows.p_row)
 
 # 1000 random params instead of the 10^6-100 rejected, for faster plotting
 randpars1000 = sample_rejected_n(sortedrows.p_row, nrow(parameterpriors), 1000);
-fig1 = dodged_rainclouds(scaledparams, selectedscaled, 2, randpars1000, 100)
+fig1 = four_dodged_rainclouds(scaledparams, selectedscaled, 5, randpars1000, 100)
 
 # now the real one
-fig12 = dodged_rainclouds(scaledparams, selectedscaled, 2, 1000, height = 1200)
-fig14 = dodged_rainclouds(scaledparams, selectedscaled, 2, 1000, height = 1400)
+fig12 = four_dodged_rainclouds(scaledparams, selectedscaled, 5, 1000, height = 1200)
+fig12s = four_dodged_rainclouds(scaledparams, selectedscaled, 5, 1000, height = 900)
+fig14 = dodged_rainclouds(scaledparams, selectedscaled, 5, 1000, height = 1400)
 
+p = mkpath("../../Dissertation/Chapters/Diss/Document/Figs/ABC")
 # still have to figure out this
-save("plots/ABC/all_stats1200.png", fig12)
+save("plots/ABC/sideq15_1200.png", fig12s)
+save(joinpath(p,"sideq15_1200.png"), fig12s)
 save("plots/ABC/all_stats1400.png", fig14)
 save("plots/ABC/all_stats1200half.pdf", fig12, pt_per_unit = 0.5)
 save("plots/ABC/all_stats1400half.pdf", fig14, pt_per_unit = 0.5)

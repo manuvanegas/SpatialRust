@@ -1,9 +1,10 @@
 using CairoMakie, CSV, DataFrames, DelimitedFiles, Statistics
 using SpatialRust
 include("../../src/GA/Plots.jl")
+include("../../src/GA/FittestRun.jl")
 
 obj = "shorttprofit"
-obj = "longtprofit"
+obj = "longtermprofit"
 pcross = 0.5
 pmut = 0.02
 
@@ -30,10 +31,15 @@ leftjoin!(parsdf, lastfitns, on = :indiv)
 bestpars = subset(parsdf, :fitns => ByRow(==(maximum(parsdf.fitns))))
 sort(parsdf, :fitns, rev = true)[1:5,:]
 
-bdf = simplerun(1460; bestpars[1,Not([:indiv,:fitns])]...)
+bdf = garuns(1, 1460, 0.48; bestpars[1,Not([:indiv,:fitns])]...)
 
 lines(bdf.dayn, bdf.production)
 lines(bdf.dayn, bdf.sumarea)
 lines(bdf.dayn, bdf.sporearea)
-lines(bdf.dayn, bdf.fungs)
+lines(bdf.dayn, bdf.fung)
 lines(bdf.dayn, bdf.active)
+lines(bdf.dayn, bdf.remprofit)
+lines(bdf.dayn, bdf.remprofit .- bdf.costs)
+lines(bdf.dayn, bdf.incidence)
+lines!(bdf.dayn, bdf.obs_incidence)
+current_figure()

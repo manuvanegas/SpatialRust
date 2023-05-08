@@ -6,7 +6,7 @@ function historyhm(df)
         ylabel = "Position in Chromosome",
         xlabel = "Generations"
     )
-    hm = heatmap!(ax1, df.gen, df.pos, df.minfreq)
+    hm = heatmap!(ax1, df.gen, df.pos, df.minfreq, colormap = :viridis)
     Colorbar(fig[0,1], hm, tellwidth = false, 
     vertical = false, height = 10, width = 500,
     label = "Position Variability", labelsize = 14, ticklabelsize = 12)
