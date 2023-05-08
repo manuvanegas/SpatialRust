@@ -46,11 +46,26 @@ function scbyprunefreq(df, yvar)
     return f
 end
 
-function scbyprunefreqbarr(df, yvar, ylab)
+function scbyprunefreqbarr(df, yvar, ylab, yticks = nothing)
     # f = Figure(resolution = (900, 500), fontsize = 16,)
     ms = [:circle, :utriangle, :rect, :diamond]
     strokecs = cgrad(:speed, 10, categorical = true)[3:10]
-    cs = cgrad(:speed, 10, categorical = true)[2:9]
+    # cs = cgrad(:speed, 10, categorical = true)[2:9]
+
+    if yvar == :maxS
+        ylabl = rich("Maximum Cumulative Inoculum Metric\n(",rich("maxSumSpore", font=:italic),")")
+    elseif yvar == :loss
+        ylabl = rich("Production Loss (%)\n(",rich("prodLoss", font=:italic),")")
+    else
+        ylabl = ylab
+    end
+    xlabl = rich("Yearly Mean Shading\n(",rich("meanShading", font=:italic),")")
+
+    if isnothing(yticks)
+        yts = Makie.automatic
+    else
+        yts = yticks
+    end
 
     pl = aogfreqbarr(df, yvar, ylab)
 
@@ -62,7 +77,8 @@ function scbyprunefreqbarr(df, yvar, ylab)
         color = strokecs
     ),
     figure = (resolution =(860, 400),),
-    axis = (xticks = 0.0:0.2:0.6,),
+    axis = (xticks = 0.0:0.2:0.6, xlabel = xlabl,
+        yticks = yts, ylabel = ylabl),
     # legend = (position = :top, nbanks = 2)
     legend = (titlesize = 14, labelsize = 12, framevisible = false)
     )
@@ -79,14 +95,14 @@ function aogfreqbarr(df, yvar, ylab)
     # renamer([0 => "Free Growth", 1 => "barriers = F", 2 => "hi", 3 => "hello"]),
     row = :barriers => renamer([true => "barriers = T", false => "barriers = F"]))
 
-    linepl = data(df) * mapping(:meanshade => "Yearly Mean Shading", yvar => ylab) *
+    linepl = data(df) * mapping(:meanshade, yvar => ylab) *
     mapping(
         group = shaded,
         ) *
     colrow *
     visual(Lines, color = :gray, linestyle = :dot)
 
-    wbarrsc = data(df) * mapping(:meanshade => "Yearly Mean Shading", yvar => ylab) *
+    wbarrsc = data(df) * mapping(:meanshade, yvar => ylab) *
     mapping(
         strokecolor = shadeval,
         color = shadeval,
