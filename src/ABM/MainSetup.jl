@@ -87,9 +87,9 @@ function init_spatialrust(;
     incidence_thresh::Float64 = 0.1,        # incidence that triggers fungicide use (10% from Cenicafe's Boletin 36)
     max_fung_sprayings::Int = 3,            # maximum fung treatments per year
 
-    prune_cost::Float64 = 2.13,             # per shade
+    prune_cost::Float64 = 1.42,             # per shade
     inspect_cost::Float64 = 0.02,           # per coffee inspected
-    fung_cost::Float64 = 0.25,              # per coffee
+    fung_cost::Float64 = 0.2,               # per coffee
     other_costs::Float64 = 0.15,            # other costs considered (weeding)
     coffee_price::Float64 = 1.0,
 

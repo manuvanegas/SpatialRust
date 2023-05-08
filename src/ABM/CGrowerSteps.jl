@@ -1,6 +1,7 @@
 function harvest!(model::SpatialRustABM)
-    model.current.prod += sum(map(c -> c.production, model.agents))
-    cost = model.current.costs += model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.01
+    yprod = sum(map(c -> c.production, model.agents))
+    model.current.prod += yprod
+    cost = model.current.costs += yprod * model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.01
     model.current.shadeacc = 0.0
     
     if sum(active, model.agents)/length(model.agents) < 0.1
@@ -98,17 +99,21 @@ function inspect!(model::SpatialRustABM)
     for c in inspected
         if c.exh_countdown > 0
             n_infected += 1
-        # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
-        elseif any(c.areas .> 0.1) && (1.0 < maximum(c.areas) || rand(model.rng) < maximum(c.areas))
-            n_infected += 1
-            spotted = unique!(sort!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), 5)))
-            deleteat!(c.ages, spotted)
-            deleteat!(c.areas, spotted)
-            deleteat!(c.spores, spotted)
-            c.n_lesions -= length(spotted)
-            if c.n_lesions == 0 && (c.deposited < 0.05)
-                c.deposited == 0.0
-                c.rusted = false
+        else
+            # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
+            nvis = sum(>(0.1), c.areas, init = 0)
+            if nvis > 0 && rand(model.rng) < nvis / model.rustpars.max_lesions
+                # (1.0 < maximum(c.areas) || rand(model.rng) < maximum(c.areas))
+                n_infected += 1
+                spotted = unique!(sort!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), 3)))
+                deleteat!(c.ages, spotted)
+                deleteat!(c.areas, spotted)
+                deleteat!(c.spores, spotted)
+                c.n_lesions -= length(spotted)
+                if c.n_lesions == 0 && (c.deposited < 0.05)
+                    c.deposited == 0.0
+                    c.rusted = false
+                end
             end
         end
     end
