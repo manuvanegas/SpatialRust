@@ -6,53 +6,53 @@ using Agents, DataFrames, Distributions, Random
 using StatsBase: sample, weights
 #end
 
-# include(srcdir("ABC/ABCMainSetup.jl"))
-
-# const SpatialRustABM = Agents.SingleContainerABM{
-#     Agents.GridSpaceSingle{2, false}, Coffee, Vector{Coffee},
-#     typeof(Agents.Schedulers.fastest), SpatialRust.Props, Random.Xoshiro
-# }
-
-# include(srcdir("ABM/CreateABM.jl"))
-# include(srcdir("ABM/FarmMap.jl"))
-# include(srcdir("ABM/ShadeMap.jl"))
-
-# include(srcdir("ABC/ABCMainStep.jl"))
-# include(srcdir("ABM/ShadeSteps.jl"))
-# include(srcdir("ABM/CoffeeSteps.jl"))
-# include(srcdir("ABC/ABCRustGrowth.jl"))
-# include(srcdir("ABM/RustDispersal.jl"))
-# include(srcdir("ABM/CGrowerSteps.jl"))
-
-# include(srcdir("QuickRuns.jl"))
-# include(srcdir("QuickMetrics.jl"))
-
-# include(srcdir("ABC", "Sims.jl"))
-
-
-
-include("ABM/MainSetup.jl")
+include(srcdir("ABC/ABCMainSetup.jl"))
 
 const SpatialRustABM = Agents.SingleContainerABM{
     Agents.GridSpaceSingle{2, false}, Coffee, Vector{Coffee},
     typeof(Agents.Schedulers.fastest), SpatialRust.Props, Random.Xoshiro
 }
 
-include("ABM/CreateABM.jl")
-include("ABM/FarmMap.jl")
-include("ABM/ShadeMap.jl")
+include(srcdir("ABM/CreateABM.jl"))
+include(srcdir("ABM/FarmMap.jl"))
+include(srcdir("ABM/ShadeMap.jl"))
 
-include("ABM/MainStep.jl")
-include("ABM/ShadeSteps.jl")
-include("ABM/CoffeeSteps.jl")
-include("ABM/RustGrowth.jl")
-include("ABM/RustDispersal.jl")
-include("ABM/CGrowerSteps.jl")
+include(srcdir("ABC/ABCMainStep.jl"))
+include(srcdir("ABM/ShadeSteps.jl"))
+include(srcdir("ABM/CoffeeSteps.jl"))
+include(srcdir("ABC/ABCRustGrowth.jl"))
+include(srcdir("ABM/RustDispersal.jl"))
+include(srcdir("ABM/CGrowerSteps.jl"))
 
-include("QuickRuns.jl")
-include("QuickMetrics.jl")
+include(srcdir("QuickRuns.jl"))
+include(srcdir("QuickMetrics.jl"))
 
-export SpatialRustABM
+include(srcdir("ABC", "Sims.jl"))
+
+
+
+# include("ABM/MainSetup.jl")
+
+# const SpatialRustABM = Agents.SingleContainerABM{
+#     Agents.GridSpaceSingle{2, false}, Coffee, Vector{Coffee},
+#     typeof(Agents.Schedulers.fastest), SpatialRust.Props, Random.Xoshiro
+# }
+
+# include("ABM/CreateABM.jl")
+# include("ABM/FarmMap.jl")
+# include("ABM/ShadeMap.jl")
+
+# include("ABM/MainStep.jl")
+# include("ABM/ShadeSteps.jl")
+# include("ABM/CoffeeSteps.jl")
+# include("ABM/RustGrowth.jl")
+# include("ABM/RustDispersal.jl")
+# include("ABM/CGrowerSteps.jl")
+
+# include("QuickRuns.jl")
+# include("QuickMetrics.jl")
+
+# export SpatialRustABM
 
 #@setup_workload begin
 #    pars = (row_d = 1,

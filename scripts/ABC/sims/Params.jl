@@ -5,13 +5,13 @@ using Arrow, CSV, DataFrames, Distributions, Random
 
 Ns = 10^6 # number of parameter combinations to test
 
-newid = "15"
+newid = "16"
 arr_file_name = string("parameters_", newid, ".arrow")
 
 opt_temp_distr = Normal(23.0, 0.5) # Motisi et al, 2022
 amp_temp_distr = Normal(5.0, 0.5) # Waller, 1982; Merle et al, 2020
 sporepct_distr = Normal(0.35, 0.05) # McCain & Hennen, 1984
-tempcool_distr = Normal(4.0, 0.5) # Merle et al., 2022
+# tempcool_distr = Normal(4.0, 0.5) # Merle et al., 2022
 
 parameters = DataFrame(
     p_row = collect(1:Ns),
@@ -29,7 +29,7 @@ parameters = DataFrame(
     light_inh = rand(Uniform(), Ns),
     rep_inf = rand(Uniform(0, 2.0), Ns),
     max_inf = rand(Uniform(0.0, 2.0), Ns),
-    temp_cooling = rand(tempcool_distr, Ns),
+    temp_cooling = rand(Uniform(0.5, 2.5), Ns),
     temp_ampl = rand(amp_temp_distr, Ns),
     opt_temp = rand(opt_temp_distr, Ns),
 )

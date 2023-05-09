@@ -28,7 +28,7 @@ function sim_abc(p_row::NamedTuple)
     wind_data = winddata()
     rn = p_row[:p_row]
 
-    sun_cor_df, sun_globs = simulate_plot(p_row, temp_data, rain_data, wind_data, :fullsun)
+    sun_cor_df, sun_globs = simulate_plot(p_row, temp_data, rain_data, wind_data, :fullsun, Int[])
 
     if ismissing(first(sun_globs))
 
@@ -45,7 +45,8 @@ function sim_abc(p_row::NamedTuple)
             cor = missing,
         )
     else
-        sh_cor_df, sh_globs = simulate_plot(p_row, temp_data, rain_data, wind_data,:regshaded)
+        sh_cor_df, sh_globs = simulate_plot(p_row, temp_data, rain_data, wind_data, :regshaded, [15, 166, -1])
+        msh_cor_df, msh_globs = simulate_plot(p_row, temp_data, rain_data, wind_data, :regshaded, Int[])
 
         if ismissing(first(sh_globs))
             
@@ -64,6 +65,7 @@ function sim_abc(p_row::NamedTuple)
         else
 
             append!(sun_cor_df, sh_cor_df)
+            append!(sun_cor_df, msh_cor_df)
             if nrow(sh_cor_df) < 10
                 prod_clr_cor = missing
             else
@@ -74,7 +76,7 @@ function sim_abc(p_row::NamedTuple)
                 prod_clr_cor = corkendall(sun_cor_df[!, :FtL], sun_cor_df[!, :clr_cat])
             end
 
-            predf = DataFrame([sun_globs, sh_globs])
+            predf = DataFrame([sun_globs, sh_globs, msh_cor_df])
             globs_df = DataFrame(
                 p_row = rn,
                 P12loss = [predf[!, 1]],
@@ -83,8 +85,8 @@ function sim_abc(p_row::NamedTuple)
                 rusts = [predf[!, 4]],
                 meanlats = [predf[!, 6]],
                 exh = [predf[!, 7]],
-                depsdiff = predf[1, 5] - predf[2, 5],
-                latentdiff = predf[1, 6] - predf[2, 6],
+                depsdiff = predf[1, 5] - predf[3, 5],
+                latentdiff = predf[1, 6] - predf[3, 6],
                 cor = prod_clr_cor,
             )
         end
@@ -98,7 +100,8 @@ function simulate_plot(
     temp_data::Vector{Float64},
     rain_data::Vector{Bool},
     wind_data::Vector{Bool},
-    type::Symbol
+    type::Symbol,
+    prunes::Vector{Int}
 )
     steps = 730
     iday = 0
@@ -111,11 +114,11 @@ function simulate_plot(
         wind_data = copy(wind_data),
         temp_data = copy(temp_data),
         p_rusts = 0.0,
-        prune_sch = [15, 166, -1],
+        prune_sch = prunes,
         inspect_period = steps,
         fungicide_sch = Int[],
         post_prune = [0.15, 0.2, -1],
-        shade_g_rate = 0.008,
+        shade_g_rate = 0.015,
         shade_d = 6,
         barriers = (0,0),
         p_row...
@@ -130,11 +133,11 @@ function simulate_plot(
         wind_data = copy(wind_data),
         temp_data = copy(temp_data),
         p_rusts = 0.01,
-        prune_sch = [15, 166, -1],
+        prune_sch = prunes,
         inspect_period = steps,
         fungicide_sch = Int[],
         post_prune = [0.15, 0.2, -1],
-        shade_g_rate = 0.008,
+        shade_g_rate = 0.015,
         shade_d = 6,
         barriers = (0,0),
         p_row...

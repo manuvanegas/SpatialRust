@@ -27,7 +27,7 @@ function pre_step!(model::SpatialRustABM)
         model.current.wind_h = rand(model.rng) * 360.0
     end
 
-    if t % 60 == 0 && sum(activeRust, model.agents) == 0 && sum(active, model.agents) > 400
+    if t % 30 == 0 && sum(activeRust, model.agents) == 0 && sum(active, model.agents) > 400
         reintroduce_rusts!(model, 5)
     end
     return nothing

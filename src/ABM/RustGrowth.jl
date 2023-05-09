@@ -15,7 +15,7 @@ function grow_rust!(rust::Coffee, rng::Xoshiro, rustpars::RustPars, local_temp::
     rust.ages .+= 1
 
     # Temperature-dependent growth modifier. If <= 0, there is no growth or sporulation
-    temp_mod = rustpars.temp_ampl_c * (local_temp - rustpars.opt_temp)^2.0 + 1.0
+    temp_mod = (rustpars.temp_ampl_c * (local_temp - rustpars.opt_temp)^2.0 + 1.0) - 0.1 * rust.sunlight
     if temp_mod > 0.0
         spor_mod = temp_mod * rain_spo * (1.0 + rustpars.rep_spo * (rust.production / (rust.production + rust.veg)))
         host_gro = 1.0 + rustpars.rep_gro * (rust.production / max(rust.storage, 1.0))

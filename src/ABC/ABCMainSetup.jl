@@ -132,7 +132,7 @@ function init_spatialrust(;
     fung_effect::Int = 30,                  # length of fungicide effect
 
     # shade parameters
-    shade_g_rate::Float64 = 0.008,           # shade growth rate
+    shade_g_rate::Float64 = 0.015,           # shade growth rate
     shade_r::Int = 3,                       # radius of influence of shades
 
     # farm map
