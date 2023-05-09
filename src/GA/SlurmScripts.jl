@@ -29,7 +29,7 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
 end
 
 function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, steps::Int, cprice::Float64, pcrs::Float64, pmut::Float64, expfolder::String)
-    fpath = joinpath(expfolder, "scripts/newgen-$gen.sh")
+    fpath = joinpath(expfolder, "scripts/newgen-$(gen + 1).sh")
     write(fpath,"""
     #!/bin/bash
     #SBATCH --ntasks-per-core=1
