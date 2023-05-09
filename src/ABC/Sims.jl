@@ -6,8 +6,8 @@ using StatsBase: corkendall
 using Statistics: quantile
 using Distributed
 
-include(srcdir("ABC","Metrics.jl"))
-include(srcdir("ABC","SimData.jl"))
+include("Metrics.jl")
+include("SimData.jl")
 
 function abc_pmap(par_iterator, wp::CachingPool)
     return pmap(sim_abc,
@@ -76,7 +76,7 @@ function sim_abc(p_row::NamedTuple)
                 prod_clr_cor = corkendall(sun_cor_df[!, :FtL], sun_cor_df[!, :clr_cat])
             end
 
-            predf = DataFrame([sun_globs, sh_globs, msh_cor_df])
+            predf = DataFrame([sun_globs; sh_globs; msh_globs])
             globs_df = DataFrame(
                 p_row = rn,
                 P12loss = [predf[!, 1]],

@@ -42,12 +42,22 @@ function diff_quals(sims::DataFrame, dats)::DataFrame
     dists = DataFrame(p_row = sims[:, :p_row])
     for var in [:P12loss, :LP, :incid, :rusts, :meanlats, :exh]
         # transform!(sims, var => ByRow(s -> sumtoldist(s, dats[var])), renamecols = false)
-        dists[!, var] = sumtoldist.(sims[!, var], Ref(dats[var]))
+        dists[!, var] = sumtoldist.(sims[!, var], Ref(dats[var]), var)
     end
     for var in [:depsdiff, :latentdiff, :cor]
         dists[!, var] = toldist.(sims[!, var], Ref(dats[var]))
     end
     return dists
+end
+
+function sumtoldistv(sims, tol, var)
+    if var == :P12loss
+        return [sum]
+    elseif var == :incid
+    elseif var == :exh
+    else
+    end
+    return v
 end
 
 function toldist(sim::Float64, tol::Vector{Float64})
@@ -65,7 +75,17 @@ end
 
 toldist(sim::Missing, tol) = 1e5
 
-sumtoldist(sim::Vector{Float64}, tol::Vector{Float64}) = toldist(sim[1], tol) + toldist(sim[2], tol)
+function sumtoldist(sim::Vector{Float64}, tol::Vector{Float64}, var::Symbol)
+    if var == :P12loss
+        return toldist(sim[1], tol .+ [0.2,0.0]) + toldist(sim[2], tol .+ [0.2,0.0]) + toldist(sim[3], tol)
+    elseif var == :incid
+        return toldist(sim[1], tol) + toldist(sim[2], tol) + toldist(sim[3], tol .- [0.3,0.0])
+    elseif var == :exh
+        return toldist(sim[1], tol) + toldist(sim[2], tol) + toldist(sim[3], tol .- [0.2,0.0])
+    else
+        return toldist(sim[1], tol) + toldist(sim[2], tol) + toldist(sim[3], tol)
+    end
+end
 
 sumtoldist(sim, tol::Vector{Float64}) = 1e5
 

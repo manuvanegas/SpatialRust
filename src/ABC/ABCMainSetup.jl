@@ -132,6 +132,7 @@ function init_spatialrust(;
     fung_effect::Int = 30,                  # length of fungicide effect
 
     # shade parameters
+    max_shade::Float64 = 0.8,               # maximum individual shade
     shade_g_rate::Float64 = 0.015,           # shade growth rate
     shade_r::Int = 3,                       # radius of influence of shades
 
@@ -228,13 +229,13 @@ function init_spatialrust(;
         other_costs, coffee_price,
         #
         les_surv, post_prune, n_inspect, fung_effect,
-        shade_g_rate, shade_r
+        max_shade, shade_g_rate, shade_r
     )
 
     doy = start_days_at == 0 ? veg_d - 1 : start_days_at
 
     b = Books(
-        doy, 0, ind_shade_i(shade_g_rate, doy, post_prune, prune_sch),
+        doy, 0, ind_shade_i(shade_g_rate, max_shade, doy, post_prune, prune_sch),
         0.0, false, false, 0.0, 0, 0, 0.0, 0.0, 0.0, true, true
     )
 
@@ -323,6 +324,7 @@ struct MngPars{N,M}
     n_inspected::Int
     fung_effect::Int
     # by_fragments::Bool = true,            # apply fungicide differentially by fragments?
+    max_shade::Float64
     shade_g_rate::Float64
     shade_r::Int
 end
@@ -385,12 +387,13 @@ addqnoise(v::Vector{Float64}, steps, rng) = v .+ rand(rng, Normal(0, 0.05), step
 # Calculate initial ind_shade
 function ind_shade_i(
     shade_g_rate::Float64,
+    max_shade::Float64,
     start_day_at::Int,
     post_prune::NTuple{N, Float64},
     prune_sch::NTuple{N, Int}) where {N}
 
     if isempty(prune_sch)
-        return 0.8
+        return max_shade
     else
         day = start_day_at > 0 ? start_day_at : 1
         # calculate elapsed days since last prune
@@ -405,6 +408,6 @@ function ind_shade_i(
             pruned_to = post_prune[prune_i]
         end
         # logistic equation to determine starting shade level
-        return 0.8 * (pruned_to / (pruned_to + (0.8 - pruned_to) * exp(-(shade_g_rate * last_prune))))
+        return max_shade * (pruned_to / (pruned_to + (max_shade - pruned_to) * exp(-(shade_g_rate * last_prune))))
     end
 end
