@@ -76,11 +76,12 @@ function scbyprunefreqbarr(df, yvar, ylab, yticks = nothing)
         strokecolor = strokecs,
         color = strokecs
     ),
-    figure = (resolution =(860, 400),),
+    figure = (resolution =(860, 400), fontsize = 12),
     axis = (xticks = 0.0:0.2:0.6, xlabel = xlabl,
-        yticks = yts, ylabel = ylabl),
+        yticks = yts, ylabel = ylabl,
+        xlabelsize = 15, ylabelsize = 15),
     # legend = (position = :top, nbanks = 2)
-    legend = (titlesize = 14, labelsize = 12, framevisible = false)
+    legend = (titlesize = 13, labelsize = 12, framevisible = false),
     )
 end
 
@@ -89,20 +90,31 @@ function aogfreqbarr(df, yvar, ylab)
     mrksz = 10
     shadeval = :shade_val => nonnumeric => "Pruning\nExtent"
     shaded = :shade_d => nonnumeric => "Shade\nDistance"
-    "solve col names issue by adding a column to the df with the correct names"
-    colrow = mapping(col = :prunes_year => nonnumeric, # => 
+    dfcols = transform(df, 
+        :prunes_year => ByRow(pruningsyear) => :prunes_year,
+        :barriers => ByRow(b -> ifelse(b, "With Barriers", "No Barriers")) => :barriers
+    )
+    colrow = mapping(col = :prunes_year => sorter("Free Growth", "1 Pruning / Year", "2 Prunings / Year", "3 Prunings / Year"), # => 
     # renamer(["Free Growth", "barriers = F", "hi", "hello"]),
     # renamer([0 => "Free Growth", 1 => "barriers = F", 2 => "hi", 3 => "hello"]),
-    row = :barriers => renamer([true => "barriers = T", false => "barriers = F"]))
+    row = :barriers)# => renamer([true => "With Barriers", false => "No Barriers"]))
 
-    linepl = data(df) * mapping(:meanshade, yvar => ylab) *
+    # errbars = data(dfcols) * mapping(:meanshade, yvar, Symbol(yvar, :_sd)) *
+    # mapping(
+    #     group = shaded,
+    #     ) *
+    # colrow *
+    # visual(Errorbars, whiskerwidth = 5)
+
+
+    linepl = data(dfcols) * mapping(:meanshade, yvar => ylab) *
     mapping(
         group = shaded,
         ) *
     colrow *
     visual(Lines, color = :gray, linestyle = :dot)
 
-    wbarrsc = data(df) * mapping(:meanshade, yvar => ylab) *
+    wbarrsc = data(dfcols) * mapping(:meanshade, yvar => ylab) *
     mapping(
         strokecolor = shadeval,
         color = shadeval,
@@ -119,8 +131,11 @@ function aogfreqbarr(df, yvar, ylab)
     # colrow *
     # visual(Scatter, strokewidth = strwdth, markersize = mrksz)#, color = :transparent)
 
-    return linepl + wbarrsc #+ wobarrsc
+    # return errbars + linepl + wbarrsc  #+ wobarrsc
+    return linepl + wbarrsc  #+ wobarrsc
 end
+
+pruningsyear(n) = ifelse(n == 0, "Free Growth", ifelse(n == 1, "1 Pruning / Year", string(n, " Prunings / Year")))
 
 # function drawsc!(f, df, yvar)
 #     # f = Figure(resolution = (900, 500), fontsize = 16,)
@@ -275,7 +290,64 @@ function get_legend(f)
     return f
 end
 
-###
+###############
+# Obs vs Att prod
+
+function obsvsatt(df)
+    fs = 18
+    alph = 0.7
+    blue = (Makie.wong_colors()[1], alph)
+    sblue = Makie.wong_colors()[1]
+    orange = (Makie.wong_colors()[2], alph)
+    sorange = Makie.wong_colors()[2]
+    ms = 18
+    with_theme(Theme(
+        Scatter = (markersize = ms, strokewidth = 2,)
+    )) do
+    fig = Figure(resolution = (800,600), fontsize = fs)
+    ax = Axis(fig[1,1],
+        xlabel = "Yearly Mean Shading",
+        ylabel = "Production Units",
+        xticks = collect(0.0:0.2:0.6),
+        yticks = (collect(0.4e5:0.2e5:1.4e5), string.(collect(40:20:140))),
+        xticklabelsize = fs - 2,
+        yticklabelsize = fs - 2,
+    )
+    wbarr = subset(df, :barriers)
+    wobarr = subset(df, :barriers => ByRow(!))
+    errorbars!(ax, df.meanshade, df.obsprod, df.obsprod_sd, whiskerwidth = 6, color = (:gray14, 0.8))
+    # errorbars!(ax, df.meanshade, df.attprod, df.attprod_sd, whiskerwidth = 6, color = (:gray14, 0.8))
+    scatter!(ax, wbarr.meanshade, wbarr.attprod, marker = :rect, color = orange, strokecolor = sorange)
+    scatter!(ax, wobarr.meanshade, wobarr.attprod, marker = :circle, color = orange, strokecolor = sorange)
+    scatter!(ax, wbarr.meanshade, wbarr.obsprod, marker = :rect, color = blue, strokecolor = sblue)
+    scatter!(ax, wobarr.meanshade, wobarr.obsprod, marker = :circle, color = blue, strokecolor = sblue)
+    
+    sqpoints = Point2f[(0.15, 0.15), (0.15, 0.85), (0.85, 0.85), (0.85, 0.15)]
+    colorgs = [
+        PolyElement(color = orange, strokecolor = sorange, strokewidth = 2, points = sqpoints),
+        PolyElement(color = blue, strokecolor = sblue, strokewidth = 2, points = sqpoints)
+    ]
+    colorlabs = ["Attainable", "Observed"]
+    shapegs = [
+        MarkerElement(marker = shape,
+        strokecolor = :black, strokewidth = 2,
+        color = (:black, alph), markersize = 18) for shape in [:circle, :rect]
+    ]
+    shapelabs = ["Absent", "Present"]
+    
+    # Legend(fig[0,1], [colorgs, shapegs], [colorlabs, shapelabs], ["Production", "Shade Barriers"],
+    # orientation = :horizontal, tellwidth = false,
+    # titlesize = fs - 1, labelsize = fs - 2)
+    axislegend(ax, [colorgs, shapegs], [colorlabs, shapelabs], ["Production\nScenario", "Shade Barriers"],
+    position = :rb, #framevisible = false, bgcolor = :white,
+    titlesize = fs - 1, labelsize = fs - 2)
+    return fig
+    end
+end
+
+
+
+###############
 # Save fns
 
 function savehere(name, fig)
@@ -284,4 +356,14 @@ end
 function savediss(name, fig)
     p = mkpath("../../Dissertation/Chapters/Diss/Document/Figs/Shading")
     save(joinpath(p,name), fig, px_per_unit = 2)
+end
+
+#####
+# For raw output files
+function correctshadeval(shdist,b,py,val)
+    if shdist == 100 && b && py == 0
+        return 0.8
+    else
+        return val
+    end
 end
