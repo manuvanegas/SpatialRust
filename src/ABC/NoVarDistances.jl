@@ -50,16 +50,6 @@ function diff_quals(sims::DataFrame, dats)::DataFrame
     return dists
 end
 
-function sumtoldistv(sims, tol, var)
-    if var == :P12loss
-        return [sum]
-    elseif var == :incid
-    elseif var == :exh
-    else
-    end
-    return v
-end
-
 function toldist(sim::Float64, tol::Vector{Float64})
     tmin, tmax = tol
     if !isfinite(sim)
@@ -73,21 +63,21 @@ function toldist(sim::Float64, tol::Vector{Float64})
     end
 end
 
-toldist(sim::Missing, tol) = 1e5
+toldist(sim::Missing, tol::Vector{Float64}) = 1e5
 
-function sumtoldist(sim::Vector{Float64}, tol::Vector{Float64}, var::Symbol)
+function sumtoldist(sim, tol::Vector{Float64}, var::Symbol)
     if var == :P12loss
         return toldist(sim[1], tol .+ [0.2,0.0]) + toldist(sim[2], tol .+ [0.2,0.0]) + toldist(sim[3], tol)
     elseif var == :incid
         return toldist(sim[1], tol) + toldist(sim[2], tol) + toldist(sim[3], tol .- [0.3,0.0])
     elseif var == :exh
-        return toldist(sim[1], tol) + toldist(sim[2], tol) + toldist(sim[3], tol .- [0.2,0.0])
+        return toldist(sim[1], tol) + toldist(sim[2], tol) #+ toldist(sim[3], tol .- [0.2,0.0])
     else
         return toldist(sim[1], tol) + toldist(sim[2], tol) + toldist(sim[3], tol)
     end
 end
 
-sumtoldist(sim, tol::Vector{Float64}) = 1e5
+sumtoldist(sim::Missing, tol::Vector{Float64}, var::Symbol) = 1e5
 
 # function diff_quals(sims::DataFrame, dats::DataFrame, vars::DataFrameRow)::DataFrame
 

@@ -12,7 +12,7 @@ end
 quantsdirname = string("quants_", ARGS[1])
 qualsdirname = string("quals_", ARGS[1])
 qldats = (
-    P12loss = [0.3, 0.9], #
+    P12loss = [0.1, 0.9], #
     LP = [25.0, 65.0],
     incid = [0.7, 1.01],
     rusts = [10.0, 5001.0],

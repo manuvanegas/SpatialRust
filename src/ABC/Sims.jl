@@ -63,7 +63,6 @@ function sim_abc(p_row::NamedTuple)
                 cor = missing,
             )
         else
-
             append!(sun_cor_df, sh_cor_df)
             append!(sun_cor_df, msh_cor_df)
             if nrow(sh_cor_df) < 10

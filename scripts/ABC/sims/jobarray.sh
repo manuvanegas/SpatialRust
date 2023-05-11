@@ -31,4 +31,4 @@ export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 cp $SLURM_NODEFILE logs/ABC/nodefiles/nodes_${SLURM_ARRAY_TASK_ID}
 # ARGS: params file #, slurm job array id, # cores, # sims per core
 julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl \
-15 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 4000 #2500 # 250 #500
+16 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 4000 #2500 # 250 #500
