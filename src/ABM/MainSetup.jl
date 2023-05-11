@@ -99,7 +99,7 @@ function init_spatialrust(;
 
     # shade parameters
     max_shade::Float64 = 0.8,               # maximum individual shade
-    shade_g_rate::Float64 = 0.01,           # shade growth rate
+    shade_g_rate::Float64 = 0.015,           # shade growth rate
     shade_r::Int = 3,                       # radius of influence of shades
 
     # farm map
@@ -113,23 +113,23 @@ function init_spatialrust(;
     barriers::NTuple{2, Int} = (1, 0),      # barrier arrangement: 1->internal(0, 1, or 2),2->edges(0 or 1)
 
     # keeping calibrated pars here for quick reference
-    # temp_cooling::Float64 = 3.693435,       # temp reduction due to shade
-    # max_inf::Float64 = 1.554745,            # Max infection probability
-    # light_inh::Float64 = 0.930545,          # UV inactivation prob under 100% sunlight 
-    # rep_inf::Float64 = 0.037021,            # Weight of reprod growth on infection prob
-    # rust_gr::Float64 = 0.065751,            # basic rust area growth rate
-    # opt_temp::Float64 = 22.514547,          # optimal rust growth temp
-    # rep_spo::Float64 = 0.518466,            # Effect on reprod growth on sporul
-    # pdry_spo::Float64 = 0.524761,           # Prob of sporulation without rain
-    # temp_ampl::Float64 = 4.517675,          # (max temp - optimal temp)
-    # rep_gro::Float64 = 0.224783,            # resource sink effect on area growth
-    # spore_pct::Float64 = 0.3711,            # % of area that sporulates
-    # rust_paras::Float64 = 0.023371,         # resources taken per unit of total area
-    # rain_dst::Float64 = 2.435203,           # mean distance of spores dispersed by rain
-    # tree_block::Float64 = 0.260111,         # prob a tree will block rust dispersal
-    # wind_dst::Float64 = 7.885713,           # mean distance of spores dispersed by wind
-    # shade_block::Float64 = 0.804193,        # prob of Shades blocking a wind dispersal event
-    # les_surv::Float64 = 0.394328,           # proportion of lesions surviving to next cycle
+    # temp_cooling::Float64 = 1.0665,       # temp reduction due to shade
+    # max_inf::Float64 = 1.0301,            # Max infection probability
+    # light_inh::Float64 = 0.5168,          # UV inactivation prob under 100% sunlight 
+    # rep_inf::Float64 = 0.2113,            # Weight of reprod growth on infection prob
+    # rust_gr::Float64 = 0.0867,            # basic rust area growth rate
+    # opt_temp::Float64 = 22.8716,          # optimal rust growth temp
+    # rep_spo::Float64 = 0.3926,            # Effect on reprod growth on sporul
+    # pdry_spo::Float64 = 0.7078,           # Prob of sporulation without rain
+    # temp_ampl::Float64 = 5.0367,          # (max temp - optimal temp)
+    # rep_gro::Float64 = 0.001,            # resource sink effect on area growth
+    # spore_pct::Float64 = 0.3836,            # % of area that sporulates
+    # rust_paras::Float64 = 0.0355,         # resources taken per unit of total area
+    # rain_dst::Float64 = 2.2071,           # mean distance of spores dispersed by rain
+    # tree_block::Float64 = 0.4889,         # prob a tree will block rust dispersal
+    # wind_dst::Float64 = 5.7806,           # mean distance of spores dispersed by wind
+    # shade_block::Float64 = 0.7898,        # prob of Shades blocking a wind dispersal event
+    # les_surv::Float64 = 0.4338,           # proportion of lesions surviving to next cycle
 )
 
     rng = seed == 0 ? Xoshiro() : Xoshiro(seed)
@@ -157,14 +157,14 @@ function init_spatialrust(;
 
     rp = RustPars(
         # Infection
-        max_lesions, 3.693435, 0.930545, rain_washoff, 0.037021, viab_loss, 1.554745, 
+        max_lesions, 1.0665, 0.5168, rain_washoff, 0.2113, viab_loss, 1.0301, 
         # Sporulation/Growth
-        0.065751, 22.514547, 0.518466, 0.524761, -(1.0/4.517675^2), 0.224783, 0.3711, 
+        0.0867, 22.8716, 0.3926, 0.7078, -(1.0/5.0367^2), 0.001, 0.3836, 
         fung_inf, fung_gro_prev, fung_gro_cur, fung_spor_prev, fung_spor_cur, 
         # Parasitism
-        0.023371, exh_countdown,
+        0.0355, exh_countdown,
         # Dispersal
-        map_side, 2.435203, diff_splash, 0.260111, 7.885713, diff_wind, 0.804193
+        map_side, 2.2071, diff_splash, 0.4889, 5.7806, diff_wind, 0.7898
     )
 
     pruneskept = filter!(i -> prune_sch[i] > 0, sortperm(prune_sch))
@@ -205,7 +205,7 @@ function init_spatialrust(;
         n_coffees, rand(rng, Normal(inspect_cost, inspect_cost * 0.05)) * n_inspect, rand(rng, Normal(fung_cost, fung_cost * 0.05)) * n_coffees,
         rand(rng, Normal(other_costs, other_costs * 0.05)), coffee_price,
         #
-        0.394328, post_prune, n_inspect, fung_effect,
+        0.4338, post_prune, n_inspect, fung_effect,
         max_shade, shade_g_rate, shade_r
     )
 

@@ -163,9 +163,9 @@ function get_best_accept_reject(parameters::DataFrame, sel_rows::Vector{Int}, b:
     pointestimate = combine(selparams, Not(:p_row) .=> median, renamecols = false)
     rejected = get_params_rows(parameters, sample_rejected(sel_rows, nrow(parameters)))
     for df in (bestest, selparams, rejected)
-        transform!(df, Not(:p_row) .=> ByRow(round6), renamecols = false)
+        transform!(df, Not(:p_row) .=> ByRow(round4), renamecols = false)
     end
-    transform!(pointestimate, All() .=> ByRow(round6), renamecols = false)
+    transform!(pointestimate, All() .=> ByRow(round4), renamecols = false)
     return bestest, pointestimate, selparams, rejected
 end
 
@@ -192,11 +192,12 @@ function top_n_rows(parameters::DataFrame, selrows::Vector{Int}, n::Int)
     for rown in toprowns
         push!(toppars, parameters[rown, :])
     end
-    transform!(toppars, Not(:p_row) .=> ByRow(round6), renamecols = false)
+    transform!(toppars, Not(:p_row) .=> ByRow(round4), renamecols = false)
     return toppars
 end
 
 round6(x) = round(x, digits = 6)
+round4(x) = round(x, digits = 4)
 
 function best_sepvars(dists::DataFrame, var::Symbol, n::Int)
     d1 = transform(

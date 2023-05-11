@@ -38,7 +38,7 @@ function grow_rust!(rust::Coffee, rng::Xoshiro, rustpars::RustPars, local_temp::
         area_gro = max(0.0, 1.0 - sum(areas) / 25.0)
         @fastmath areas .+= areas .* (growth_mod * area_gro)
 
-        clamp!(areas, 0.0, 7.0) # (McCain & Hennen, 1984)
+        # clamp!(areas, 0.0, 7.0) # (McCain & Hennen, 1984)
 
         # If active, update ABC sentinel leaves
         # if rust.sentinel.active

@@ -60,6 +60,9 @@ function init_spatialrust(;
     rep::Int = 0,                           # repetition number (for other exps)
 
     # weather parameters
+    rain_prob::Float64 = 0.6,
+    wind_prob::Float64 = 0.5,
+    mean_temp::Float64 = 22.5,
     rain_data::Vector{Bool} = Bool[],       # if provided, rain_prob is ignored
     wind_data::Vector{Bool} = Bool[],       # if provided, wind_prob is ignored
     temp_data::Vector{Float64} = Float64[], # if provided, mean_temp is ignored
@@ -153,11 +156,13 @@ function init_spatialrust(;
     # rains = isempty(rain_data) ? rand(rng, steps) .< rain_prob : resize!(rain_data, steps)
     # wpdn = wind_prob - 0.1
     # wpup = wind_prob + 0.1
-    w = Weather(
-        addnoise(rain_data, rng),
-        addnoise(wind_data, rng),
-        addqnoise(temp_data, steps, rng),
-    )
+    w = noisedweather(rain_data, wind_data, temp_data, rain_prob, wind_prob, mean_temp, steps, rng)
+
+    # w = Weather(
+    #     addnoise(rain_data, rng),
+    #     addnoise(wind_data, rng),
+    #     addqnoise(temp_data, steps, rng),
+    # )
 
     if isempty(farm_map)
         if common_map == :none
@@ -366,6 +371,7 @@ end
 
 # Other fncs
 
+
 function createweather(rain_prob, wind_prob, mean_temp, steps, rng)
     raindata = rand(rng, steps) .< rain_prob
     return Weather(
@@ -375,11 +381,27 @@ function createweather(rain_prob, wind_prob, mean_temp, steps, rng)
     )
 end
 
-function addnoise(v::Vector{Bool}, rng)
+function noisedweather(rain_data, wind_data, temp_data, rain_prob, wind_prob, mean_temp, steps, rng)
+    raindata = isempty(rain_data) ? rand(rng, steps) .< rain_prob : addnoise(rain_data, steps, rng)
+    wpdn = wind_prob - 0.1
+    wpup = wind_prob + 0.1
+    return Weather(
+        raindata,
+        isempty(wind_data) ? rand(rng, steps) .< ifelse.(raindata, wpdn, wpup) : addnoise(wind_data, steps, rng),
+        isempty(temp_data) ? rand(rng, Normal(mean_temp, 0.5), steps) : addqnoise(temp_data, steps, rng)
+    )
+end
+
+function addnoise(v::Vector{Bool}, steps, rng)
     @inbounds for (i, b) in enumerate(v)
         rand(rng) < 0.05 && (v[i] = !b)
     end
-    return v
+    return resize!(v, steps)
+end
+
+function addqnoise(v::Vector{Float64}, steps, rng)
+    resize!(v, steps)
+    return v .+ rand(rng, Normal(0, 0.05), steps)
 end
 
 addqnoise(v::Vector{Float64}, steps, rng) = v .+ rand(rng, Normal(0, 0.05), steps)

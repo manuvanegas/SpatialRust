@@ -31,7 +31,7 @@ function grow_rust!(rust::Coffee, rng::Xoshiro, rustpars::RustPars, local_temp::
         # update latent areas
         area_gro = max(0.0, 1.0 - sum(areas) / 25.0)
         areas .+= areas .* (growth_mod * area_gro)
-        clamp!(areas, 0.0, 7.0) # (McCain & Hennen, 1984)
+        # clamp!(areas, 0.0, 7.0) # (McCain & Hennen, 1984)
     end
 end
 
@@ -75,7 +75,7 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
         # update latent areas
         area_gro = max(0.0, 1.0 - sum(areas) / 25.0)
         areas .+= areas .* (gro_mods .* area_gro)
-        clamp!(areas, 0.0, 7.0) # (McCain & Hennen, 1984)
+        # clamp!(areas, 0.0, 7.0) # (McCain & Hennen, 1984)
     end
 end
 
