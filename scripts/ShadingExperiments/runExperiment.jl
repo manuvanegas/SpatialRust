@@ -15,7 +15,7 @@ wind_prob = parse(Float64, ARGS[4])
 shade_placemnt = parse(Int, ARGS[5])
 years = parse(Int, ARGS[6])
 
-p = mkpath("results/Shading/ABCests/exp-g-rate-$mean_temp-$rain_prob-$wind_prob")
+p = mkpath("results/Shading/ABCests2/exp2-$mean_temp-$rain_prob-$wind_prob")
 filepath = joinpath(p, "r-$reps-$shade_placemnt-$(years)y.csv")
 
 # using Dates
@@ -27,7 +27,7 @@ singlevals = DataFrame(
     common_map = :none,
     inspect_period = steps,
     fungicide_sch = [Int[]],
-    shade_g_rate = 0.008,
+    shade_g_rate = 0.015,
     steps = steps,
 )
 

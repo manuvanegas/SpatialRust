@@ -30,7 +30,7 @@ function run_par_combination(pars::DataFrameRow, w)
 
     return hcat(
         DataFrame(pars[[:rep, :barriers, :shade_d, :post_prune, :prune_sch]]),
-        mdf, atdf, shade_val(pars[[:post_prune, :shade_d]])
+        mdf, atdf, shade_val(pars[[:post_prune, :shade_d, :barriers]])
     )
 end
 
@@ -112,7 +112,7 @@ function inoculum(r::Coffee)
     if isempty(r.areas)
         return 0.0
     else
-        return sum(a * s for (a,s) in zip(r.areas, r.spores)) * (1.0 + r.sunlight) * 0.3711
+        return sum(a * s for (a,s) in zip(r.areas, r.spores)) * (1.0 + r.sunlight) * 0.3836
     end
 end
 
@@ -123,7 +123,7 @@ end
 
 function shade_val(nt)
     if isempty(nt.post_prune)
-        if nt.shade_d == 100
+        if nt.shade_d == 100 && nt.barriers[1] == 0
             sh = 0.0
         else
             sh = 0.8
@@ -131,6 +131,6 @@ function shade_val(nt)
     else
         sh = first(nt.post_prune)
     end
-    return DataFrame(shadeval = sh)
+    return DataFrame(shade_val = sh)
 end
 

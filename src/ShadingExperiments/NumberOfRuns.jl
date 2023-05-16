@@ -1,10 +1,11 @@
 function coeff_vars(n::Int, mtemp::Float64, rainp::Float64, windp::Float64, y::Int)
 
-    ns = [25; 50:50:500; 600:100:1000]
+    ns = [10; 25; 50:50:500; 600:100:1000]
     # if n == 100
     #    ns = collect(20:20:100)
     # end
-    a_ns = n == 450 ? [10, 125, 150, 250, 350, 450] : filter(x -> x .<= n, ns)
+    # a_ns = n == 450 ? [10, 125, 150, 250, 350, 450] : filter(x -> x .<= n, ns)
+    a_ns = filter(x -> x .<= n, ns)
 
     df = cv_n_sims(a_ns, mtemp, rainp, windp, y)
 
@@ -18,7 +19,10 @@ function coeff_vars(n::Int, mtemp::Float64, rainp::Float64, windp::Float64, y::I
             area = (std(a) / mean(a)),
             spore = (std(s) / mean(s)),
             nls = (std(n) / mean(n)),
-            exh = (std(e) / mean(e)))
+            exh = (std(e) / mean(e)),
+            mprod = mean(p),
+            mloss = mean(l),
+            mspore = mean(s))
         ) => AsTable,
         nrow)
 
@@ -94,7 +98,7 @@ function custom_run!(model::SpatialRustABM, n::Int, ss::Int)
         s += step_n!(model, 5)
         active = Iterators.filter(c -> c.exh_countdown == 0, allcofs)
         myaudpcA += mean(map(r -> sum(r.areas), active))
-        myaudpcS += mean(map(r -> sum(r.spores), active))
+        myaudpcS += mean(map(inoculum, active))
         myaudpcN += mean(map(r -> r.n_lesions, active))
         myaudpcE += 1.0 - sum(allof, active) / ncofs
         if s % 365 == 0
@@ -128,6 +132,14 @@ function custom_run!(model::SpatialRustABM, n::Int, ss::Int)
 end
 
 allof(c::Coffee) = true
+
+function inoculum(r::Coffee)
+    if isempty(r.areas)
+        return 0.0
+    else
+        return sum(a * s for (a,s) in zip(r.areas, r.spores)) * (1.0 + r.sunlight) * 0.3836
+    end
+end
 
 function att_run!(model::SpatialRustABM, ss::Int)
     step_n!(model, ss)

@@ -11,7 +11,7 @@ end
     include("../../src/ShadingExperiments/NumberOfRuns.jl")
 end
 
-mkpath("results/Shading/ABCests/CV")
+mkpath("results/Shading/ABCests2/CV")
 
 n = parse(Int, ARGS[1]) # n > 100
 mean_temp = parse(Float64, ARGS[2])
@@ -21,4 +21,4 @@ years = parse(Int, ARGS[5])
 
 cvs = coeff_vars(n, mean_temp, rain_prob, wind_prob, years)
 
-CSV.write("results/Shading/ABCests/CV/CVs-$mean_temp-$rain_prob-$n-$(years)y.csv", cvs)
+CSV.write("results/Shading/ABCests2/CV/CVs-$mean_temp-$rain_prob-$n-$(years)y.csv", cvs)
