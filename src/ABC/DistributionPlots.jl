@@ -1,4 +1,6 @@
-isnormalpar(v::String) = v ∈ ("opt_temp", "temp_cooling", "pdry_spo", "spore_pct", "wind_dst")
+function significant(par, is)
+    is ? string(par,"*") : par
+end
 
 four_dodged_rainclouds(params::DataFrame, selected::DataFrame, nnorms::Int, randpars::Vector{Int}, ndots::Int; kwargs...) =
 four_dodged_rainclouds(params[randpars, :], selected, nnorms, ndots; kwargs...)
@@ -20,17 +22,8 @@ function four_dodged_rainclouds(wideparams::DataFrame, wideselected::DataFrame, 
     restsel2 = stack(wideselected[:, prest2])
     rustppar = stack(wideparams,:rust_paras)[:,18:19]
     rustpsel = stack(wideselected,:rust_paras)[:,18:19]
-
-    # params = stack(wideparams)
-    # # selected = stack(wideselected)
-    # optvstot = 1.0/(ncol(wideselected) - 1)
-    # v05vstot = nsep/(ncol(wideselected) - 1)
-    # rustpvstot = 1.0/(ncol(wideselected) - 1)
-    # restvstot = 1.0 - (optvstot + v05vstot + rustpvstot)
     optvstot = 1/8
     v05vstot = 4/8
-    # v05vstot = nsep/6
-    # rustpvstot = 1.0/(ncol(wideselected) - 1)
     restvstot = 10/11
 
     # cs = cgrad(:roma, 10, categorical = true)
@@ -52,38 +45,8 @@ function four_dodged_rainclouds(wideparams::DataFrame, wideselected::DataFrame, 
     markersize_s = 4.5
     n_dots = ndots
 
-    # nparams = filter(:variable => v -> isnormalpar(v), params)
-    # nselected = filter(:variable => v -> isnormalpar(v), selected)
-    # maxinfparams = filter(:variable => v -> v == "rust_paras", params)
-    # maxinfselec = filter(:variable => v -> v == "rust_paras", selected)
-    # uparams = filter(:variable => v -> !isnormalpar(v) && v != "rust_paras", params)
-    # uselected = filter(:variable => v -> !isnormalpar(v) && v != "rust_paras", selected)
-
     fbox = Figure(resolution = (width, height));
 
-    # ax1 = Axis(fbox[1,1];
-    # limits = ((0.85, 1.15), (0.45,1.6)),
-    # xticks = 0.9:0.1:1.1,
-    # yticklabelrotation = π/4,
-    # )
-    # ax2 = Axis(fbox[2,1];
-    # limits = ((0.45, 1.55), (0.45,5.6)),
-    # xticks = 0.5:0.2:1.5,
-    # yticklabelrotation = π/4,
-    # )
-    # ax3 = Axis(fbox[3,1];
-    # limits = ((-0.1, 2.1), (0.4,10.6)),
-    # yticklabelrotation = π/4,
-    # bottomspinevisible = false
-    # )
-    # hidexdecorations!(ax3, grid = false)
-    # ax4 = Axis(fbox[4,1];
-    #     limits = ((-0.1, 2.1), (0.45,1.55)),
-    #     yticklabelrotation = π/4,
-    #     topspinevisible = false,
-    #     xlabel = "Scaled Value"
-    # )
-    # rowgap!(fbox.layout, 3, 0)
     ga = GridLayout(fbox[1,1])
     ax1 = Axis(ga[1,1];
     limits = ((0.91, 1.09), (0.45,1.6)),
@@ -163,6 +126,8 @@ end
 
 dodged_rainclouds(params::DataFrame, selected::DataFrame, nnorms::Int, randpars::Vector{Int}, ndots::Int; kwargs...) =
 dodged_rainclouds(params[randpars, :], selected, nnorms, ndots; kwargs...)
+
+isnormalpar(v::String) = v ∈ ("opt_temp", "temp_cooling", "pdry_spo", "spore_pct", "wind_dst")
 
 function dodged_rainclouds(wideparams::DataFrame, wideselected::DataFrame, nnorms::Int, ndots::Int;
     height = 1200, width = 600)
