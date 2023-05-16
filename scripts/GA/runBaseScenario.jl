@@ -17,10 +17,11 @@ function baseprod(n, y)
             shade_d = 9,
             common_map = :regshaded,
             prune_sch = [74, 196, 319],
-            post_prune = [0.15, 0.15, 0.15],
+            post_prune = [0.05, 0.05, 0.05],
             inspect_period = 32,
             inspect_effort = 0.25,
-            fungicide_sch = [125, 166, 237]
+            fungicide_sch = [125, 166, 237],
+            incidence_as_thr = false,
         )
         step_n!(model, ndays)
         sumprods += model.current.prod
@@ -29,4 +30,4 @@ function baseprod(n, y)
 end
 
 meanprod = baseprod(n, y)/(n*y)
-writedlm("results/GA/baseProduction.csv", meanprod, ',')
+writedlm("results/GA2/baseProduction.csv", meanprod, ',')

@@ -41,9 +41,9 @@ function init_spatialrust(;
     rep::Int = 0,                           # repetition number (for other exps)
 
     # weather parameters
-    rain_prob::Float64 = 0.6,
-    wind_prob::Float64 = 0.5,
-    mean_temp::Float64 = 22.5,
+    rain_prob::Float64 = 0.8,
+    wind_prob::Float64 = 0.7,
+    mean_temp::Float64 = 22.0,
     rain_data::Vector{Bool} = Bool[],       # if provided, rain_prob is ignored
     wind_data::Vector{Bool} = Bool[],       # if provided, wind_prob is ignored
     temp_data::Vector{Float64} = Float64[], # if provided, mean_temp is ignored
@@ -83,14 +83,15 @@ function init_spatialrust(;
     prune_sch::Vector{Int} = [182,-1,-1],
     inspect_period::Int = 7,                # days
     fungicide_sch::Vector{Int} = [91,273,-1],
-    incidence_as_thr::Bool = false,         # use incidence as threshold? alternative is area
+    fung_stratg::Symbol = :cal,             # fungicide use strategy: :cal, :cal_incd, :incd, :flor
     incidence_thresh::Float64 = 0.1,        # incidence that triggers fungicide use (10% from Cenicafe's Boletin 36)
     max_fung_sprayings::Int = 3,            # maximum fung treatments per year
 
-    prune_cost::Float64 = 1.42,             # per shade
-    inspect_cost::Float64 = 0.02,           # per coffee inspected
-    fung_cost::Float64 = 0.2,               # per coffee
-    other_costs::Float64 = 0.15,            # other costs considered (weeding)
+    prune_cost::Float64 = 0.644,            # per shade
+    inspect_cost::Float64 = 0.009,           # per coffee inspected
+    fung_cost::Float64 = 0.074,             # per coffee
+    other_costs::Float64 = 0.12,            # other costs considered (weeding)
+    fixed_costs::Float64 = 3337.1,          # production-independent costs
     coffee_price::Float64 = 1.0,
 
     post_prune::Vector{Float64} = [0.3, 0.5, 0.0], # individual shade level after pruning
@@ -189,7 +190,13 @@ function init_spatialrust(;
     end
     prune_sch = Tuple(prune_sch)
     post_prune = Tuple(post_prune)
-    fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
+    if fung_stratg == :cal || fung_stratg == :cal_incd
+        fungicide_sch = Tuple(sort!(filter!(>(0), fungicide_sch)))
+    elseif fung_stratg == :flor
+        fungicide_sch = (rep_d + 60, rep_d + 105)
+    else
+        fungicide_sch = ()
+    end
     
     n_shades = count(farm_map .== 2)
     n_coffees = count(farm_map .== 1)
@@ -199,11 +206,11 @@ function init_spatialrust(;
     mp = MngPars{length(prune_sch),length(fungicide_sch)}(
         harvest_day, prune_sch,
         inspect_period, fungicide_sch,
-        incidence_as_thr, incidence_thresh, max_fung_sprayings,
+        fung_stratg, incidence_thresh, max_fung_sprayings,
         #
         n_shades, rand(rng, Normal(prune_cost, prune_cost * 0.05)) * n_shades,
         n_coffees, rand(rng, Normal(inspect_cost, inspect_cost * 0.05)) * n_inspect, rand(rng, Normal(fung_cost, fung_cost * 0.05)) * n_coffees,
-        rand(rng, Normal(other_costs, other_costs * 0.05)), coffee_price,
+        rand(rng, Normal(other_costs, other_costs * 0.05)), rand(rng, Normal(fixed_costs, fixed_costs * 0.05)), coffee_price,
         #
         0.4338, post_prune, n_inspect, fung_effect,
         max_shade, shade_g_rate, shade_r
@@ -288,7 +295,8 @@ struct MngPars{N,M}
     prune_sch::NTuple{N,Int}
     inspect_period::Int
     fungicide_sch::NTuple{M,Int}
-    incidence_as_thr::Bool
+    # incidence_as_thr::Bool
+    fung_stratg::Symbol
     incidence_thresh::Float64
     max_fung_sprayings::Int
     # financials
@@ -298,6 +306,7 @@ struct MngPars{N,M}
     tot_inspect_cost::Float64
     tot_fung_cost::Float64
     other_costs::Float64
+    fixed_costs::Float64
     coffee_price::Float64
     # others
     lesion_survive::Float64

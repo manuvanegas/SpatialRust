@@ -13,7 +13,7 @@ include("../../src/GA/Generation.jl")
 include("../../src/GA/SlurmScripts.jl")
 
 # experiment id: obj function - pcross - pmut
-expfolder = string("/scratch/mvanega1/GA/", obj, "-", pcross, "-", pmut)
+expfolder = string("/scratch/mvanega1/GA2/", obj, "-", pcross, "-", pmut)
 # mkpaths: pops, transcs, fitns, histftns, scripts
 poppath = mkpath(joinpath(expfolder, "pops"))
 mkpath(joinpath(expfolder, "transcs"))
@@ -22,7 +22,7 @@ mkpath(joinpath(expfolder, "histftns"))
 mkpath(joinpath(expfolder, "scripts"))
 
 # init and save pop
-pop = bitrand(79, popsize)
+pop = bitrand(86, popsize)
 writedlm(joinpath(poppath, "g-001.csv"), pop, ',')
 
 # create fitness folder

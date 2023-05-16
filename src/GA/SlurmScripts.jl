@@ -11,7 +11,7 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     # #SBATCH -J debug-GA-ind-$gen
     # #SBATCH -t 0-00:15:00
     #SBATCH -J GA-ind-g$gen
-    #SBATCH -t 0-00:20:00
+    #SBATCH -t 0-00:30:00
     #SBATCH -o logs/GA/ind/g-%A.o
     #SBATCH -e logs/GA/ind/g-%A.e
     #SBATCH --mail-type=ALL

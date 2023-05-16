@@ -37,7 +37,7 @@ if pastgen < maxgens # || end condition?
 
     # progeny
     newpop = tourn_select(pastpop, fitns, popsize, rng)
-    xover!(newpop, pcross, popsize, 79, rng)
+    xover!(newpop, pcross, popsize, 86, rng)
     mutate!(newpop, pmut, rng)
 
     # write new gen's pop
@@ -63,7 +63,7 @@ else
     end
     writedlm(joinpath(expfolder,"histftns", string("g-", pastgen0s,".csv")), fitns, ',')
     
-    p = mkpath(joinpath("results/GA", rsplit(expfolder, "/", limit = 2)[2]))
+    p = mkpath(joinpath("results/GA2", rsplit(expfolder, "/", limit = 2)[2]))
     hfitnsfiles = readdir(joinpath(expfolder, "histftns"), join = true)
     hfitns = fill(Float64[], maxgens)
     for f in hfitnsfiles

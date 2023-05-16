@@ -1,23 +1,25 @@
 
 DoY(x::Int) = round(Int, 365 * x * inv(64))
-propto08(x::Int) = (x + 1) * 0.75 * inv(64)
-perioddays(x::Int) = (x + 1) * 2
-proportion(x::Int) = (x + 1) * inv(128) # (*inv(64) * 0.5) 
+sch(days::Vector{Int}) = collect(ifelse(s == 1, DoY(f), -1) for (f,s) in Iterators.partition(days, 2))
+propto08(x::Int) = x * 0.75 * inv(64)
+perioddays(x::Int) = x * 2
+proportion(x::Int) = x * inv(128) # (*inv(64) * 0.5)
+fung_str(x::Int) = ifelse(x < 3, ifelse(x == 1, :cal, :cal_incd), ifelse(x == 3, :incd, :flor))
 
 function ints_to_pars(transcr::Matrix{Int}, steps, cprice)
     return (
         row_d = transcr[1],
         plant_d = transcr[2],
         shade_d = ifelse(transcr[3] < 2, 100, transcr[3] * 3),
-        barriers = ifelse(Bool(transcr[4]), (1,1), (0,0)),
+        barriers = ifelse(Bool(transcr[4] - 1), (1,1), (0,0)),
         barrier_rows = transcr[5],
-        prune_sch = DoY.(transcr[6:8]),
-        post_prune = propto08.(transcr[9:11]),
-        inspect_period = perioddays(transcr[12]),
-        inspect_effort = proportion(transcr[13]),
-        fungicide_sch = DoY.(transcr[14:16]),
-        incidence_as_thr = Bool(transcr[17]),
-        incidence_thresh = proportion(transcr[18]),
+        prune_sch = sch(transcr[6:11]),
+        post_prune = propto08.(transcr[12:14]),
+        inspect_period = perioddays(transcr[15]),
+        inspect_effort = proportion(transcr[16]),
+        fungicide_sch = sch(transcr[17:22]),
+        fung_stratg = fung_str(transcr[23]),
+        incidence_thresh = proportion(transcr[24]),
         steps = steps,
         coffee_price = cprice
     )
@@ -28,9 +30,17 @@ function sptlrust_profit_fitness(pars::NamedTuple, reps::Int, steps::Int, cprice
         ; pars...
         ) for _ in 1:reps)
     # models = [pars[[1:3;5;8;9]] for _ in 1:reps]
+    
+    if pars.shade_d < 13 && all(pars.post_prune .>= 0.4) # Farfan & Robledo, 2009
+        shadeprem = 0.1
+    else
+        shadeprem = 0.0
+    end
+    
     sumscores = 0.0
+    
     for m in models
-        sumscores += farm_profit(m, steps, cprice)
+        sumscores += farm_profit(m, steps, cprice + shadeprem)
     end
     return sumscores / reps
     # return mapreduce(m -> farm_profit(m, pars.steps, pars.coffee_price), +, models) ./ reps
@@ -39,6 +49,8 @@ end
 function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64)
     shadetracker = 0.0
     s = 0
+    nofung = true
+    fungpremium = 0.1
     
     # shade_n = 0
     # while s < 365
@@ -55,6 +67,9 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64)
         s += step_n!(model, everyn)
         if s % 365 == 364
             # model.current.costs += model.mngpars.other_costs * avsunlight - 0.032
+            if model.current.fung_count > 0
+                nofung = false
+            end
             step_model!(model)
             s += 1
         end
@@ -68,6 +83,6 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64)
     #end
 
     #return score
-    return 0.48 * (model.current.prod) * cprice - model.current.costs
+    return (model.current.prod) * (cprice + ifelse(nofung, fungpremium, 0.0)) - model.current.costs
     # return model.current.prod
 end

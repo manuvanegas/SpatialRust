@@ -17,5 +17,6 @@ module purge
 module load julia/1.8.2
 
 echo `date +%F-%T`
-julia ~/SpatialRust/scripts/GA/beginGA.jl 100 40 100 365 0.5 0.02 1.0 shorttermprofit2
+julia ~/SpatialRust/scripts/GA/beginGA.jl 100 50 100 365 0.5 0.02 0.65 shorttermprofit
 # popsize, gens, reps, steps, pcross, pmut, cofprice, obj function name
+#pet: 40 20 50

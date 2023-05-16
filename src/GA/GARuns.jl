@@ -1,9 +1,9 @@
 
 function transcripts(col)
-    pos = [1:2, 3:3, 4:5, 6:6, 7:7, 8:13, 14:19, 20:25, 26:31, 32:37, 38:43, 44:48, 49:54, 55:60, 61:66, 67:72, 73:73, 74:79]
+    pos = [1:2, 3:3, 4:5, 6:6, 7:7, 8:13, 14:14, 15:20, 21:21, 22:27, 28:28, 29:34, 35:40, 41:46, 47:51, 52:57, 58:63, 64:64, 65:70, 71:71, 72:77, 78:78, 79:80, 81:86]
     transcripts = [bits_to_int(col[p]) for p in pos]
-    transcripts[[1:3; 5]] .+= 1
-    return ints_to_pars(transcripts, 1460, 1.0)
+    # transcripts[[1:3; 5]] .+= 1
+    return ints_to_pars(transcripts, 1460, 0.65)
 end
 
 function garuns(n::Int, steps::Int, rem::Float64; kwargs...)

@@ -1,17 +1,18 @@
 function harvest!(model::SpatialRustABM)
     yprod = sum(map(c -> c.production, model.agents))
     model.current.prod += yprod
-    #cost = model.current.costs += yprod * model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.01
-    #model.current.shadeacc = 0.0
+    cost = model.current.costs += model.mngpars.fixed_costs +
+        (yprod * model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.004)
+    model.current.shadeacc = 0.0
     
-    #if sum(active, model.agents)/length(model.agents) < 0.1
-    #    model.current.inbusiness = false
-    #elseif (years = div(model.current.days, model.mngpars.harvest_day)) > 1
-    #    tot_in = model.current.prod * model.mngpars.coffee_price
-    #    if (cost - tot_in) > (0.5 * tot_in * inv(years))
-    #        model.current.inbusiness = false
-    #    end
-    #end
+    if sum(active, model.agents)/length(model.agents) < 0.1
+        model.current.inbusiness = false
+    elseif (years = div(model.current.days, model.mngpars.harvest_day)) > 1
+        tot_in = model.current.prod * model.mngpars.coffee_price
+        if (cost - tot_in) > (0.5 * tot_in * inv(years))
+            model.current.inbusiness = false
+        end
+    end
 
     # if (years = div(model.current.days, model.mngpars.harvest_day)) > 1
     #     tot_in = model.current.prod * model.mngpars.coffee_price
