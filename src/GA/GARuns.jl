@@ -14,6 +14,14 @@ end
 
 function run(steps::Int, rem::Float64; kwargs...)
     model = init_spatialrust(steps = steps; kwargs...)
+
+    pp = model.mngpars.post_prune
+    if kwargs[:shade_d] < 13 && (isempty(pp) || all(pp .>= 0.4)) # Farfan & Robledo, 2009
+        rem += 0.1
+        println("added")
+    end
+    nofung = true
+    fungpremium = 0.1
     
     meanshade = mean(model.shade_map)
     allcofs = model.agents
@@ -25,9 +33,9 @@ function run(steps::Int, rem::Float64; kwargs...)
         indshade = Float64[], mapshade = Float64[],
         production = Float64[], active = Float64[],
         incidence = Float64[], obs_incidence = Float64[],
-        sumarea = Float64[], inoculum = Float64[],
+        gsumarea = Float64[], sumarea = Float64[], inoculum = Float64[], nl = Float64[],
         remprofit = Float64[], costs = Float64[],
-        fung = Int[],
+        fung = Int[], farmprod = Float64[],
     )
     for c in eachcol(df)
         sizehint!(c, steps)
@@ -35,26 +43,32 @@ function run(steps::Int, rem::Float64; kwargs...)
 
     s = 0
     while s < steps
+        step_model!(model)
         s += 1
         indshade = model.current.ind_shade
-        sumareas = Iterators.filter(>(0.0), map(r -> sum(r.areas), allcofs))
+        # sumareas = Iterators.filter(>(0.0), map(r -> sum(r.areas), allcofs))
+        as = map(r -> maximum(r.areas, init = 0.0), allcofs)
+        sumareas = Iterators.filter(>(0.0), as)
         msuma = isempty(sumareas) ? 0.0 : mean(sumareas)
+        actvcofs = sum(map(active, allcofs))
 
         push!(df, [
             model.current.days,
             indshade,
             indshade * meanshade,
             mean(map(currentprod, allcofs)),
-            sum(map(active, allcofs)) / ncofs,
-            sum(map(activeRust, allcofs)) / ncofs,
+            actvcofs / ncofs,
+            sum(map(activeRust, allcofs)) / actvcofs,
             model.current.obs_incidence,
+            mean(as),
             msuma,
             mean(map(inoculum, allcofs)) * sporepct,
-            model.current.prod * rem * cprice,
+            mean(c -> c.n_lesions, allcofs),
+            model.current.prod * cprice * (rem + ifelse(nofung, fungpremium, 0.0)),
             model.current.costs,
             model.current.fungicide,
+            copy(model.current.prod),
         ])
-        step_model!(model)
     end
 
     return df
@@ -65,3 +79,11 @@ currentprod(c::Coffee)::Float64 = c.production
 inoculum(r::Coffee)::Float64 =
     isempty(r.areas) ? 0.0 : sum(a * s for (a,s) in zip(r.areas, r.spores)) * (1.0 + r.sunlight)
 
+function ttr()
+    println("T")
+    return true
+end
+function tfl()
+    println("F")
+    return false
+end

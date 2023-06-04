@@ -2,8 +2,8 @@ using CairoMakie, CSV, DataFrames, Statistics
 
 include("../../src/GA/Plots.jl")
 
-obj = "shorttprofit3032"
-obj = "longtermprofit"
+obj = "shorttermprofit"
+obj = "longtermprofit-0.2"
 pcross = 0.5
 pmut = 0.02
 
@@ -24,13 +24,15 @@ end
 ###########################################
 
 
-popfiles = readdir("results/GA/$obj-$pcross-$pmut/pops/", join = true)
+popfiles = readdir("results/GA/3/$obj-$pcross-$pmut/pops/", join = true)
 
-popsraw = [readaddinfo(f) for f in popfiles]
+popsraw = [readaddinfo(f) for f in popfiles];
 pops = reduce(vcat, popsraw)
 
 freqs = select(pops, :gen, :pos,
     AsTable(r"Column") => ByRow(minfreq) => :minfreq
 )
 
-historyhm(freqs)
+fhm = historyhm(freqs)
+##
+savedissGA("test.png", fhm)

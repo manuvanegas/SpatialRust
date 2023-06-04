@@ -78,6 +78,7 @@ function runsimple!(model::SpatialRustABM, steps::Int)
         indshade = model.current.ind_shade
 
         sumareas = Iterators.filter(>(0.0), map(r -> sum(r.areas), allcofs))
+        # sumareas = Iterators.filter(>(0.0), map(emptymean, allcofs))
         if isempty(sumareas)
             msuma = 0.0
             msumsp = 0.0
@@ -112,6 +113,7 @@ function runsimple!(model::SpatialRustABM, steps::Int)
     indshade = model.current.ind_shade
     
     sumareas = Iterators.filter(>(0.0), map(r -> sum(r.areas), allcofs))
+    # sumareas = Iterators.filter(>(0.0), map(emptymean, allcofs))
     if isempty(sumareas)
         msuma = 0.0
         msumsp = 0.0
@@ -153,4 +155,202 @@ function meanage(ages)
     else
         return mean(ages)
     end
+end
+
+emptymean(c) = isempty(c.areas) ? 0.0 : mean(filter(>(0.0), c.areas))
+
+function followone(steps::Int = 365; kwargs...)
+    model = init_spatialrust(steps = steps,
+        farm_map = [0 0 0 0 0; 0 0 0 0 0; 0 1 0 1 0; 0 0 0 0 0; 0 0 0 0 0],
+        p_rusts = 0.0,
+        ; kwargs...)
+    ci = model.agents[1]
+    ci.n_lesions = 3
+    ci.ages = [10, 8, 3]
+    ci.areas = [0.1, 0.05, 0.0003]
+    ci.spores = [false, false, false]
+    ci.rusted = true
+
+    df = DataFrame(dayn = Int[],
+    veg = Float64[], storage = Float64[], production = Float64[],
+    indshade = Float64[], mapshade = Float64[], sl = Float64[],
+    nl = Int[],
+    sumarea = Float64[], maxarea = Float64[], minarea = Float64[], allareas = Vector{Float64}[],
+    spores = Vector{Bool}[], deps = Float64[], ndeps = Float64[],
+    maxage = Int[], minage = Int[], allages = Vector{Int}[],
+    active = Bool[], rusted = Bool[], nrusts = Int[],
+    farmprod = Float64[], fung = Int[]
+    )
+    for c in eachcol(df)
+        sizehint!(c, steps)
+    end
+
+    meanshade = mean(model.shade_map)
+    c2 = model.agents[2]
+
+    println(ci)
+    println(c2)
+
+    s = 0
+    while s < steps
+        indshade = model.current.ind_shade
+        areas = copy(c2.areas)
+        ages = copy(c2.ages)
+        spores = copy(c2.spores)
+        push!(df, [
+            model.current.days,
+            c2.veg,
+            c2.storage,
+            c2.production,
+            indshade,
+            indshade * meanshade,
+            c2.sunlight,
+            c2.n_lesions,
+            sum(areas),
+            maximum(areas, init = 0.0),
+            minimum(areas, init = 0.0),
+            areas,
+            spores,
+            c2.deposited,
+            c2.newdeps,
+            maximum(ages, init = 0.0),
+            minimum(ages, init = 0.0),
+            ages,
+            c2.exh_countdown == 0,
+            c2.rusted,
+            sum(map(a -> a.rusted, model.agents)),
+            copy(model.current.prod),
+            model.current.fung_count,
+        ])
+        step_model!(model)
+        s += 1
+    end
+
+    
+    indshade = model.current.ind_shade
+    areas = c2.areas
+    ages = c2.ages
+    spores = copy(c2.spores)
+    push!(df, [
+        model.current.days,
+        c2.veg,
+        c2.storage,
+        c2.production,
+        indshade,
+        indshade * meanshade,
+        c2.sunlight,
+        c2.n_lesions,
+        sum(areas),
+        maximum(areas, init = 0.0),
+        minimum(areas, init = 0.0),
+        areas,
+        spores,
+        c2.deposited,
+        c2.newdeps,
+        maximum(ages, init = 0.0),
+        minimum(ages, init = 0.0),
+        ages,
+        c2.exh_countdown == 0,
+        c2.rusted,
+        sum(map(a -> a.rusted, model.agents)),
+        copy(model.current.prod),
+        model.current.fung_count,
+    ])
+
+    return df#, model
+end
+
+function secondloss(steps::Int = 730; kwargs...)
+    model = init_spatialrust(steps = steps; kwargs...)
+
+    df = DataFrame(
+        dayn = Int[],
+        veg = Float64[], storage = Float64[], production = Float64[],
+        nl = Float64[], sumarea = Float64[], #sumspores = Float64[],
+        deps = Float64[], meanage = Float64[],
+        active = Float64[], rusted = Float64[], farmprod = Float64[],
+    )
+    
+    s = 0
+    allcofs = model.agents
+    ncofs = length(allcofs)
+
+    while s < 365
+        step_model!(model)
+        sumareas = Iterators.filter(>(0.0), map(r -> sum(r.areas), allcofs))
+        # sumareas = Iterators.filter(>(0.0), map(emptymean, allcofs))
+        actages = Iterators.filter(>(0.0), map(r -> meanage(r.ages), allcofs))
+        if isempty(sumareas)
+            msuma = 0.0
+            msumsp = 0.0
+            mages = 0.0
+        else
+            msuma = mean(sumareas)
+            sumspores = map(r -> sum(r.spores), allcofs)
+            msumsp = mean(sumspores)
+            mages = mean(actages)
+        end
+        push!(df, [
+            model.current.days,
+            mean(map(a -> a.veg, allcofs)),
+            mean(map(a -> a.storage, allcofs)),
+            mean(map(a -> a.production, allcofs)),
+            mean(map(a -> a.n_lesions, allcofs)),
+            msuma,
+            # msumsp,
+            mean(map(a -> a.deposited, allcofs)),
+            mages,
+            sum(map(active, allcofs)) / ncofs,
+            sum(map(a -> a.rusted, allcofs)) / ncofs,
+            copy(model.current.prod),
+        ])
+        s += 1
+    end
+
+    map(cure, allcofs)
+    model.outpour .= 0.0
+
+    while s < steps
+        step_model!(model)
+        sumareas = Iterators.filter(>(0.0), map(r -> sum(r.areas), allcofs))
+        # sumareas = Iterators.filter(>(0.0), map(emptymean, allcofs))
+        actages = Iterators.filter(>(0.0), map(r -> meanage(r.ages), allcofs))
+        if isempty(sumareas)
+            msuma = 0.0
+            msumsp = 0.0
+            mages = 0.0
+        else
+            msuma = mean(sumareas)
+            sumspores = map(r -> sum(r.spores), allcofs)
+            msumsp = mean(sumspores)
+            mages = mean(actages)
+        end
+        push!(df, [
+            model.current.days,
+            mean(map(a -> a.veg, allcofs)),
+            mean(map(a -> a.storage, allcofs)),
+            mean(map(a -> a.production, allcofs)),
+            mean(map(a -> a.n_lesions, allcofs)),
+            msuma,
+            # msumsp,
+            mean(map(a -> a.deposited, allcofs)),
+            mages,
+            sum(map(active, allcofs)) / ncofs,
+            sum(map(a -> a.rusted, allcofs)) / ncofs,
+            copy(model.current.prod),
+        ])
+        s += 1
+    end
+
+    return df
+end
+
+function cure(c::Coffee)
+    c.rusted = false
+    c.newdeps = 0.0
+    c.deposited = 0.0
+    c.n_lesions = 0
+    empty!(c.areas)
+    empty!(c.spores)
+    empty!(c.ages)
 end
