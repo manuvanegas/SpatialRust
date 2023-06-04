@@ -55,17 +55,18 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
     # Temperature-dependent growth modifier. If <= 0, there is no growth or sporulation
     temp_mod = rustpars.temp_ampl_c * (local_temp - rustpars.opt_temp)^2.0 + 1.0
     if temp_mod > 0.0
+        areas = rust.areas
+        spores = rust.spores
         spor_mod = temp_mod * rain_spo * (1.0 + rustpars.rep_spo * (rust.production / (rust.production + rust.veg)))
         host_gro = 1.0 + rustpars.rep_gro * (rust.production / max(rust.storage, 1.0))
         growth_mod = rust.rust_gr * temp_mod * host_gro
-        prev_cur = rust.ages .< fday
+        prev_cur = rust.ages .- fday .< 15
+        area_gro = max(0.0, 1.0 - sum(areas) / 25.0)
         spor_probs = spor_mod .* ifelse.(prev_cur, rustpars.fung_spor_prev, rustpars.fung_spor_cur)
         # spor_probs = (spor_mod * ifelse(last(p) < fday, rustpars.fung_spor_prev, rustpars.fung_spor_cur) for p in pairs(rust.ages) if !spores[first(p)])
         gro_mods = growth_mod .* ifelse.(prev_cur, rustpars.fung_gro_prev, rustpars.fung_gro_cur)
         # gro_mods = (growth_mod * ifelse(p < fday, rustpars.fung_gro_prev, rustpars.fung_gro_cur) for p in rust.ages)
         
-        areas = rust.areas
-        spores = rust.spores
         
         # nonsporulated lesions try to sporulate
         for nl in findeach(!, spores)
@@ -73,7 +74,6 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
         end
 
         # update latent areas
-        area_gro = max(0.0, 1.0 - sum(areas) / 25.0)
         areas .+= areas .* (gro_mods .* area_gro)
         # clamp!(areas, 0.0, 7.0) # (McCain & Hennen, 1984)
     end

@@ -197,7 +197,7 @@ function farmer_step!(model)
             # end
         elseif model.current.obs_incidence > model.mngpars.incidence_thresh
             fs = model.mngpars.fung_stratg
-            if fs == :incc || fs == :cal_incd || (fs == :flor && doy > @inbounds model.mngpars.fungicide_sch[2])
+            if fs == :incd || fs == :cal_incd || (fs == :flor && doy > @inbounds model.mngpars.fungicide_sch[2])
                 fungicide!(model)
             end
         end

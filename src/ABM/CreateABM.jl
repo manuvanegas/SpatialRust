@@ -196,6 +196,7 @@ function pre_run365!(model::SpatialRustABM, mngpars::MngPars)
     map(harvest_day, model.agents)
 
     model.current.days = 0
+    model.current.costs = 0
     return nothing
 end
 

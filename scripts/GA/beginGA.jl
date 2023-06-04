@@ -13,7 +13,7 @@ include("../../src/GA/Generation.jl")
 include("../../src/GA/SlurmScripts.jl")
 
 # experiment id: obj function - pcross - pmut
-expfolder = string("/scratch/mvanega1/GA2/", obj, "-", pcross, "-", pmut)
+expfolder = string("/scratch/mvanega1/GA3/", obj, "-", pcross, "-", pmut)
 # mkpaths: pops, transcs, fitns, histftns, scripts
 poppath = mkpath(joinpath(expfolder, "pops"))
 mkpath(joinpath(expfolder, "transcs"))

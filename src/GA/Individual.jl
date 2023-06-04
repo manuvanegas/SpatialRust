@@ -26,21 +26,24 @@ function ints_to_pars(transcr::Matrix{Int}, steps, cprice)
 end
 
 function sptlrust_profit_fitness(pars::NamedTuple, reps::Int, steps::Int, cprice::Float64)
-    models = (init_spatialrust(
+    models = (init_light_spatialrust(
         ; pars...
         ) for _ in 1:reps)
     # models = [pars[[1:3;5;8;9]] for _ in 1:reps]
     
-    if pars.shade_d < 13 && all(pars.post_prune .>= 0.4) # Farfan & Robledo, 2009
-        shadeprem = 0.1
-    else
-        shadeprem = 0.0
-    end
+    fmod = first(models)
+    pp = fmod.mngpars.post_prune
+    #if pars.shade_d < 13 && (isempty(pp) || all(pp .>= 0.4)) # Farfan & Robledo, 2009
+    #    shadeprem = 0.1
+    #else
+    #    shadeprem = 0.0
+    #end
     
     sumscores = 0.0
     
     for m in models
-        sumscores += farm_profit(m, steps, cprice + shadeprem)
+        #sumscores += farm_profit(m, steps, cprice + shadeprem)
+        sumscores += farm_profit(m, steps, cprice)
     end
     return sumscores / reps
     # return mapreduce(m -> farm_profit(m, pars.steps, pars.coffee_price), +, models) ./ reps
@@ -83,6 +86,7 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64)
     #end
 
     #return score
-    return (model.current.prod) * (cprice + ifelse(nofung, fungpremium, 0.0)) - model.current.costs
+    #return (model.current.prod) * (cprice + ifelse(nofung, fungpremium, 0.0)) - model.current.costs
+    return (model.current.prod) * cprice - model.current.costs
     # return model.current.prod
 end

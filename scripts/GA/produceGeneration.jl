@@ -50,9 +50,17 @@ if pastgen < maxgens # || end condition?
     arraypath = write_array_script(popsize, gen, reps, steps, coffee_price, expfolder)
     newgenpath = write_ngen_script(popsize, gen, maxgens, reps, steps, coffee_price, pcross, pmut, expfolder)
     # sbatch array for inds
-    depend = readchomp(`sbatch --parsable $arraypath`)
+    println("sbatch --parsable $arraypath")
+    depend = readchomp(ignorestatus(`sbatch --parsable $arraypath`))
+    println(depend)
+    if isnothing(depend) || length(depend) == 0
+        depend = readchomp("/home/mvanega1/SpatialRust/slurmjobid.txt")
+    end
+    println(depend)
+    flush(stdout)
     # sbatch afterok for next progeny
     run(`sbatch --dependency=afterok:$depend $newgenpath`, wait = false)
+    println("sbatch --dependency=afterok:$depend $newgenpath")
 else
     # read past gen's fitnesses to copy them in a single file
     fitnfiles = readdir(joinpath(expfolder,"fitns", string("g-", pastgen0s,"/")), join = true)
@@ -71,5 +79,5 @@ else
         hfitns[g] = vec(readdlm(f, ',', Float64))
     end
     histfitness = reduce(hcat, hfitns)
-    writedlm(joinpath(p,"fitnesshistory.csv"), hfitns, ',')
+    writedlm(joinpath(p,"fitnesshistory-$(pastgen).csv"), hfitns, ',')
 end

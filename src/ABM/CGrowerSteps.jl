@@ -2,16 +2,16 @@ function harvest!(model::SpatialRustABM)
     yprod = sum(map(c -> c.production, model.agents))
     model.current.prod += yprod
     cost = model.current.costs += model.mngpars.fixed_costs +
-        (yprod * model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.004)
+        yprod * (model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.012)
     model.current.shadeacc = 0.0
     
     if sum(active, model.agents)/length(model.agents) < 0.1
         model.current.inbusiness = false
-    elseif (years = div(model.current.days, model.mngpars.harvest_day)) > 1
-        tot_in = model.current.prod * model.mngpars.coffee_price
-        if (cost - tot_in) > (0.5 * tot_in * inv(years))
-            model.current.inbusiness = false
-        end
+    #elseif (years = div(model.current.days, model.mngpars.harvest_day)) > 1
+    #    tot_in = model.current.prod * model.mngpars.coffee_price
+    #    if (cost - tot_in) > (0.5 * tot_in * inv(years))
+    #        model.current.inbusiness = false
+    #    end
     end
 
     # if (years = div(model.current.days, model.mngpars.harvest_day)) > 1
@@ -93,28 +93,30 @@ end
 # end
 
 function inspect!(model::SpatialRustABM)
-    # exhausted coffees can be inspected in this version. They have a 100% chance of being regarded as infected.
-    inspected = sample(model.rng, model.agents, model.mngpars.n_inspected, replace = false)
     n_infected = 0
+    actv = filter(active, model.agents)
+    if model.mngpars.n_inspected < length(actv)
+        inspected = sample(model.rng, actv, model.mngpars.n_inspected, replace = false)
+    else
+        inspected = actv
+    end
 
     for c in inspected
-        if c.exh_countdown > 0
+        # lesion area of 0.05 means a diameter of ~0.25 cm, which is taken as minimum so grower can see it
+        nvis = sum(>(0.05), c.areas, init = 0.0)
+        # area of 0.8 means a diameter of ~1 cm
+        if nvis > 0  && (0.8 < maximum(c.areas, init = 0.0) || rand(model.rng) < nvis / 5)
+        # if nvis > 0 && rand(model.rng) < sum(visibleup, c.areas) / 25
+        # if (1.0 < maximum(c.areas, init = 0.0) || rand(model.rng) < maximum(c.areas, init = 0.0))
             n_infected += 1
-        else
-            # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
-            nvis = sum(>(0.1), c.areas, init = 0)
-            if nvis > 0 && rand(model.rng) < nvis / model.rustpars.max_lesions
-                # (1.0 < maximum(c.areas) || rand(model.rng) < maximum(c.areas))
-                n_infected += 1
-                spotted = unique!(sort!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), 3)))
-                deleteat!(c.ages, spotted)
-                deleteat!(c.areas, spotted)
-                deleteat!(c.spores, spotted)
-                c.n_lesions -= length(spotted)
-                if c.n_lesions == 0 && (c.deposited < 0.05)
-                    c.deposited == 0.0
-                    c.rusted = false
-                end
+            spotted = unique!(sort!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), 5)))
+            deleteat!(c.ages, spotted)
+            deleteat!(c.areas, spotted)
+            deleteat!(c.spores, spotted)
+            c.n_lesions -= length(spotted)
+            if c.n_lesions == 0 && (c.deposited < 0.05)
+                c.deposited == 0.0
+                c.rusted = false
             end
         end
     end
@@ -123,10 +125,10 @@ function inspect!(model::SpatialRustABM)
     model.current.obs_incidence = n_infected / model.mngpars.n_inspected
 end
 
-visible(a::Float64) = a > 0.1 ? a : 0.0
+visible(a::Float64) = a > 0.05 ? a : 0.0
 
 function fungicide!(model::SpatialRustABM)
     model.current.costs += model.mngpars.tot_fung_cost
-    model.current.fungicide = model.mngpars.fung_effect
+    model.current.fungicide = 1 # model.mngpars.fung_effect
     model.current.fung_count += 1
 end
