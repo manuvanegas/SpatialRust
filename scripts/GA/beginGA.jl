@@ -13,7 +13,7 @@ include("../../src/GA/Generation.jl")
 include("../../src/GA/SlurmScripts.jl")
 
 # experiment id: obj function - pcross - pmut
-expfolder = string("/scratch/mvanega1/GA3/", obj, "-", pcross, "-", pmut)
+expfolder = string("/scratch/mvanega1/GA4/", obj, "-", pcross, "-", pmut)
 # mkpaths: pops, transcs, fitns, histftns, scripts
 poppath = mkpath(joinpath(expfolder, "pops"))
 mkpath(joinpath(expfolder, "transcs"))
@@ -33,9 +33,10 @@ trfolder = mkpath(joinpath(expfolder, "transcs", "g-001"))
 transcribe(pop, trfolder)
 
 # create first .sh with new ARGS
-arraypath = write_array_script(popsize, 1, reps, steps, coffee_price, expfolder)
+arraypath, runmins = write_array_script(popsize, 1, reps, steps, coffee_price, expfolder)
 newgenpath = write_ngen_script(popsize, 1, maxgens, reps, steps, coffee_price, pcross, pmut, expfolder)
 # sbatch array for inds
 depend = readchomp(`sbatch --parsable $arraypath`)
-# sbatch afterok for next progeny
-run(`sbatch --dependency=afterok:$depend $newgenpath`, wait = false)
+# sbatch after for next progeny
+jt = string(depend, "+", runmins, "?afterok:$depend")
+run(`sbatch --dependency=after:$jt $newgenpath`, wait = false)

@@ -1,8 +1,8 @@
 function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cprice::Float64, expfolder::String)
     if steps > 730
-        runmins = 40
+        runmins = 20
     else
-        runmins = 10
+        runmins = 6
     end
     logspath = mkpath("/home/mvanega1/SpatialRust/logs/GA/ind/$(steps)-$(gen)")
     fpath = joinpath(expfolder, "scripts/array-$gen.sh")
@@ -24,14 +24,17 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
 
     echo `date +%F-%T`
     echo \$SLURM_JOB_ID
-    if [[ \$SLURM_ARRAY_TASK_ID == $popsize ]]
-    then
-    echo \$SLURM_JOB_ID > /home/mvanega1/SpatialRust/slurmjobid.txt
-    fi
+    echo \$SLURM_ARRAY_TASK_ID
+    echo $expfolder
+    echo gen $gen
+    # if [[ \$SLURM_ARRAY_TASK_ID == $popsize ]]
+    # then
+    # echo \$SLURM_JOB_ID > /home/mvanega1/SpatialRust/slurmjobid-$gen.txt
+    # fi
     julia ~/SpatialRust/scripts/GA/testIndividual.jl \
     \$SLURM_ARRAY_TASK_ID $gen $reps $steps $cprice $expfolder
     """)
-    return fpath
+    return fpath, runmins
     
     # #SBATCH --mem=1G
     # #SBATCH -q debug
@@ -59,6 +62,11 @@ function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, step
     module load julia/1.8.2
 
     echo `date +%F-%T`
+    echo \$SLURM_JOB_ID
+    echo $expfolder
+    echo gen $(gen + 1)
+    # cat /home/mvanega1/SpatialRust/slurmjobid-$gen.txt
+    # rm /home/mvanega1/SpatialRust/slurmjobid-$gen.txt
     julia ~/SpatialRust/scripts/GA/produceGeneration.jl \
     $popsize $gen $maxgens $reps $steps $cprice $pcrs $pmut $expfolder
     """)
