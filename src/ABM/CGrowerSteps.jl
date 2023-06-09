@@ -2,17 +2,17 @@ function harvest!(model::SpatialRustABM)
     yprod = sum(map(c -> c.production, model.agents))
     model.current.prod += yprod
     cost = model.current.costs += model.mngpars.fixed_costs +
-        yprod * (model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) - 0.012)
+        yprod * (model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) + 0.012)
     model.current.shadeacc = 0.0
     
-    if sum(active, model.agents)/length(model.agents) < 0.1
-        model.current.inbusiness = false
-    #elseif (years = div(model.current.days, model.mngpars.harvest_day)) > 1
-    #    tot_in = model.current.prod * model.mngpars.coffee_price
-    #    if (cost - tot_in) > (0.5 * tot_in * inv(years))
-    #        model.current.inbusiness = false
-    #    end
-    end
+    # if sum(active, model.agents)/length(model.agents) < 0.1
+    #     model.current.inbusiness = false
+    # #elseif (years = div(model.current.days, model.mngpars.harvest_day)) > 1
+    # #    tot_in = model.current.prod * model.mngpars.coffee_price
+    # #    if (cost - tot_in) > (0.5 * tot_in * inv(years))
+    # #        model.current.inbusiness = false
+    # #    end
+    # end
 
     # if (years = div(model.current.days, model.mngpars.harvest_day)) > 1
     #     tot_in = model.current.prod * model.mngpars.coffee_price
@@ -101,6 +101,7 @@ function inspect!(model::SpatialRustABM)
         inspected = actv
     end
 
+    rmles = mngpars.rm_lesions
     for c in inspected
         # lesion area of 0.05 means a diameter of ~0.25 cm, which is taken as minimum so grower can see it
         nvis = sum(>(0.05), c.areas, init = 0.0)
@@ -109,7 +110,7 @@ function inspect!(model::SpatialRustABM)
         # if nvis > 0 && rand(model.rng) < sum(visibleup, c.areas) / 25
         # if (1.0 < maximum(c.areas, init = 0.0) || rand(model.rng) < maximum(c.areas, init = 0.0))
             n_infected += 1
-            spotted = unique!(sort!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), 5)))
+            spotted = unique!(sort!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), rmles)))
             deleteat!(c.ages, spotted)
             deleteat!(c.areas, spotted)
             deleteat!(c.spores, spotted)

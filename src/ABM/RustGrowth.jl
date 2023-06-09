@@ -51,11 +51,11 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
 
     # All rusts age 1 day
     rust.ages .+= 1
+    areas = rust.areas
 
     # Temperature-dependent growth modifier. If <= 0, there is no growth or sporulation
     temp_mod = rustpars.temp_ampl_c * (local_temp - rustpars.opt_temp)^2.0 + 1.0
     if temp_mod > 0.0
-        areas = rust.areas
         spores = rust.spores
         spor_mod = temp_mod * rain_spo * (1.0 + rustpars.rep_spo * (rust.production / (rust.production + rust.veg)))
         host_gro = 1.0 + rustpars.rep_gro * (rust.production / max(rust.storage, 1.0))
@@ -76,6 +76,17 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
         # update latent areas
         areas .+= areas .* (gro_mods .* area_gro)
         # clamp!(areas, 0.0, 7.0) # (McCain & Hennen, 1984)
+    end
+    if fday < 15
+        areas .*= 0.9 #rustpars.fung_reduce
+        lost = findall(<(0.00005), areas)
+        if !isempty(lost)
+            # rand() < 0.2 && println("lost $(length(lost))!")
+            rust.n_lesions -= length(lost)
+            deleteat!(rust.ages, lost)
+            deleteat!(rust.areas, lost)
+            deleteat!(rust.spores, lost)
+        end
     end
 end
 

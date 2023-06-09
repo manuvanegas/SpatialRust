@@ -33,7 +33,8 @@ end
 
 function init_light_spatialrust(;
     steps::Int, row_d::Int, plant_d::Int, shade_d::Int, barriers::NTuple{2, Int}, barrier_rows::Int, 
-    prune_sch::Vector{Int}, post_prune::Vector{Float64}, inspect_period::Int, inspect_effort::Float64,
+    prune_sch::Vector{Int}, post_prune::Vector{Float64}, inspect_period::Int, inspect_effort::Float64, 
+    rm_lesions::Int = 2,
     fungicide_sch::Vector{Int}, fung_stratg::Symbol, incidence_thresh::Float64, coffee_price::Float64,
 )
     
@@ -68,6 +69,7 @@ function init_light_spatialrust(;
     fung_gro_cur::Float64 = 0.6           # fungicide mod to growth rate on curative fungicide
     fung_spor_prev::Float64 = 0.0          # fungicide mod to spor prob on preventive fungicide
     fung_spor_cur::Float64 = 0.5          # fungicide mod to spor prob on curative fungicide
+    fung_reduce::Float64 = 0.9              # fungicide's area reduction rate
     
     exh_countdown::Int = 731               # days to count after plant has been exhausted (2-3 y to resume production) 
 
@@ -79,11 +81,11 @@ function init_light_spatialrust(;
     harvest_day::Int = 365                 # 365 or 182, depending on the region
     max_fung_sprayings::Int = 3            # maximum fung treatments per year
 
-    prune_cost::Float64 = 0.644            # per shade
-    inspect_cost::Float64 = 0.009           # per coffee inspected
-    fung_cost::Float64 = 0.074             # per coffee
-    other_costs::Float64 = 0.12            # other costs considered (weeding)
-    fixed_costs::Float64 = 3337.1          # production-independent costs
+    prune_cost::Float64 = 0.671            # per shade
+    inspect_cost::Float64 = 0.019          # per coffee inspected
+    fung_cost::Float64 = 0.068             # per coffee
+    other_costs::Float64 = 0.088           # other costs considered (weeding)
+    fixed_costs::Float64 = 3044.8          # production-independent costs
 
     fung_effect::Int = 30                  # length of fungicide effect
 
@@ -110,7 +112,7 @@ function init_light_spatialrust(;
         max_lesions, 1.0665, 0.5168, rain_washoff, 0.2113, viab_loss, 1.0301, 
         # Sporulation/Growth
         0.0867, 22.8716, 0.3926, 0.7078, -(1.0/5.0367^2), 0.01, 0.3836, 
-        fung_inf, fung_gro_prev, fung_gro_cur, fung_spor_prev, fung_spor_cur, 
+        fung_inf, fung_gro_prev, fung_gro_cur, fung_spor_prev, fung_spor_cur, #fung_reduce,
         # Parasitism
         0.0155, exh_countdown,
         # Dispersal
@@ -151,14 +153,15 @@ function init_light_spatialrust(;
     n_coffees = count(farm_map .== 1)
 
     n_inspect = trunc(Int, inspect_effort * n_coffees)
+    inspcst = inspect_cost * rm_lesions
 
     mp = MngPars{length(prune_sch),length(fungicide_sch)}(
         harvest_day, prune_sch,
-        inspect_period, fungicide_sch,
-        fung_stratg, incidence_thresh, max_fung_sprayings,
+        inspect_period, #rem_lesions,
+        fungicide_sch, fung_stratg, incidence_thresh, max_fung_sprayings,
         #
         n_shades, rand(rng, Normal(prune_cost, prune_cost * 0.05)) * n_shades,
-        n_coffees, rand(rng, Normal(inspect_cost, inspect_cost * 0.05)) * n_inspect, rand(rng, Normal(fung_cost, fung_cost * 0.05)) * n_coffees,
+        n_coffees, rand(rng, Normal(inspcst, inspcst * 0.05)) * n_inspect, rand(rng, Normal(fung_cost, fung_cost * 0.05)) * n_coffees,
         rand(rng, Normal(other_costs, other_costs * 0.05)), rand(rng, Normal(fixed_costs, fixed_costs * 0.05)), coffee_price,
         #
         0.4338, post_prune, n_inspect, fung_effect,
@@ -172,6 +175,7 @@ function init_light_spatialrust(;
 
     return init_abm_obj(Props(w, cp, rp, mp, b, farm_map, smap, zeros(8)), rng, p_rusts)
 end
+
 # function init_spatialrust(;
 #     seed::Int = 0,
 #     start_days_at::Int = 0,
@@ -208,9 +212,10 @@ end
 #     viab_loss::Float64 = 0.75,              # Deposited spore viability loss
 #     fung_inf::Float64 = 0.9,                # infection prob under fungicide mod
 #     fung_gro_prev::Float64 = 0.3,           # fungicide mod to growth rate on preventive fungicide
-#     fung_gro_cur::Float64 = 0.6,           # fungicide mod to growth rate on curative fungicide
+#     fung_gro_cur::Float64 = 0.6,            # fungicide mod to growth rate on curative fungicide
 #     fung_spor_prev::Float64 = 0.0,          # fungicide mod to spor prob on preventive fungicide
-#     fung_spor_cur::Float64 = 0.5,          # fungicide mod to spor prob on curative fungicide
+#     fung_spor_cur::Float64 = 0.5,           # fungicide mod to spor prob on curative fungicide
+#     fung_reduce::Float64 = 0.9,             # fungicide's area reduction rate
     
 #     exh_countdown::Int = 731,               # days to count after plant has been exhausted (2-3 y to resume production) 
 
@@ -227,15 +232,16 @@ end
 #     incidence_thresh::Float64 = 0.1,        # incidence that triggers fungicide use (10% from Cenicafe's Boletin 36)
 #     max_fung_sprayings::Int = 3,            # maximum fung treatments per year
 
-#     prune_cost::Float64 = 0.644,            # per shade
-#     inspect_cost::Float64 = 0.009,           # per coffee inspected
-#     fung_cost::Float64 = 0.074,             # per coffee
-#     other_costs::Float64 = 0.12,            # other costs considered (weeding)
-#     fixed_costs::Float64 = 3337.1,          # production-independent costs
+#     prune_cost::Float64 = 0.671,            # per shade
+#     inspect_cost::Float64 = 0.01,           # per coffee inspected
+#     fung_cost::Float64 = 0.068,             # per coffee
+#     other_costs::Float64 = 0.088,           # other costs considered (weeding)
+#     fixed_costs::Float64 = 3044.8,          # production-independent costs
 #     coffee_price::Float64 = 1.0,
 
 #     post_prune::Vector{Float64} = [0.3, 0.5, 0.0], # individual shade level after pruning
 #     inspect_effort::Float64 = 0.01,         # % coffees inspected each time
+#     rm_lesions::Int = 2,                    # if rust is found, remove n lesions
 #     fung_effect::Int = 30,                  # length of fungicide effect
 
 #     # shade parameters
@@ -301,7 +307,7 @@ end
 #         max_lesions, 1.0665, 0.5168, rain_washoff, 0.2113, viab_loss, 1.0301, 
 #         # Sporulation/Growth
 #         0.0867, 22.8716, 0.3926, 0.7078, -(1.0/5.0367^2), 0.01, 0.3836, 
-#         fung_inf, fung_gro_prev, fung_gro_cur, fung_spor_prev, fung_spor_cur, 
+#         fung_inf, fung_gro_prev, fung_gro_cur, fung_spor_prev, fung_spor_cur, #fung_reduce,
 #         # Parasitism
 #         0.0155, exh_countdown,
 #         # Dispersal
@@ -342,18 +348,19 @@ end
 #     n_coffees = count(farm_map .== 1)
 
 #     n_inspect = trunc(Int, inspect_effort * n_coffees)
+#     inspcst = inspect_cost * rm_lesions
 
 #     mp = MngPars{length(prune_sch),length(fungicide_sch)}(
 #         harvest_day, prune_sch,
-#         inspect_period, fungicide_sch,
-#         fung_stratg, incidence_thresh, max_fung_sprayings,
+#         inspect_period, #rem_lesions,
+#         fungicide_sch, fung_stratg, incidence_thresh, max_fung_sprayings,
 #         #
 #         n_shades, rand(rng, Normal(prune_cost, prune_cost * 0.05)) * n_shades,
-#         n_coffees, rand(rng, Normal(inspect_cost, inspect_cost * 0.05)) * n_inspect, rand(rng, Normal(fung_cost, fung_cost * 0.05)) * n_coffees,
+#         n_coffees, rand(rng, Normal(inspcst, inspcst * 0.05)) * n_inspect, rand(rng, Normal(fung_cost, fung_cost * 0.05)) * n_coffees,
 #         rand(rng, Normal(other_costs, other_costs * 0.05)), rand(rng, Normal(fixed_costs, fixed_costs * 0.05)), coffee_price,
 #         #
-#         # 0.4338, post_prune, n_inspect, fung_effect,
-#         les_surv, post_prune, n_inspect, fung_effect,
+#         0.4338, post_prune, n_inspect, fung_effect,
+#         # les_surv, post_prune, n_inspect, fung_effect,
 #         max_shade, shade_g_rate, shade_r
 #     )
 
@@ -416,7 +423,8 @@ struct RustPars
     fung_gro_prev::Float64
     fung_gro_cur::Float64 
     fung_spor_prev::Float64
-    fung_spor_cur::Float64 
+    fung_spor_cur::Float64
+    # fung_reduce::Float64
     # parasitism
     rust_paras::Float64
     exh_countdown::Int
@@ -435,6 +443,7 @@ struct MngPars{N,M}
     harvest_day::Int
     prune_sch::NTuple{N,Int}
     inspect_period::Int
+    #rem_lesions::Int
     fungicide_sch::NTuple{M,Int}
     # incidence_as_thr::Bool
     fung_stratg::Symbol
@@ -507,28 +516,28 @@ function createweather(rain_prob, wind_prob, mean_temp, steps, rng)
     )
 end
 
-# function noisedweather(rain_data, wind_data, temp_data, rain_prob, wind_prob, mean_temp, steps, rng)
-#     raindata = isempty(rain_data) ? rand(rng, steps) .< rain_prob : addnoise(rain_data, steps, rng)
-#     wpdn = wind_prob - 0.1
-#     wpup = wind_prob + 0.1
-#     return Weather(
-#         raindata,
-#         isempty(wind_data) ? rand(rng, steps) .< ifelse.(raindata, wpdn, wpup) : addnoise(wind_data, steps, rng),
-#         isempty(temp_data) ? rand(rng, Normal(mean_temp, 0.5), steps) : addqnoise(temp_data, steps, rng)
-#     )
-# end
+function noisedweather(rain_data, wind_data, temp_data, rain_prob, wind_prob, mean_temp, steps, rng)
+    raindata = isempty(rain_data) ? rand(rng, steps) .< rain_prob : addnoise(rain_data, steps, rng)
+    wpdn = wind_prob - 0.1
+    wpup = wind_prob + 0.1
+    return Weather(
+        raindata,
+        isempty(wind_data) ? rand(rng, steps) .< ifelse.(raindata, wpdn, wpup) : addnoise(wind_data, steps, rng),
+        isempty(temp_data) ? rand(rng, Normal(mean_temp, 0.5), steps) : addqnoise(temp_data, steps, rng)
+    )
+end
 
-# function addnoise(v::Vector{Bool}, steps, rng)
-#     @inbounds for (i, b) in enumerate(v)
-#         rand(rng) < 0.05 && (v[i] = !b)
-#     end
-#     return resize!(v, steps)
-# end
+function addnoise(v::Vector{Bool}, steps, rng)
+    @inbounds for (i, b) in enumerate(v)
+        rand(rng) < 0.05 && (v[i] = !b)
+    end
+    return resize!(v, steps)
+end
 
-# function addqnoise(v::Vector{Float64}, steps, rng)
-#     resize!(v, steps)
-#     return v .+ rand(rng, Normal(0, 0.05), steps)
-# end
+function addqnoise(v::Vector{Float64}, steps, rng)
+    resize!(v, steps)
+    return v .+ rand(rng, Normal(0, 0.05), steps)
+end
 
 # Calculate initial ind_shade
 function ind_shade_i(
