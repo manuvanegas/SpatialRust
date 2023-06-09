@@ -101,7 +101,7 @@ function inspect!(model::SpatialRustABM)
         inspected = actv
     end
 
-    rmles = mngpars.rm_lesions
+    rmles = model.mngpars.rm_lesions
     for c in inspected
         # lesion area of 0.05 means a diameter of ~0.25 cm, which is taken as minimum so grower can see it
         nvis = sum(>(0.05), c.areas, init = 0.0)
