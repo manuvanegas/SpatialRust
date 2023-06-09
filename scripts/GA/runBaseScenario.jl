@@ -11,17 +11,18 @@ function baseprod(n, y)
     ndays = y * 365
     for r in 1:n
         if r % 10 == 0
-            model = init_spatialrust(
+            model = SpatialRust.init_spatialrust(
                 steps = ndays,
                 row_d = 2,
                 plant_d = 1,
                 shade_d = 9,
                 common_map = :regshaded,
-                prune_sch = [74, 196, 319],
+                prune_sch = [75, 197, 319],
                 post_prune = [0.05, 0.05, 0.05],
-                inspect_period = 32,
+                inspect_period = 16,
                 inspect_effort = 0.25,
-                fungicide_sch = [125, 176, 237],
+                rm_lesions = 1,
+                fungicide_sch = [125, 177, 238],
                 fung_stratg = :cal,
             )
             @time step_n!(model, ndays)
@@ -30,17 +31,18 @@ function baseprod(n, y)
             flush(stdout)
             GC.gc()
         else
-            model = init_spatialrust(
+            model = SpatialRust.init_spatialrust(
                 steps = ndays,
                 row_d = 2,
                 plant_d = 1,
                 shade_d = 9,
                 common_map = :regshaded,
-                prune_sch = [74, 196, 319],
+                prune_sch = [75, 197, 319],
                 post_prune = [0.05, 0.05, 0.05],
-                inspect_period = 32,
+                inspect_period = 16,
                 inspect_effort = 0.25,
-                fungicide_sch = [125, 176, 237],
+                rm_lesions = 1,
+                fungicide_sch = [125, 177, 238],
                 fung_stratg = :cal,
             )
             step_n!(model, ndays)

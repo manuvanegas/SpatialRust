@@ -10,6 +10,7 @@ coffee_price = parse(Float64, ARGS[7])
 suffix = ARGS[8]
 obj = Symbol(ARGS[9])
 prem = parse(Bool, ARGS[10])
+chrom = parse(Int, ARGS[11])
 
 include("../../src/GA/Generation.jl")
 include("../../src/GA/SlurmScripts.jl")
@@ -28,7 +29,7 @@ if obj == :all
     
     # init and save pop
     for (poppath, expfolder) in zip(poppaths, expfolders)
-        local pop = bitrand(86, popsize)
+        local pop = bitrand(chrom, popsize)
         writedlm(joinpath(poppath, "g-001.csv"), pop, ',')
         # create fitness folder
         mkpath(joinpath(expfolder, "fitns", "g-001"))

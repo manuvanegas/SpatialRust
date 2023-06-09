@@ -1,26 +1,39 @@
 using StatsBase
 
-DoY(x::Int) = round(Int, 365 * x * inv(64))
-sch(days::Vector{Int}) = collect(ifelse(s == 1, DoY(f), -1) for (f,s) in Iterators.partition(days, 2))
-propto08(x::Int) = x * 0.75 * inv(64)
+DoY(x::Int) = round(Int, 365 * x / 126)
+#sch(days::Vector{Int}) = collect(ifelse(s == 1, DoY(f), -1) for (f,s) in Iterators.partition(days, 2))
+sch(days::Vector{Int}) = collect(ifelse(d == 1 || d == 128, -1, DoY(d - 1)) for d in days)
+propto08(x::Int) = round(x * 0.75 / 64.0, digits = 4)
 perioddays(x::Int) = x * 2
-proportion(x::Int) = x * inv(128) # (*inv(64) * 0.5)
+proportion(x::Int) = x * inv(256) # (*inv(64) * 0.5)
 fung_str(x::Int) = ifelse(x < 3, ifelse(x == 1, :cal, :cal_incd), ifelse(x == 3, :incd, :flor))
 
 function ints_to_pars(transcr::Matrix{Int}, steps, cprice)
     return (
-        row_d = transcr[1],
-        plant_d = transcr[2],
-        shade_d = ifelse(transcr[3] < 2, 100, transcr[3] * 3),
-        barriers = ifelse(Bool(transcr[4] - 1), (1,1), (0,0)),
-        barrier_rows = transcr[5],
-        prune_sch = sch(transcr[6:11]),
-        post_prune = propto08.(transcr[12:14]),
-        inspect_period = perioddays(transcr[15]),
-        inspect_effort = proportion(transcr[16]),
-        fungicide_sch = sch(transcr[17:22]),
-        fung_stratg = fung_str(transcr[23]),
-        incidence_thresh = proportion(transcr[24]),
+        #row_d = transcr[1],
+        #plant_d = transcr[2],
+        #shade_d = ifelse(transcr[3] < 2, 100, transcr[3] * 3),
+        #barriers = ifelse(Bool(transcr[4] - 1), (1,1), (0,0)),
+        #barrier_rows = transcr[5],
+        #prune_sch = sch(transcr[6:11]),
+        #post_prune = propto08.(transcr[12:14]),
+        #inspect_period = perioddays(transcr[15]),
+        #inspect_effort = proportion(transcr[16]),
+        #fungicide_sch = sch(transcr[17:22]),
+        #fung_stratg = fung_str(transcr[23]),
+        #incidence_thresh = proportion(transcr[24]),
+        prune_sch = sch(transcr[1:3]),
+        post_prune = propto08.(transcr[4:6]),
+        rm_lesions = transcr[7],
+        inspect_period = perioddays(transcr[8]),
+        row_d = transcr[9],
+        inspect_effort = proportion(transcr[10]),
+        plant_d = transcr[11],
+        shade_d = ifelse(transcr[12] < 2, 100, transcr[12] * 3),
+        barriers = ifelse(Bool(transcr[13] - 1), (1,1), (0,0)),
+        fungicide_sch = sch(transcr[14:16]),
+        fung_stratg = fung_str(transcr[17]),
+        incidence_thresh = proportion(transcr[18]),
         steps = steps,
         coffee_price = cprice
     )
