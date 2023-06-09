@@ -44,6 +44,7 @@ if obj == :all
     newgenpath = write_ngen_script(popsize, 1, maxgens, reps, steps, coffee_price, pcross, pmut, expfolders[1], obj, prem)
     # sbatch array for inds
     depend = readchomp(`sbatch --parsable $arraypath`)
+    println(depend)
     # sbatch after for next progeny
     jt = string(depend, "+", runmins, "?afterok:$depend")
     run(`sbatch --dependency=after:$jt $newgenpath`, wait = false)
@@ -63,7 +64,7 @@ else
     mkpath(joinpath(expfolder, "scripts"))
     
     # init and save pop
-    pop = bitrand(86, popsize)
+    pop = bitrand(chrom, popsize)
     writedlm(joinpath(poppath, "g-001.csv"), pop, ',')
     
     # create fitness folder
@@ -74,10 +75,11 @@ else
     transcribe(pop, trfolder)
     
     # create first .sh with new ARGS
-    arraypath, runmins = write_array_script(popsize, 1, reps, steps, coffee_price, expfolder, popsize)
-    newgenpath = write_ngen_script(popsize, 1, maxgens, reps, steps, coffee_price, pcross, pmut, expfolder)
+    arraypath, runmins = write_array_script(popsize, 1, reps, steps, coffee_price, expfolder, obj, prem, popsize)
+    newgenpath = write_ngen_script(popsize, 1, maxgens, reps, steps, coffee_price, pcross, pmut, expfolder, obj, prem)
     # sbatch array for inds
     depend = readchomp(`sbatch --parsable $arraypath`)
+    println(depend)
     # sbatch after for next progeny
     jt = string(depend, "+", runmins, "?afterok:$depend")
     run(`sbatch --dependency=after:$jt $newgenpath`, wait = false)

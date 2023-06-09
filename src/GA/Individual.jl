@@ -177,9 +177,9 @@ function severity(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::
     if premiums
         if fungs < 2
             if ((model.current.shadeacc / 365.0) * mean(model.shade_map)) < 0.4
-                prem = 0.8
+                prem = 0.7
             elseif fungs == 0
-                prem = 0.9
+                prem = 0.85
             end
         end
     end

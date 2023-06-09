@@ -78,7 +78,7 @@ function grow_f_rust!(rust::Coffee, rng, rustpars::RustPars, local_temp::Float64
         # clamp!(areas, 0.0, 7.0) # (McCain & Hennen, 1984)
     end
     if fday < 15
-        areas .*= 0.9 #rustpars.fung_reduce
+        areas .*= 0.95 #rustpars.fung_reduce
         lost = findall(<(0.00005), areas)
         if !isempty(lost)
             # rand() < 0.2 && println("lost $(length(lost))!")
