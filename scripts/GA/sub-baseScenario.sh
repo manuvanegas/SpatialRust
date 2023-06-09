@@ -12,7 +12,7 @@
 #SBATCH --mail-user=mvanega1@asu.edu
 
 module purge
-module load julia/1.8.2
+module load julia/1.9.0
 
 echo `date +%F-%T`
 julia ~/SpatialRust/scripts/GA/runBaseScenario.jl

@@ -9,6 +9,9 @@ reps = parse(Int, ARGS[3])
 steps = parse(Int, ARGS[4])
 coffee_price = parse(Float64, ARGS[5])
 expfolder = ARGS[6]
+obj = Symbol(ARGS[7])
+prem = parse(Bool, ARGS[8])
+popsize = parse(Int, ARGS[9])
 
 include("../../src/GA/Individual.jl")
 # parnames = [:row_d, :plant_d, :shade_d, :barriers, :barrier_rows, :prune_sch, :target_shade,
@@ -22,6 +25,15 @@ include("../../src/GA/Individual.jl")
 # phenod, phenon = CSV.read(joinpath("/scratch/mvanega1/GA",obj,"phens/", phenfile), ',', header = true)
 # pheno = NamedTuple(zip(vec(phenon), phenod[indiv,:]))
 
+if obj == :all
+    expfs = split(read("/scratch/mvanega1/GA4/expfolders.txt", String))
+    exp = div(indiv - 1, popsize) + 1
+    expfolder = expfs[exp]
+    println(indiv)
+    indiv = mod1(indiv, popsize)
+    obj = ifelse(exp < 3, :profit, :sev)
+    prem = iseven(exp)
+end
 
 # loci = readdlm(joinpath("/scratch/mvanega1/GA/",obj,"loci.csv"), ',', Int)
 filename = string("g-", lpad(gen, 3, "0"), "/i-", lpad(indiv, 3, "0"), ".csv")
@@ -30,7 +42,7 @@ transcripts = readdlm(joinpath(expfolder, "transcs/", filename), ',', Int)
 # "phenotype"
 pheno = ints_to_pars(transcripts, steps, coffee_price)
 # produce individual fitness
-fitness = sptlrust_profit_fitness(pheno, reps, steps, coffee_price)
+fitness = sptlrust_fitness(pheno, reps, steps, coffee_price, obj, prem)
 
 # write fitness
 writedlm(joinpath(expfolder, "fitns/", filename), fitness, ',')

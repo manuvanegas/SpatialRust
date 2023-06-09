@@ -1,4 +1,4 @@
-function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cprice::Float64, expfolder::String)
+function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cprice::Float64, expfolder::String, obj::Symbol, prem::Bool, arrayn::Int)
     if steps > 730
         runmins = 20
     else
@@ -6,13 +6,14 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     end
     logspath = mkpath("/home/mvanega1/SpatialRust/logs/GA/ind/$(steps)-$(gen)")
     fpath = joinpath(expfolder, "scripts/array-$gen.sh")
+    objprem = string(obj, Int(prem))
     write(fpath,"""
     #!/bin/bash
-    #SBATCH --array=1-$popsize
+    #SBATCH --array=1-$arrayn
     #SBATCH --ntasks-per-core=1
     #SBATCH --ntasks=1
     #SBATCH -p htc
-    #SBATCH -J GA-ind-g$gen
+    #SBATCH -J GA-ind-g$gen-$objprem
     #SBATCH -t 0-00:$(runmins):00
     #SBATCH -o $(logspath)/g-%A-%a.o
     #SBATCH -e $(logspath)/g-%A-%a.e
@@ -20,7 +21,7 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     #SBATCH --mail-user=mvanega1@asu.edu
 
     module purge
-    module load julia/1.8.2
+    module load julia/1.9.0
 
     echo `date +%F-%T`
     echo \$SLURM_JOB_ID
@@ -32,7 +33,7 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     # echo \$SLURM_JOB_ID > /home/mvanega1/SpatialRust/slurmjobid-$gen.txt
     # fi
     julia ~/SpatialRust/scripts/GA/testIndividual.jl \
-    \$SLURM_ARRAY_TASK_ID $gen $reps $steps $cprice $expfolder
+    \$SLURM_ARRAY_TASK_ID $gen $reps $steps $cprice $expfolder $obj $prem $popsize
     """)
     return fpath, runmins
     
@@ -42,8 +43,9 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     # #SBATCH -t 0-00:15:00
 end
 
-function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, steps::Int, cprice::Float64, pcrs::Float64, pmut::Float64, expfolder::String)
+function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, steps::Int, cprice::Float64, pcrs::Float64, pmut::Float64, expfolder::String, obj::Symbol, prem::Bool)
     fpath = joinpath(expfolder, "scripts/newgen-$(gen + 1).sh")
+    objprem = string(obj, Int(prem))
     write(fpath,"""
     #!/bin/bash
     #SBATCH --ntasks-per-core=1
@@ -51,7 +53,7 @@ function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, step
     #SBATCH --ntasks=1
     #SBATCH -p htc
     #SBATCH -q debug
-    #SBATCH -J debug-GA-gen-$(gen + 1)
+    #SBATCH -J debug-GA-gen-$(gen + 1)-$objprem
     #SBATCH -t 0-00:05:00
     #SBATCH -o logs/GA/gen/g-%A.o
     #SBATCH -e logs/GA/gen/g-%A.e
@@ -59,7 +61,7 @@ function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, step
     #SBATCH --mail-user=mvanega1@asu.edu
 
     module purge
-    module load julia/1.8.2
+    module load julia/1.9.0
 
     echo `date +%F-%T`
     echo \$SLURM_JOB_ID
@@ -68,7 +70,7 @@ function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, step
     # cat /home/mvanega1/SpatialRust/slurmjobid-$gen.txt
     # rm /home/mvanega1/SpatialRust/slurmjobid-$gen.txt
     julia ~/SpatialRust/scripts/GA/produceGeneration.jl \
-    $popsize $gen $maxgens $reps $steps $cprice $pcrs $pmut $expfolder
+    $popsize $gen $maxgens $reps $steps $cprice $pcrs $pmut $expfolder $obj $prem
     """)
     return fpath
 end

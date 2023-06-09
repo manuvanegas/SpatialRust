@@ -3,8 +3,8 @@ Pkg.activate(".")
 using DelimitedFiles, SpatialRust
 # using Statistics: mean
 
-n = 150
-y = 4
+n = 300
+y = 2
 
 function baseprod(n, y)
     sumprods = 0.0
@@ -21,7 +21,7 @@ function baseprod(n, y)
                 post_prune = [0.05, 0.05, 0.05],
                 inspect_period = 32,
                 inspect_effort = 0.25,
-                fungicide_sch = [125, 166, 237],
+                fungicide_sch = [125, 176, 237],
                 fung_stratg = :cal,
             )
             @time step_n!(model, ndays)
@@ -40,16 +40,15 @@ function baseprod(n, y)
                 post_prune = [0.05, 0.05, 0.05],
                 inspect_period = 32,
                 inspect_effort = 0.25,
-                fungicide_sch = [125, 166, 237],
+                fungicide_sch = [125, 176, 237],
                 fung_stratg = :cal,
             )
             step_n!(model, ndays)
             sumprods += model.current.prod
-            GC.gc()
         end
     end
     return sumprods
 end
 
 meanprod = baseprod(n, y)/(n*y)
-writedlm("results/GA2/baseProduction-$(y)y.csv", meanprod, ',')
+writedlm("results/GA4/baseProduction-$(y)y.csv", meanprod, ',')

@@ -14,10 +14,10 @@
 #SBATCH --mail-user=mvanega1@asu.edu
 
 module purge
-module load julia/1.8.2
+module load julia/1.9.0
 
 echo `date +%F-%T`
-julia ~/SpatialRust/scripts/GA/beginGA.jl 4 4 3 365 0.5 0.02 0.65 shortsanct-deb
+julia ~/SpatialRust/scripts/GA/beginGA.jl 4 3 3 365 0.5 0.02 0.65 deb all true
 #julia ~/SpatialRust/scripts/GA/beginGA.jl 80 80 100 1460 0.5 0.02 0.65 longtermprofit-0.0
 # popsize, gens, reps, steps, pcross, pmut, cofprice, obj function name
 #pet: 40 20 50

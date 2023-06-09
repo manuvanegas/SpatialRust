@@ -12,6 +12,8 @@ coffee_price = parse(Float64, ARGS[6])
 pcross = parse(Float64, ARGS[7])
 pmut = parse(Float64, ARGS[8])
 expfolder = ARGS[9]
+obj = Symbol(ARGS[10])
+prem = parse(Bool, ARGS[11])
 
 include("../../src/GA/Generation.jl")
 include("../../src/GA/SlurmScripts.jl")
@@ -22,33 +24,20 @@ if pastgen < maxgens
     gen = pastgen + 1
     gen0s = lpad(gen, 3, "0")
 
-    # read past gen's pop and fitnesses
-    pastpop = BitMatrix(readdlm(joinpath(expfolder,"pops", string("g-", pastgen0s,".csv")), ',', Bool))
-    fitnfiles = readdir(joinpath(expfolder,"fitns", string("g-", pastgen0s,"/")), join = true)
-    fitns = zeros(popsize)
-    for f in fitnfiles
-        ind = parse(Int, f[end-6:end-4])
-        fitns[ind] = only(readdlm(f, ','))
+    if obj == :all
+        expfs = string.(split(read("/scratch/mvanega1/GA4/expfolders.txt", String)))
+        for expfolder in expfs
+            newgen(expfolder, pastgen0s, gen0s, popsize, rng)
+        end
+        arrayn = popsize * 4
+    else
+        newgen(expfolder, pastgen0s, gen0s, popsize, rng)
+        arrayn = popsize
     end
-
-    # copy fitnesses to single file and create dir for next generation
-    writedlm(joinpath(expfolder,"histftns", string("g-", pastgen0s,".csv")), fitns, ',')
-    mkpath(joinpath(expfolder, "fitns", string("g-", gen0s)))
-
-    # progeny
-    newpop = tourn_select(pastpop, fitns, popsize, rng)
-    xover!(newpop, pcross, popsize, 86, rng)
-    mutate!(newpop, pmut, rng)
-
-    # write new gen's pop
-    writedlm(joinpath(expfolder,"pops", string("g-", gen0s,".csv")), newpop, ',')
-
-    # transcribe from pop (produce Ints) and write files
-    trfolder = mkpath(joinpath(expfolder, "transcs", string("g-", gen0s)))
-    transcribe(newpop, trfolder)
+    
     # write .sh with new ARGS
-    arraypath, runmins = write_array_script(popsize, gen, reps, steps, coffee_price, expfolder)
-    newgenpath = write_ngen_script(popsize, gen, maxgens, reps, steps, coffee_price, pcross, pmut, expfolder)
+    arraypath, runmins = write_array_script(popsize, gen, reps, steps, coffee_price, expfolder, obj, prem, arrayn)
+    newgenpath = write_ngen_script(popsize, gen, maxgens, reps, steps, coffee_price, pcross, pmut, expfolder, obj, prem)
     # sbatch array for inds
     println("sbatch --parsable $arraypath")
     println("First try.")
@@ -105,24 +94,12 @@ if pastgen < maxgens
         #println("sbatch --dependency=after:$jt?afterok:$depend $newgenpath")
     end
 else
-    # read past gen's fitnesses to copy them in a single file
-    fitnfiles = readdir(joinpath(expfolder,"fitns", string("g-", pastgen0s,"/")), join = true)
-    fitns = zeros(popsize)
-    for f in fitnfiles
-        ind = parse(Int, f[end-6:end-4])
-        fitns[ind] = only(readdlm(f, ','))
-    end
-    writedlm(joinpath(expfolder,"histftns", string("g-", pastgen0s,".csv")), fitns, ',')
-    
-    p = mkpath(joinpath("results/GA4", rsplit(expfolder, "/", limit = 2)[2]))
-    hfitnsfiles = readdir(joinpath(expfolder, "histftns"), join = true)
-    hfitns = fill(Float64[], maxgens)
-    for f in hfitnsfiles
-        g = parse(Int, f[end-6:end-4])
-        if g <= maxgens
-            hfitns[g] = vec(readdlm(f, ',', Float64))
+    if obj == :all
+        expfs = string.(split(read("/scratch/mvanega1/GA4/expfolders.txt", String)))
+        for expfolder in expfs
+            finalize(expfolder, pastgen0s, popsize)
         end
+    else
+        finalize(expfolder, pastgen0s, popsize)
     end
-    histfitness = reduce(hcat, hfitns)
-    writedlm(joinpath(p,"fitnesshistory-$(pastgen).csv"), hfitns, ',')
 end

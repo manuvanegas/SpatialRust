@@ -1,3 +1,4 @@
+using StatsBase
 
 DoY(x::Int) = round(Int, 365 * x * inv(64))
 sch(days::Vector{Int}) = collect(ifelse(s == 1, DoY(f), -1) for (f,s) in Iterators.partition(days, 2))
@@ -25,12 +26,11 @@ function ints_to_pars(transcr::Matrix{Int}, steps, cprice)
     )
 end
 
-function sptlrust_profit_fitness(pars::NamedTuple, reps::Int, steps::Int, cprice::Float64)
+function sptlrust_fitness(pars::NamedTuple, reps::Int, steps::Int, cprice::Float64, obj::Symbol, premiums::Bool)
     models = (init_light_spatialrust(
         ; pars...
         ) for _ in 1:reps)
     # models = [pars[[1:3;5;8;9]] for _ in 1:reps]
-    
     #fmod = first(models)
     #pp = fmod.mngpars.post_prune
     #if pars.shade_d < 13 && (isempty(pp) || all(pp .>= 0.4)) # Farfan & Robledo, 2009
@@ -38,13 +38,18 @@ function sptlrust_profit_fitness(pars::NamedTuple, reps::Int, steps::Int, cprice
     #else
     #    shadeprem = 0.0
     #end
+    #premiums = false
     
-    premiums = false
     sumscores = 0.0
-    
-    for m in models
-        #sumscores += farm_profit(m, steps, cprice + shadeprem)
-        sumscores += farm_profit(m, steps, cprice, premiums)
+    if obj == :profit
+        for m in models
+            #sumscores += farm_profit(m, steps, cprice + shadeprem)
+            sumscores += farm_profit(m, steps, cprice, premiums)
+        end
+    else
+        for m in models
+            sumscores -= severity(m, steps, cprice, premiums)
+        end
     end
     return sumscores / reps
     # return mapreduce(m -> farm_profit(m, pars.steps, pars.coffee_price), +, models) ./ reps
@@ -54,21 +59,53 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premium
     s = 0
     
     if premiums
+        fungs = 0
+        everyn = 7 # (7*4*13=364)
+        while s < steps # && model.current.inbusiness
+            s += step_n!(model, everyn)
+            if s % 365 == 364
+                # model.current.costs += model.mngpars.other_costs * avsunlight - 0.032
+                #if model.current.fung_count > 0
+                #    nofung = false
+                #end
+                fungs += model.current.fung_count
+                step_model!(model)
+                s += 1
+            end
+        end
+        
+        prem = 0.0
+        if fungs < 2
+            if ((model.current.shadeacc / 365.0) * mean(model.shade_map)) < 0.4
+                prem = 0.2
+            elseif fungs == 0
+                prem = 0.1
+            end
+        end
+        
+        return (model.current.prod) * (cprice + prem) - model.current.costs
         #pp = model.mngpars.post_prune
         #if pars.shade_d < 13 && (isempty(pp) || all(pp .>= 0.4)) # Farfan & Robledo, 2009
         #    shadeprem = 0.1
         #else
         #    shadeprem = 0.0
         #end
-        shaded = true
-        shadeprem = 0.1
-        nofung = true
-        fungpremium = 0.1
+        #shaded = true
+        #shadeprem = 0.1
+        #fungs = 0
+        #fungpremium = 0.1
     else
-        shaded = false
-        shadeprem = 0.0
-        nofung = false
-        fungpremium = 0.0
+        #shaded = false
+        #shadeprem = 0.0
+        #nofung = false
+        #fungpremium = 0.0
+        
+        while s < steps #&& model.current.inbusiness
+            step_model!(model)
+            s += 1
+        end
+        
+        return (model.current.prod) * cprice - model.current.costs
     end
         
     
@@ -82,18 +119,7 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premium
     # avsunlight = 1.0 -  (shadetracker / shade_n) * mean(model.shade_map)
     # model.current.costs += model.mngpars.other_costs * avsunlight - 0.032
 
-    everyn = 7 # (7*4*13=364)
-    while s <= (steps - 1) && model.current.inbusiness
-        s += step_n!(model, everyn)
-        if s % 365 == 364
-            # model.current.costs += model.mngpars.other_costs * avsunlight - 0.032
-            if model.current.fung_count > 0
-                nofung = false
-            end
-            step_model!(model)
-            s += 1
-        end
-    end
+
 
     #if !model.current.inbusiness
     #    score = -1e8 #(model.current.prod) * cprice - model.current.costs
@@ -102,64 +128,103 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premium
     #    score = (model.current.prod) * cprice - model.current.costs # -(1.0 + y_lost) * (model.current.prod) * cprice - model.current.costs
     #end
     
-    if model.current.shadeacc / 365.0 < 0.4
-        shaded = false
-    end
+    
 
     #return score
-    return (model.current.prod) * (cprice + ifelse(shaded, shadeprem, 0.0) + ifelse(nofung, fungpremium, 0.0)) - model.current.costs
+    #return (model.current.prod) * (cprice + ifelse(shaded, shadeprem, 0.0) + ifelse(nofung, fungpremium, 0.0)) - model.current.costs
     #return (model.current.prod) * cprice - model.current.costs
     # return model.current.prod
 end
 
-function sanction_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::Bool)
+function severity(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::Bool)
     s = 0
-    clean = 0
-    visits = 0
+    sev = 0.0
+    insps = 0
+    fungs = 0
     
-    if premiums
-        shaded = true
-        shadeprem = 0.1
-        nofung = true
-        fungpremium = 0.1
-    else
-        shaded = false
-        shadeprem = 0.0
-        nofung = false
-        fungpremium = 0.0
-    end
-    
-    everyn = 14
-    while s <= (steps - 1) && model.current.inbusiness
+    ninsp = round(Int, length(model.agents) * 0.1)
+    allcofs = model.agents
+
+    everyn = 7 # (7*4*13=364)
+    while s < steps
         s += step_n!(model, everyn)
         
-        clean += nosy_visit(model)
-        visits += 1
+        inspected = sample(allcofs, ninsp, replace = false)
+        sev += mean(map(c -> sum(visible, c.areas, init = 0.0), inspected))
+        insps += 1
         
         if s % 365 == 364
-            if model.current.fung_count > 0
-                nofung = false
-            end
+            fungs += model.current.fung_count
             step_model!(model)
             s += 1
         end
     end
     
-    if model.current.shadeacc / 365.0 < 0.4
-        shaded = false
+    prem = 1.0
+    if premiums
+        if fungs < 2
+            if ((model.current.shadeacc / 365.0) * mean(model.shade_map)) < 0.4
+                prem = 0.8
+            elseif fungs == 0
+                prem = 0.9
+            end
+        end
     end
+
+    #return score
+    return (sev / insps) * prem
+end
+
+visible(a::Float64) = a > 0.05 ? a : 0.0
+
+# function sanction_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::Bool)
+
+#     s = 0
+#     clean = 0
+#     visits = 0
     
-    return ((model.current.prod) * (cprice + ifelse(shaded, shadeprem, 0.0) + ifelse(nofung, fungpremium, 0.0)) - model.current.costs) * (clean / visits)
-end
+#     if premiums
+#         shaded = true
+#         shadeprem = 0.1
+#         nofung = true
+#         fungpremium = 0.1
+#     else
+#         shaded = false
+#         shadeprem = 0.0
+#         nofung = false
+#         fungpremium = 0.0
+#     end
+    
+#     everyn = 14
+#     while s < steps && model.current.inbusiness
+#         s += step_n!(model, everyn)
+        
+#         clean += nosy_visit(model)
+#         visits += 1
+        
+#         if s % 365 == 364
+#             if model.current.fung_count > 0
+#                 nofung = false
+#             end
+#             step_model!(model)
+#             s += 1
+#         end
+#     end
+    
+#     if ((model.current.shadeacc / 365.0) * mean(model.shade_map)) < 0.4
+#         shaded = false
+#     end
+    
+#     return ((model.current.prod) * (cprice + ifelse(shaded, shadeprem, 0.0) + ifelse(nofung, fungpremium, 0.0)) - model.current.costs) * (clean / visits)
+# end
 
-function nosy_visit(model)
-    allcofs = model.agents
-    clean = 1
-    ninsp = round(Int, length(allcofs) * 0.1)
-    inspected = sample(allcofs, ninsp, replace = false)
-    if any(map(c -> c.exh_countdown > 0, allcofs)) || mean(map(c -> sum(c.areas, init = 0.0), allcofs)) > 0.05
-        clean = 0
-    end
-    return clean
-end
-
+# function nosy_visit(model)
+#     allcofs = model.agents
+#     clean = 1
+#     ninsp = round(Int, length(allcofs) * 0.1)
+#     inspected = sample(allcofs, ninsp, replace = false)
+#     if any(map(c -> c.exh_countdown > 0, allcofs)) || mean(map(c -> sum(c.areas, init = 0.0), allcofs)) > 0.05
+#         clean = 0
+#     end
+#     return clean
+# end

@@ -11,18 +11,20 @@ function tourn_select(pop::BitMatrix, fitnesses::Vector{Float64}, popsize::Int, 
     # (length(fitnesses) == size(pop)[2] == popsize) || error("population and fitnesses dont match. fitn = $(length(fitnesses)), size(pop) = $(size(pop)), popsize = $popsize")
     selected = zeros(Int, popsize)
     # pair_select.(repr, Ref(fitnesses), n)
-    @inbounds for i in 1:(popsize - 5) # set one slot aside for elitism and 4 for random indivs
+    ex = round(Int, popsize * 0.05, RoundUp)
+    @inbounds for i in 1:(popsize - ex - 1) # set 1 slot aside for elitism and 5 for random indivs
         c1, c2 = sample(rng, 1:popsize, 2, replace = false)
         selected[i] = fitnesses[c1] > fitnesses[c2] ? c1 : c2
     end
+    @inbounds selected[popsize - ex] = argmax(fitnesses)
     remaining = setdiff(1:popsize, selected)
-    @inbounds selected[popsize-4:popsize-1] = sample(rng, remaining, 4, replace = false)
-    @inbounds selected[popsize] = argmax(fitnesses)
+    @inbounds selected[popsize - ex + 1:popsize] = sample(rng, remaining, ex, replace = false)
     shuffle!(selected) # to allow xover to operate over contiguous pairs
     return pop[:, selected]
 end
 
-function xover!(pop::BitMatrix, p_c::Float64, popsize::Int, lastp::Int, rng::Random.Xoshiro)
+function xover!(pop::BitMatrix, p_c::Float64, popsize::Int, rng::Random.Xoshiro)
+    lastp = size(pop, 1)
     for i in 1:2:popsize
         if rand(rng) < p_c
             p1, p2 = sort!(sample(rng, 1:lastp, 2, replace = false))
@@ -53,3 +55,54 @@ function transcribe(pop::BitMatrix, trfolder::String)
         writedlm(joinpath(trfolder, string("i-", lpad(i, 3, "0"),".csv")), transcripts)
     end
 end
+
+function newgen(expfolder::String, pastgen0s::String, gen0s::String, popsize::Int, rng::Xoshiro)
+    # read past gen's pop and fitnesses
+    pastpop = BitMatrix(readdlm(joinpath(expfolder,"pops", string("g-", pastgen0s,".csv")), ',', Bool))
+    fitnfiles = readdir(joinpath(expfolder,"fitns", string("g-", pastgen0s,"/")), join = true)
+    fitns = zeros(popsize)
+    for f in fitnfiles
+        ind = parse(Int, f[end-6:end-4])
+        fitns[ind] = only(readdlm(f, ','))
+    end
+
+    # copy fitnesses to single file and create dir for next generation
+    writedlm(joinpath(expfolder,"histftns", string("g-", pastgen0s,".csv")), fitns, ',')
+    mkpath(joinpath(expfolder, "fitns", string("g-", gen0s)))
+
+    # progeny
+    newpop = tourn_select(pastpop, fitns, popsize, rng)
+    xover!(newpop, pcross, popsize, rng)
+    mutate!(newpop, pmut, rng)
+
+    # write new gen's pop
+    writedlm(joinpath(expfolder,"pops", string("g-", gen0s,".csv")), newpop, ',')
+
+    # transcribe from pop (produce Ints) and write files
+    trfolder = mkpath(joinpath(expfolder, "transcs", string("g-", gen0s)))
+    transcribe(newpop, trfolder)
+end
+
+function finalize(expfolder::String, pastgen0s::String, popsize::Int)
+    # read past gen's fitnesses to copy them in a single file
+    fitnfiles = readdir(joinpath(expfolder,"fitns", string("g-", pastgen0s,"/")), join = true)
+    fitns = zeros(popsize)
+    for f in fitnfiles
+        ind = parse(Int, f[end-6:end-4])
+        fitns[ind] = only(readdlm(f, ','))
+    end
+    writedlm(joinpath(expfolder,"histftns", string("g-", pastgen0s,".csv")), fitns, ',')
+    
+    p = mkpath(joinpath("results/GA4", rsplit(expfolder, "/", limit = 2)[2]))
+    hfitnsfiles = readdir(joinpath(expfolder, "histftns"), join = true)
+    hfitns = fill(Float64[], maxgens)
+    for f in hfitnsfiles
+        g = parse(Int, f[end-6:end-4])
+        if g <= maxgens
+            hfitns[g] = vec(readdlm(f, ',', Float64))
+        end
+    end
+    histfitness = reduce(hcat, hfitns)
+    writedlm(joinpath(p,"fitnesshistory-$(pastgen).csv"), hfitns, ',')
+end
+
