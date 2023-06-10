@@ -30,6 +30,12 @@ if pastgen < maxgens
             newgen(expfolder, pastgen0s, gen0s, popsize, rng)
         end
         arrayn = popsize * 4
+    elseif obj == :noprems || obj == :prems
+        expfs = string.(split(read("/scratch/mvanega1/GA4/expfolders.txt", String)))
+        for expfolder in expfs
+            newgen(expfolder, pastgen0s, gen0s, popsize, rng)
+        end
+        arrayn = popsize * 2
     else
         newgen(expfolder, pastgen0s, gen0s, popsize, rng)
         arrayn = popsize
@@ -95,6 +101,11 @@ if pastgen < maxgens
     end
 else
     if obj == :all
+        expfs = string.(split(read("/scratch/mvanega1/GA4/expfolders.txt", String)))
+        for expfolder in expfs
+            finalize(expfolder, pastgen0s, popsize)
+        end
+    elseif obj == :noprems || obj == :prems
         expfs = string.(split(read("/scratch/mvanega1/GA4/expfolders.txt", String)))
         for expfolder in expfs
             finalize(expfolder, pastgen0s, popsize)

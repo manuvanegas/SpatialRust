@@ -55,13 +55,19 @@ function sptlrust_fitness(pars::NamedTuple, reps::Int, steps::Int, cprice::Float
     
     sumscores = 0.0
     if obj == :profit
-        for m in models
+        for (i, m) in enumerate(models)
             #sumscores += farm_profit(m, steps, cprice + shadeprem)
             sumscores += farm_profit(m, steps, cprice, premiums)
+            if i % 25 == 0
+                GC.gc()
+            end
         end
     else
-        for m in models
-            sumscores -= severity(m, steps, cprice, premiums)
+        for (i, m) in enumerate(models)
+            sumscores += severity(m, steps, cprice, premiums)
+            if i % 25 == 0
+                GC.gc()
+            end
         end
     end
     return sumscores / reps
@@ -82,6 +88,7 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premium
                 #    nofung = false
                 #end
                 fungs += model.current.fung_count
+                accshade = model.current.shadeacc
                 step_model!(model)
                 s += 1
             end
@@ -89,7 +96,7 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premium
         
         prem = 0.0
         if fungs < 2
-            if ((model.current.shadeacc / 365.0) * mean(model.shade_map)) < 0.4
+            if ((accshade / 364.0) * mean(model.shade_map)) > 0.4
                 prem = 0.2
             elseif fungs == 0
                 prem = 0.1
@@ -168,24 +175,25 @@ function severity(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::
         
         if s % 365 == 364
             fungs += model.current.fung_count
+            accshade = model.current.shadeacc
             step_model!(model)
             s += 1
         end
     end
     
-    prem = 1.0
+    prem = 0.0
     if premiums
         if fungs < 2
-            if ((model.current.shadeacc / 365.0) * mean(model.shade_map)) < 0.4
-                prem = 0.7
+            if ((accshade / 364.0) * mean(model.shade_map)) > 0.4
+                prem = 0.2
             elseif fungs == 0
-                prem = 0.85
+                prem = 0.1
             end
         end
     end
 
     #return score
-    return (sev / insps) * prem
+    return (model.current.prod) * (cprice + prem) - model.current.costs - 1000 * log(sev / insps)
 end
 
 visible(a::Float64) = a > 0.05 ? a : 0.0

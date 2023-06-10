@@ -193,7 +193,7 @@ function farmer_step!(model)
         else
             model.current.fungicide += 1
         end
-    elseif model.current.fung_count < model.mngpars.max_fung_sprayings
+    elseif doy != model.mngpars.harvest_day && model.current.fung_count < model.mngpars.max_fung_sprayings
         if doy in model.mngpars.fungicide_sch
             # fs = model.mngpars.fung_stratg
             # if fs == :cal || fs == :cal_incd || fs == :flor

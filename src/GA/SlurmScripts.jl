@@ -2,7 +2,7 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     if steps > 730
         runmins = 20
     else
-        runmins = 8
+        runmins = 10
     end
     logspath = mkpath("/home/mvanega1/SpatialRust/logs/GA/ind/$(steps)-$(gen)")
     fpath = joinpath(expfolder, "scripts/array-$gen.sh")

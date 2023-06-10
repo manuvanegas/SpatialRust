@@ -31,8 +31,30 @@ if obj == :all
     expfolder = expfs[exp]
     println(indiv)
     indiv = mod1(indiv, popsize)
+    
     obj = ifelse(exp < 3, :profit, :sev)
     prem = iseven(exp)
+    
+elseif obj == :noprems
+    expfs = split(read("/scratch/mvanega1/GA4/expfolders.txt", String))
+    exp = div(indiv - 1, popsize) + 1
+    expfolder = expfs[exp]
+    println(indiv)
+    indiv = mod1(indiv, popsize)
+    
+    obj = ifelse(exp == 1, :profit, :sev)
+    prem = false
+    
+elseif obj == :prems
+    expfs = split(read("/scratch/mvanega1/GA4/expfolders.txt", String))
+    exp = div(indiv - 1, popsize) + 1
+    expfolder = expfs[exp]
+    println(indiv)
+    indiv = mod1(indiv, popsize)
+    
+    obj = ifelse(exp == 1, :profit, :sev)
+    prem = true
+    
 end
 
 # loci = readdlm(joinpath("/scratch/mvanega1/GA/",obj,"loci.csv"), ',', Int)
