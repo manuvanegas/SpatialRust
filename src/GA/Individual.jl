@@ -57,16 +57,20 @@ function sptlrust_fitness(pars::NamedTuple, reps::Int, steps::Int, cprice::Float
     if obj == :profit
         for (i, m) in enumerate(models)
             #sumscores += farm_profit(m, steps, cprice + shadeprem)
-            sumscores += farm_profit(m, steps, cprice, premiums)
             if i % 25 == 0
+                @time sumscores += farm_profit(m, steps, cprice, premiums)
                 GC.gc()
+            else
+                sumscores += farm_profit(m, steps, cprice, premiums)
             end
         end
     else
         for (i, m) in enumerate(models)
-            sumscores += severity(m, steps, cprice, premiums)
             if i % 25 == 0
+                @time sumscores += severity(m, steps, cprice, premiums)
                 GC.gc()
+            else
+                sumscores += severity(m, steps, cprice, premiums)
             end
         end
     end
@@ -79,6 +83,7 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premium
     
     if premiums
         fungs = 0
+        accshade = 0.0
         everyn = 7 # (7*4*13=364)
         while s < steps # && model.current.inbusiness
             s += step_n!(model, everyn)
@@ -88,7 +93,7 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premium
                 #    nofung = false
                 #end
                 fungs += model.current.fung_count
-                accshade = model.current.shadeacc
+                accshade = copy(model.current.shadeacc)
                 step_model!(model)
                 s += 1
             end
@@ -161,6 +166,7 @@ function severity(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::
     sev = 0.0
     insps = 0
     fungs = 0
+    accshade = 0.0
     
     ninsp = round(Int, length(model.agents) * 0.1)
     allcofs = model.agents
@@ -175,7 +181,7 @@ function severity(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::
         
         if s % 365 == 364
             fungs += model.current.fung_count
-            accshade = model.current.shadeacc
+            accshade = copy(model.current.shadeacc)
             step_model!(model)
             s += 1
         end

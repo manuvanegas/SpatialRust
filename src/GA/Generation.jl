@@ -61,6 +61,27 @@ function newgen(expfolder::String, pastgen0s::String, gen0s::String, popsize::In
     # read past gen's pop and fitnesses
     pastpop = BitMatrix(readdlm(joinpath(expfolder,"pops", string("g-", pastgen0s,".csv")), ',', Bool))
     fitnfiles = readdir(joinpath(expfolder,"fitns", string("g-", pastgen0s,"/")), join = true)
+    
+    if length(fitnfiles) < popsize
+        wait = true
+        tries = 0
+        while wait
+            fitnfiles = readdir(joinpath(expfolder,"fitns", string("g-", pastgen0s,"/")), join = true)
+            nfs = length(fitnfiles)
+            println(nfs, " files")
+            if nfs < popsize
+                sleep(1)
+                tries += 1
+                println("try $tries failed")
+                if tries > 15
+                    error("fitness files are incomplete")
+                end
+            else
+                wait = false
+            end
+        end
+        #fitnfiles = readdir(joinpath(expfolder,"fitns", string("g-", pastgen0s,"/")), join = true)
+    end
     fitns = zeros(popsize)
     for f in fitnfiles
         ind = parse(Int, f[end-6:end-4])

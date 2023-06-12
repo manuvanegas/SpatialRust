@@ -2,7 +2,7 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     if steps > 730
         runmins = 20
     else
-        runmins = 10
+        runmins = 8
     end
     logspath = mkpath("/home/mvanega1/SpatialRust/logs/GA/ind/$(steps)-$(gen)")
     fpath = joinpath(expfolder, "scripts/array-$gen.sh")
@@ -19,6 +19,7 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     #SBATCH -e $(logspath)/g-%A-%a.e
     #SBATCH --mail-type=ALL
     #SBATCH --mail-user=mvanega1@asu.edu
+    # #SBATCH --exclude=c[001-085],c[090-091],c[105-112],cg[001-005],ch001
 
     module purge
     module load julia/1.9.0
@@ -34,6 +35,10 @@ function write_array_script(popsize::Int, gen::Int, reps::Int, steps::Int, cpric
     # fi
     julia ~/SpatialRust/scripts/GA/testIndividual.jl \
     \$SLURM_ARRAY_TASK_ID $gen $reps $steps $cprice $expfolder $obj $prem $popsize
+    
+    echo finished
+    echo `date +%F-%T`
+    exit 0
     """)
     return fpath, runmins
     
@@ -59,6 +64,7 @@ function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, step
     #SBATCH -e logs/GA/gen/g-%A.e
     #SBATCH --mail-type=ALL
     #SBATCH --mail-user=mvanega1@asu.edu
+    # #SBATCH --exclude=c[001-85],c[090-095],c[105-112],cg[001-005],ch001
 
     module purge
     module load julia/1.9.0
@@ -71,6 +77,10 @@ function write_ngen_script(popsize::Int, gen::Int, maxgens::Int, reps::Int, step
     # rm /home/mvanega1/SpatialRust/slurmjobid-$gen.txt
     julia ~/SpatialRust/scripts/GA/produceGeneration.jl \
     $popsize $gen $maxgens $reps $steps $cprice $pcrs $pmut $expfolder $obj $prem
+    
+    echo finished
+    echo `date +%F-%T`
+    exit 0
     """)
     return fpath
 end
