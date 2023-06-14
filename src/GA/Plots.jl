@@ -193,7 +193,10 @@ function hmaxis!(fig, pos, df)
         xaxisposition = :top,
         yreversed = true
     )
-    hm = heatmap!(ax1, df.pos, df.gen, df.minfreq, colormap = :viridis, colorrange = (0, 0.5))
+    hm = heatmap!(ax1, df.pos, df.gen, df.minfreq,
+    colormap = Reverse(:roma),
+    # colormap = :viridis,
+    colorrange = (0, 0.5))
     hidedecorations!(ax1, ticks = false, ticklabels = false, label = false)
     hidespines!(ax1)
     xlims!(ax1, 0, 88.2)
@@ -315,7 +318,9 @@ function hmfigure(folder, exps, poss)
     Label(fig[6, 3], "2 Years,\nNo Premiums", rotation = 3pi/2, tellheight = false, font = :bold)
     Label(fig[8, 3], "2 Years,\nPremiums", rotation = 3pi/2, tellheight = false, font = :bold)
 
-    cb = Colorbar(fig[-1, 1:2], limits = (0, 0.5), colormap = :viridis,
+    cb = Colorbar(fig[-1, 1:2], limits = (0, 0.5),
+    colormap = Reverse(:roma),
+    # colormap = :viridis,
     tellwidth = false, tellheight = false, width = 400, height = 10,
     label = "Position Variability", labelsize = 15, ticklabelsize = 12,
     vertical = false,
@@ -374,6 +379,7 @@ function fitaxis!(fig, pos, dfsd)
     l1 = lines!(ax1, dfsd.gen, dfsd.meanfit, color = (mcolr, 1.0), linewidth = lw, label = "Mean ± sd")
     l2 = lines!(ax1, dfsd.gen, dfsd.maxfit, color = (:firebrick4, 1.0), linestyle = :dash, linewidth = lw, label = "Maximum")
     ax1.xticks = collect(20:20:160)
+    ax1.yticks = collect(0:20:100)
     xlims!(low = 1, high = maximum(dfsd.gen))
 
     return ax1
@@ -386,10 +392,10 @@ function fitfigure(folder, exps, poss, gen)
 
     fig[-1,1:end] = Legend(fig, fitaxs[2], merge = true, orientation = :horizontal)
     
-    # for ax in 1:2:length(fitaxs)
-    #     linkyaxes!(fitaxs[ax], fitaxs[ax + 1])
-    # end
-    linkyaxes!(fitaxs...)
+    for ax in 1:2:length(fitaxs)
+        linkyaxes!(fitaxs[ax], fitaxs[ax + 1])
+    end
+    # linkyaxes!(fitaxs...)
     # linkyaxes!.([p for p in Iterators.partition(fitaxs, 2)])
 
     Label(fig[1:end, 0], "Fitness Score", rotation = pi/2)

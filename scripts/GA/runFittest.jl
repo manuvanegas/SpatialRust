@@ -7,7 +7,7 @@ arrayid = parse(Int, ARGS[2])
 # years = parse(Int, ARGS[3])
 reps = parse(Int, ARGS[3])
 
-p = mkpath("results/GA4/fittest/")
+p = mkpath("results/GA4/fittest/$reps")
 
 pars = CSV.read(filepath, DataFrame)[arrayid, :]
 # pars.steps = 2555
@@ -116,4 +116,4 @@ end
 outs = runfittest(pars, reps)
 
 df = hcat(DataFrame(scenario = scen, rep = 1:reps), outs)
-CSV.write(joinpath(p, "$(scen)-$(reps).csv"), df)
+CSV.write(joinpath(p, "$(scen).csv"), df)

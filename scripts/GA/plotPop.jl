@@ -26,12 +26,12 @@ fhm = historyhm(freqs, true)
 # savedissGA("test.png", fhm)
 
 
-poss = [(1,1),(1,2),(2,1),(2,2)]
-exps = ["profit-np", "profit-p", "sev-np", "sev-p"]
+# poss = [(1,1),(1,2),(2,1),(2,2)]
+# exps = ["profit-np", "profit-p", "sev-np", "sev-p"]
 
-exps2 = ["profit-np-s",  "sev-np-s", "profit-p-s1b",  "sev-p-s1b", "profit-np",  "sev-np", "profit-p",  "sev-p",]
-poss2 = [(1,1),(1,2),(2,1),(2,2),(3,1),(3,2),(4,1),(4,2)]
+exps = ["profit-np-s",  "sev-np-s", "profit-p-s1b",  "sev-p-s1b", "profit-np",  "sev-np", "profit-p-2b",  "sev-p-2b",]
+poss = [(1,1),(1,2),(2,1),(2,2),(3,1),(3,2),(4,1),(4,2)]
 
-hmfig = hmfigure("results/GA/4/2/", exps2, poss2)
+hmfig = hmfigure("results/GA/4/2/", exps, poss)
 
-savedissGA("hm8.png", hmfig)
+savedissGA("hm8-2.png", hmfig)
