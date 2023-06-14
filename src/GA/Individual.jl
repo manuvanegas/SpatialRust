@@ -83,27 +83,32 @@ function farm_profit(model::SpatialRustABM, steps::Int, cprice::Float64, premium
     
     if premiums
         fungs = 0
-        accshade = 0.0
+        #accshade = 0.0
+        accshade = 1.0
         everyn = 7 # (7*4*13=364)
         while s < steps # && model.current.inbusiness
             s += step_n!(model, everyn)
+            accshade = min(accshade, copy(model.current.ind_shade))
             if s % 365 == 364
                 # model.current.costs += model.mngpars.other_costs * avsunlight - 0.032
                 #if model.current.fung_count > 0
                 #    nofung = false
                 #end
                 fungs += model.current.fung_count
-                accshade = copy(model.current.shadeacc)
+                #accshade = copy(model.current.shadeacc)
                 step_model!(model)
                 s += 1
             end
         end
         
         prem = 0.0
-        if fungs < 2
-            if ((accshade / 364.0) * mean(model.shade_map)) > 0.4
+        #if fungs < 2
+        if fungs == 0
+            #if ((accshade / 364.0) * mean(model.shade_map)) > 0.4
+            if (accshade * mean(model.shade_map)) > 0.4
                 prem = 0.2
-            elseif fungs == 0
+            #elseif fungs == 0
+            else
                 prem = 0.1
             end
         end
@@ -166,7 +171,8 @@ function severity(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::
     sev = 0.0
     insps = 0
     fungs = 0
-    accshade = 0.0
+    #accshade = 0.0
+    accshade = 1.0
     
     ninsp = round(Int, length(model.agents) * 0.1)
     allcofs = model.agents
@@ -179,9 +185,11 @@ function severity(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::
         sev += mean(map(c -> sum(visible, c.areas, init = 0.0), inspected))
         insps += 1
         
+        accshade = min(accshade, copy(model.current.ind_shade))
+        
         if s % 365 == 364
             fungs += model.current.fung_count
-            accshade = copy(model.current.shadeacc)
+            #accshade = copy(model.current.shadeacc)
             step_model!(model)
             s += 1
         end
@@ -189,10 +197,13 @@ function severity(model::SpatialRustABM, steps::Int, cprice::Float64, premiums::
     
     prem = 0.0
     if premiums
-        if fungs < 2
-            if ((accshade / 364.0) * mean(model.shade_map)) > 0.4
+        #if fungs < 2
+        if fungs == 0
+            #if ((accshade / 364.0) * mean(model.shade_map)) > 0.4
+            if (accshade * mean(model.shade_map)) > 0.4
                 prem = 0.2
-            elseif fungs == 0
+            #elseif fungs == 0
+            else
                 prem = 0.1
             end
         end
