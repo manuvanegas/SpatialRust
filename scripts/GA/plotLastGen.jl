@@ -19,7 +19,7 @@ function getbestind(folder, exp, v)
     gen = string("g-", lpad(pos[1], 3, "0"), ".csv")
     chrom = readdlm(joinpath(folder, exp, "pops", gen), ',')[:, pos[2]]
     
-    return express(chrom)
+    return (express(chrom)..., exp = exp)
 end
 
 exps = ["profit-np-s",  "sev-np-s", "profit-p-s1b",  "sev-p-s1b", "profit-np",  "sev-np", "profit-p-2b",  "sev-p-2b",]
@@ -79,11 +79,29 @@ current_figure()
 
 include("../../src/GA/GARuns.jl")
 
-parsdf = phenofit("profit-np-s", 100, 125);
+function phenofit(obj, lp, fh = 0)
+    if fh == 0
+        fh = lp
+    end
+    lastpopf = readdir("results/GA/4/2/$obj/pops/", join = true, sort = true)[lp]
+    lastpop = readdlm(lastpopf, ',', Bool)
+    parsdf = DataFrame(map(express, eachcol(lastpop)))
+    transform!(parsdf, eachindex => :indiv)
+
+    fitness = CSV.read("results/GA/4/2/$obj/fitnesshistory-$fh.csv", DataFrame, header = false)
+    println(findmax(maximum(r) for r in eachrow(fitness)))
+    lastfitns = DataFrame(indiv = 1:ncol(fitness), fitns = stack(fitness[lp,:]))
+    println(maximum(lastfitns.fitns))
+    leftjoin!(parsdf, lastfitns, on = :indiv)
+
+    return parsdf
+end
+
+parsdf = phenofit("sev-p-2b", 128, 150);
 bestpars = subset(parsdf, :fitns => ByRow(==(maximum(parsdf.fitns))))
 bestpars = sort(parsdf, :fitns, rev = true)[1:5,:]
 
-@time bdf = garuns(1, 2555, 0.65, false; 
+@time bdf = garuns(1, 2555, 1.0, false; 
     mean_temp = 22.0,
     rain_prob = 0.8,
     bestpars[1,Not([:indiv,:fitns])]...)
@@ -134,8 +152,10 @@ current_figure()
 )
 
 # @benchmark basesc = garuns(1, 730, 0.65, false; prf...)
+bbexp = deepcopy(bestexppars[8,:])
+bbexp.inspect_effort = 0.5
 
-@time basesc = garuns(1, 2555, 0.65, false; sev...)
+@time basesc = garuns(1, 2555, 0.65, false; bbexp...)
 
 lines(basesc.dayn, basesc.production)
 lines(basesc.dayn, basesc.gsumarea)
@@ -172,22 +192,3 @@ obj = "longtermprofit-0.0"
 pcross = 0.5
 pmut = 0.02
 lp = 80
-
-
-function phenofit(obj, lp, fh = 0)
-    if fh == 0
-        fh = lp
-    end
-    lastpopf = readdir("results/GA/4/2/$obj/pops/", join = true, sort = true)[lp]
-    lastpop = readdlm(lastpopf, ',', Bool)
-    parsdf = DataFrame(map(express, eachcol(lastpop)))
-    transform!(parsdf, eachindex => :indiv)
-
-    fitness = CSV.read("results/GA/4/2/$obj/fitnesshistory-$fh.csv", DataFrame, header = false)
-    println(findmax(maximum(r) for r in eachrow(fitness)))
-    lastfitns = DataFrame(indiv = 1:ncol(fitness), fitns = stack(fitness[lp,:]))
-    println(maximum(lastfitns.fitns))
-    leftjoin!(parsdf, lastfitns, on = :indiv)
-
-    return parsdf
-end

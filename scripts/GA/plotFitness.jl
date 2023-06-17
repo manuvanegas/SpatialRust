@@ -20,3 +20,7 @@ plotfit("profit-np-s", 115)
 plotfit("profit-p-s", 115)
 plotfit("sev-np-s", 115)
 plotfit("sev-p-s", 115)
+
+
+fitfig = fitfigure("results/GA/4/2/", exps, poss, 125)
+savedissGA("fit8.png", fitfig)

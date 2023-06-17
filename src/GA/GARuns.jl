@@ -38,6 +38,7 @@ function run(steps::Int, rem::Float64, premiums::Bool; kwargs...)
 
     df = DataFrame(dayn = Int[],
         indshade = Float64[], mapshade = Float64[],
+        veg = Float64[], storage = Float64[],
         production = Float64[], active = Float64[],
         incidence = Float64[], obs_incidence = Float64[],
         gsumarea = Float64[], sumarea = Float64[], inoculum = Float64[], nl = Float64[],
@@ -66,6 +67,8 @@ function run(steps::Int, rem::Float64, premiums::Bool; kwargs...)
             model.current.days,
             indshade,
             indshade * meanshade,
+            mean(map(c -> c.veg, allcofs)),
+            mean(map(c -> c.storage, allcofs)),
             mean(map(currentprod, allcofs)),
             actvcofs / ncofs,
             sum(map(activeRust, allcofs)) / actvcofs,

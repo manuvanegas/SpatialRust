@@ -313,10 +313,10 @@ function hmfigure(folder, exps, poss)
     Label(fig[0, 2], "Profit + Severity Bonus", tellwidth = false, height = 5, font = :bold)
     Label(fig[1, 1:end], "Position in Chromosome", height = 10, padding = (0,0,0,0))
     Label(fig[1:end, 0], "Generation", rotation = pi/2, width = 15, padding = (-10,0,0,0))
-    Label(fig[2, 3], "1 Year,\nNo Premiums", rotation = 3pi/2, tellheight = false, font = :bold)
-    Label(fig[4, 3], "1 Year,\nPremiums", rotation = 3pi/2, tellheight = false, font = :bold)
-    Label(fig[6, 3], "2 Years,\nNo Premiums", rotation = 3pi/2, tellheight = false, font = :bold)
-    Label(fig[8, 3], "2 Years,\nPremiums", rotation = 3pi/2, tellheight = false, font = :bold)
+    Label(fig[2, 3], "Short Term,\nNo Premiums", rotation = 3pi/2, tellheight = false, font = :bold)
+    Label(fig[4, 3], "Short Term,\nPremiums", rotation = 3pi/2, tellheight = false, font = :bold)
+    Label(fig[6, 3], "Medium Term,\nNo Premiums", rotation = 3pi/2, tellheight = false, font = :bold)
+    Label(fig[8, 3], "Medium Term,\nPremiums", rotation = 3pi/2, tellheight = false, font = :bold)
 
     cb = Colorbar(fig[-1, 1:2], limits = (0, 0.5),
     colormap = Reverse(:roma),
@@ -402,10 +402,10 @@ function fitfigure(folder, exps, poss, gen)
     Label(fig[5, 1:end], "Generation")
     Label(fig[0, 1], "Profit", tellwidth = false, height = 5, font = :bold)
     Label(fig[0, 2], "Profit + Severity Bonus", tellwidth = false, height = 5, font = :bold)
-    Label(fig[1, 3], "1 Year,\nNo Premiums", rotation = 3pi/2, tellheight = false, font = :bold)
-    Label(fig[2, 3], "1 Year,\nPremiums", rotation = 3pi/2, tellheight = false, font = :bold)
-    Label(fig[3, 3], "2 Years,\nNo Premiums", rotation = 3pi/2, tellheight = false, font = :bold)
-    Label(fig[4, 3], "2 Years,\nPremiums", rotation = 3pi/2, tellheight = false, font = :bold)
+    Label(fig[1, 3], "Short Term,\nNo Premiums", rotation = 3pi/2, tellheight = false, font = :bold)
+    Label(fig[2, 3], "Short Term,\nPremiums", rotation = 3pi/2, tellheight = false, font = :bold)
+    Label(fig[3, 3], "Medium Term,\nNo Premiums", rotation = 3pi/2, tellheight = false, font = :bold)
+    Label(fig[4, 3], "Medium Term,\nPremiums", rotation = 3pi/2, tellheight = false, font = :bold)
 
     rowgap!(fig.layout, 2, 5)
     rowgap!(fig.layout, 6, 10)
@@ -414,9 +414,6 @@ function fitfigure(folder, exps, poss, gen)
 
     return fig
 end
-
-fitfig = fitfigure("results/GA/4/2/", exps2, poss2, 125)
-savedissGA("fit8.png", fitfig)
 
 function plotfit(obj, gen)
     fitness = CSV.read("results/GA/4/2/$obj/fitnesshistory-$gen.csv", DataFrame, header = false);
