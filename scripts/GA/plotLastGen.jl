@@ -29,6 +29,11 @@ bestexppars = DataFrame(pars)
 
 CSV.write("results/GA/4/2/fittest/parsdf.csv", bestexppars)
 
+bestexpparsNF = deepcopy(bestexppars)
+bestexpparsNF.fungicide_sch .= [Int[]]
+bestexpparsNF.fung_stratg .= :cal
+
+CSV.write("results/GA/4/2/fittest/parsdfNF.csv", bestexpparsNF)
 
 ###########################################################
 ##
@@ -97,11 +102,11 @@ function phenofit(obj, lp, fh = 0)
     return parsdf
 end
 
-parsdf = phenofit("sev-p-2b", 128, 150);
+parsdf = phenofit("sev-p-2b", 125, 125);
 bestpars = subset(parsdf, :fitns => ByRow(==(maximum(parsdf.fitns))))
 bestpars = sort(parsdf, :fitns, rev = true)[1:5,:]
 
-@time bdf = garuns(1, 2555, 1.0, false; 
+@time bdf = garuns(1, 365, 1.0, false; 
     mean_temp = 22.0,
     rain_prob = 0.8,
     bestpars[1,Not([:indiv,:fitns])]...)
@@ -110,6 +115,15 @@ bestpars = sort(parsdf, :fitns, rev = true)[1:5,:]
 # bp2[!,:row_d] .= 2
 # bdf = garuns(1, 2190, 0.85, false; mean_temp = 22.0, bp2[1,Not([:indiv,:fitns])]...)
 
+# mean(bdf.mapshade)
+# "profit-np-s" -> 0.3960382138592426
+# "sev-np-s" -> 0.34956781443576285
+# "profit-p-s1b" -> 0.34530010803395605
+# "sev-p-s1b" -> 0.29290319850432917
+# "profit-np" -> 0.1615357697815683
+# "sev-np" -> 0.1542541267449669
+# "profit-p-2b" -> 0.5376182424600082
+# "sev-p-2b" -> 0.5399456336288129
 
 lines(bdf.dayn, bdf.production)
 # lines(bdf.dayn, bdf.farmprod)

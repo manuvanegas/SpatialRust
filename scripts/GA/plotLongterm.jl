@@ -28,10 +28,6 @@ function addjitter(dfo, var, bands, seed)
     return df
 end
 
-p4df = addjitter(df, :p4, 20)
-
-scatter(p4df.xpos, p4df.p4)
-
 
 function scengroup(s)
     # findfirst(==(s), [:p_np_s, :p_p_s, :p_np_m, :p_p_m, :s_np_s, :s_p_s, :s_np_m, :s_p_m])
@@ -53,7 +49,7 @@ function boxplotfig(dfi, var, withscatt, bands = 10)
 
     df = transform(dfi, :scenario => ByRow(scengroup) => :group)
 
-    fig = Figure(resolution = (800,500))
+    fig = Figure(resolution = (800,425))
     colors = [categorical_colors(:oleron10,10)[[1,6]]]
     alpha = 0.6
     df.color .= getcolor.(df.group, colors, alpha)
@@ -78,7 +74,7 @@ function boxplotfig(dfi, var, withscatt, bands = 10)
         xticks = ([1.5, 3.5], [
             "Short Term", "Medium Term",
         ]),
-        xticklabelrotation = pi/4,
+        # xticklabelrotation = pi/4,
         # xticklabelsize = tsize
     )
     ax2 = Axis(fig[1,2], 
@@ -89,7 +85,7 @@ function boxplotfig(dfi, var, withscatt, bands = 10)
         xticks = ([1.5, 3.5], [
             "Short Term", "Medium Term",
         ]),
-        xticklabelrotation = pi/4,
+        # xticklabelrotation = pi/4,
         # xticklabelsize = tsize
     )
     
@@ -139,9 +135,15 @@ transform!(df, [:p4, :p5, :p6, :p7] .=> (p -> p / 1000) .=> [:p4, :p5, :p6, :p7]
 # CSV.write("results/GA/4/2/fittest/100/all.csv", df)
 
 p4 = boxplotfig(df, :p4, true, 10)
-s4 = boxplotfig(df, :s4, true, 10)
+scatter!(p4[1,1], [1,2,3,4], [112, 112.1, 116.5, 111.8], marker = ['d', 'd', 'c', 'd'], color = :black, markersize = 14)
+scatter!(p4[1,2], [1,2,3,4], [115.5, 115.8, 122, 118], marker = ['c', 'c', 'a', 'b'], color = :black, markersize = 14)
 
-boxplotfig(df, :s6, true, 10)
+s4 = boxplotfig(df, :s4, true, 10)
+scatter!(s4[1,1], [1,2,3,4], [0.09, 0.08, 0.17, 0.165], marker = ['c', 'd', 'a', 'a'], color = :black, markersize = 14)
+scatter!(s4[1,2], [1,2,3,4], [0.08, 0.075, 0.03, 0.11], marker = ['d', 'e', 'f', 'b'], color = :black, markersize = 14)
+
+
+boxplotfig(df, :f4, true, 10)
 
 savedissGA("profit4.png", p4)
 savedissGA("severity4.png", s4)
@@ -152,3 +154,6 @@ savedissGA("severity4.png", s4)
 # [
 # "Short Term, No Premiums", "Short Term, Premiums", "Medium Term, No Premiums", "Medium Term, Premiums",
 # ]
+
+
+tb = boxplot([1,2,3,1,2,3,1,2,3], [1,2,3,1,2,3,1,2,3])
