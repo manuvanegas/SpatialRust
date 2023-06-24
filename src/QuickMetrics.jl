@@ -1,4 +1,4 @@
-export totprod, maxA, incidence, n_coffees, justcofs, justrusts, active, emean
+export totprod, maxA, incidence, n_coffees, justcofs, justrusts, active, activeRust, emean
 
 totprod(model::SpatialRustABM) = model.current.prod
 

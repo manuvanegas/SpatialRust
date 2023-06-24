@@ -68,7 +68,7 @@ else
         outputs = pmap(
             p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018),
             wp,
-            eachrow(parameters); retry_delays = fill(0.1, 3))
+            Tables.namedtupleiterator(parameters); retry_delays = fill(0.1, 3))
         # outputs = pmap(p -> sim_abc(p),
         #                 eachrow(parameters); retry_delays = fill(0.1, 3), batch_size = 20)
         println("total: ", length(outputs))

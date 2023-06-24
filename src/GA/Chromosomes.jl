@@ -58,7 +58,7 @@ Shades:
 - barrier_rows -- 2                     | 1
 Shade Management:
 - prune_sch -- 3X DoY                   | 3x5
-- target_shade -- 3X 0.1to1             | 3x5
+- post_prune -- 3X 0.1to1             | 3x5
 Inspection:
 - inspect_period -- dayperiod           | 4
 - inspect_effort -- 0.1to1              | 5
@@ -79,7 +79,7 @@ end
 
 DoY(x::Vararg{Int}) = collect(@. round(Int, 365 * x * inv(32)))
 proportion(x::Vararg{Int}) = collect(@. (x + 1) * inv(32))
-propto08(x::Vararg{Int}) = collect(@. (x + 1) * 0.8 * inv(32))
+propto08(x::Vararg{Int}) = collect(@. (x + 1) * 0.75 * inv(32))
 perioddays(x::Int) = (x + 1) * 4
 
 

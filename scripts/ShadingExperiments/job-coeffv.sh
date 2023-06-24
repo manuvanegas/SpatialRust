@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --ntasks=5
 #SBATCH --ntasks-per-core=1
-#SBATCH --mem=5G
+#SBATCH --mem=4G
 
 #SBATCH -p htc
 #SBATCH -q public
@@ -16,6 +16,9 @@
 module purge
 module load julia/1.8.2
 
+echo `date +%F-%T`
+echo $SLURM_JOB_ID
+echo $SLURM_JOB_NODELIST
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 julia --machine-file $SLURM_NODEFILE \
-~/SpatialRust/scripts/ShadingExperiments/calcRepCVs.jl 600 23.0 0.8
+~/SpatialRust/scripts/ShadingExperiments/calcRepCVs.jl 600 22.0 0.8 0.7 4

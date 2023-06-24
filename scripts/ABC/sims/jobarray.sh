@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --array=1-80
-#SBATCH --mem=12G
+#SBATCH --array=1-50 #80
+#SBATCH --mem=3G
 #SBATCH --ntasks=5
 #SBATCH --ntasks-per-core=1
 #SBATCH -p htc
@@ -15,6 +15,7 @@
 
 module purge
 module load julia/1.8.2
+ulimit -s 262144
 
 # checklist
 # [] Pkg.precompiled 
@@ -23,8 +24,11 @@ module load julia/1.8.2
 # [] correct # arrays/runs per job
 # [] every file has been saved!
 
+echo `date +%F-%T`
+echo $SLURM_JOB_ID
+echo $SLURM_JOB_NODELIST
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 cp $SLURM_NODEFILE logs/ABC/nodefiles/nodes_${SLURM_ARRAY_TASK_ID}
 # ARGS: params file #, slurm job array id, # cores, # sims per core
 julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl \
-5 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 2500 # 250 #500
+16 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 4000 #2500 # 250 #500

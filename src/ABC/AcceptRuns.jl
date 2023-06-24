@@ -9,10 +9,7 @@ end
 
 function metric_combination(idx::Vector{Int})
     quants = [:area_d, :spore_d, :nl_d, :occup_d]
-    quals = [
-        :exh_sun, :prod_clr_sun, :exh_shade, :prod_clr_shade,
-        :exh_spct, :prod_clr_cor
-    ]
+    quals = [:exh_d, :incid_d, :cor_d]
     qntsid = filter(i -> i < 5, idx)
     qlsid = filter(i -> i > 4, idx) .- 4
     return quals[qlsid], quants[qntsid]
@@ -64,6 +61,19 @@ function replacenans(df::DataFrame, regex::Regex, val::Float64)
     return df2
 end
 
+function fromquantile(dists::DataFrame, n::Int, qualmetrics::Vector{Symbol}, quantmetrics::Vector{Symbol})
+    d1 = sum_cols(dists, qualmetrics, :qual_dist)
+    d1 = sum_cols(d1, quantmetrics, :quant_dist)
+    sort!(d1, :qual_dist)
+    
+    apxq = 1.5 * n / nrow(dists)
+    thr = quantile(d1.qual_dist, apxq)
+    println(thr)
+
+    subset!(d1, :qual_dist => ByRow(<=(thr)))
+    return sort!(d1, :quant_dist)[1:n,:]
+end
+
 function best_100(dists::DataFrame, qualsfirst::Bool, qualmetrics::Vector{Symbol}, quantmetrics::Vector{Symbol})
     return best_n(dists, qualsfirst, 100, qualmetrics, quantmetrics)
 end
@@ -82,21 +92,28 @@ function best_n(dists::DataFrame, qualsfirst::Bool, n::Int, qualmetrics::Vector{
         )
         sort!(d1, :qual_dist)
     elseif qualsfirst
-        d1 = transform(
-            dists, :p_row,
-            AsTable(qualmetrics) => ByRow(sqrt ∘ sum) => :qual_dist,
-            AsTable(quantmetrics) => ByRow(sqrt ∘ sum) => :quant_dist,
-            )
+        # println(qualmetrics)
+        # println(quantmetrics)
+        # println("$quantmetrics but $(quantmetrics[2]) later")
+        d1 = sum_cols(dists, qualmetrics, :qual_dist)
+        d1 = sum_cols(d1, quantmetrics, :quant_dist)
+        # d1 = sum_these(d1, quantmetrics[Not(2)], :quant_dist)
+        # d1 = sum_these(d1, [quantmetrics[2]], :spores)
         sort!(d1, [:qual_dist, :quant_dist])
+        # sort!(d1, [:qual_dist, :quant_dist, :spores])
     else
         d1 = transform(
             dists, :p_row,
-            AsTable(qualmetrics) => ByRow(sqrt ∘ sum) => :qual_dist,
-            AsTable(quantmetrics) => ByRow(sqrt ∘ sum) => :quant_dist,
+            AsTable(qualmetrics) => ByRow(sum) => :qual_dist,
+            AsTable(quantmetrics) => ByRow(sum) => :quant_dist,
             )
         sort!(d1, [:quant_dist, :qual_dist])
     end
     return d1[1:n, :]
+end
+
+function sum_cols(dists::DataFrame, ms::Vector{Symbol}, name::Symbol)
+    return transform(dists, AsTable(ms) => ByRow(sum) => name)
 end
 
 function best_100ranked(dists::DataFrame,qualmetrics::Vector{Symbol}, quantmetrics::Vector{Symbol})
@@ -132,27 +149,55 @@ function best_hierar(dists::DataFrame, n::Int, qualmetrics::Vector{Symbol}, quan
     return d1[1:n, :]
 end
 
-get_best_params(params::DataFrame, sel_rows::DataFrame) = subset(params, :p_row => x -> x .∈ Ref(sel_rows.p_row))
 
-function sample_rejected(sel_rows::DataFrame)
-    rows = sel_rows.p_row
-    rand(filter(n -> n ∉ rows, 1:10^6), 100)
-end
+sample_rejected(sel_rows::Vector{Int}, totrows::Int) = sample_rejected_n(sel_rows, totrows, 100)
 
-get_rejected(params::DataFrame, sampled::Vector{Int}) = subset(params, :p_row => x -> x .∈ Ref(sampled))
+sample_rejected_n(sel_rows::Vector{Int}, totrows::Int, n::Int) = rand(filter(n -> n ∉ sel_rows, 1:totrows), n)
 
-function write_accept_reject_runs(parameters::DataFrame, sel_rows::DataFrame, metrics::String, nmissing::Int)
-    selparams = get_best_params(parameters, sel_rows)
-    # # selhead = first(selparams, 10)
-    # append!(selhead, )
-    # selhead[11, :p_row] = -1
+get_params_rows(params::DataFrame, sel_rows::Vector{Int}) = subset(params, :p_row => x -> x .∈ Ref(sel_rows))
+
+function get_best_accept_reject(parameters::DataFrame, sel_rows::Vector{Int}, b::Int)
+    r1 = sel_rows[b]
+    selparams = get_params_rows(parameters, sel_rows)
+    bestest = filter(:p_row => .==(r1), selparams)
     pointestimate = combine(selparams, Not(:p_row) .=> median, renamecols = false)
-    rejected = get_rejected(parameters, sample_rejected(sel_rows))
-
-    CSV.write(string("results/ABC/params/pointestimate_", metrics, "_", nmissing, ".csv"), pointestimate)
-    CSV.write(string("results/ABC/params/accepted_", metrics, "_", nmissing, ".csv"), selparams)
-    CSV.write(string("results/ABC/params/rejected_", metrics, "_", nmissing, ".csv"), rejected)
+    rejected = get_params_rows(parameters, sample_rejected(sel_rows, nrow(parameters)))
+    for df in (bestest, selparams, rejected)
+        transform!(df, Not(:p_row) .=> ByRow(round4), renamecols = false)
+    end
+    transform!(pointestimate, All() .=> ByRow(round4), renamecols = false)
+    return bestest, pointestimate, selparams, rejected
 end
+
+function write_dfs(dfs::NTuple{4, DataFrame}, metrics::String, fn::String)
+    bestpoint, medpoint, selparams, rejected = dfs
+    CSV.write(string("results/ABC/params/sents/", fn, "/", metrics, "_bestpointestimate.csv"), bestpoint)
+    CSV.write(string("results/ABC/params/sents/", fn, "/", metrics, "_medpointestimate.csv"), medpoint)
+    CSV.write(string("results/ABC/params/sents/", fn, "/", metrics, "_accepted.csv"), selparams)
+    CSV.write(string("results/ABC/params/sents/", fn, "/", metrics, "_rejected.csv"), rejected)
+end
+    
+
+function write_accept_reject_runs(parameters::DataFrame, sel_rows::DataFrame, metrics::String, b::Int, fn::String)
+
+    bestpoint, medpoint, selparams, rejected = get_best_accept_reject(parameters, sel_rows, b)
+    write_dfs((bestpoint, medpoint, selparams, rejected), metrics, fn)
+
+    return bestpoint, pointestimate, selparams, rejected
+end
+
+function top_n_rows(parameters::DataFrame, selrows::Vector{Int}, n::Int)
+    toppars = DataFrame(deepcopy(parameters[selrows[1], :]))
+    toprowns = selrows[2:n]
+    for rown in toprowns
+        push!(toppars, parameters[rown, :])
+    end
+    transform!(toppars, Not(:p_row) .=> ByRow(round4), renamecols = false)
+    return toppars
+end
+
+round6(x) = round(x, digits = 6)
+round4(x) = round(x, digits = 4)
 
 function best_sepvars(dists::DataFrame, var::Symbol, n::Int)
     d1 = transform(
@@ -160,3 +205,20 @@ function best_sepvars(dists::DataFrame, var::Symbol, n::Int)
         AsTable([:exh_sun, :prod_clr_sun, :exh_shade, :prod_clr_shade]) => ByRow(sqrt ∘ sum) => :qual_dist)
     sort(d1, [:qual_dist, var])[1:n, :]
 end
+
+function test_params(pars, row)
+    steps = 2920
+    dffs = simplerun(steps; seed = 123, common_map = :fullsun,
+    start_days_at = 115,
+    prune_sch = [15, 166, -1],
+    post_prune = [0.15, 0.2, -1],
+    pars[row, :]...);
+    dfms = simplerun(steps; seed = 123, common_map = :regshaded, shade_d = 6, barriers = (0,0),
+    start_days_at = 115, 
+    prune_sch = [15, 166, -1],
+    post_prune = [0.15, 0.2, -1],
+    pars[row, :]...);
+    return dffs, dfms
+end
+
+

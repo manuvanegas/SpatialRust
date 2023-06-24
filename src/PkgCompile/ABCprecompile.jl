@@ -29,5 +29,5 @@ temp_data = Tuple(w_table[2])
 rain_data = Tuple(w_table[3])
 wind_data = Tuple(w_table[4]);
 
-touts = map(p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018), eachrow(tdf))
+touts = map(p -> sim_abc(p, temp_data, rain_data, wind_data, when_2017, when_2018), Tables.namedtupleiterator(tdf))
 tquant, tqual = reduce(cat_dfs, touts)

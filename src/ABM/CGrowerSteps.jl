@@ -1,49 +1,85 @@
 function harvest!(model::SpatialRustABM)
-    model.current.prod += sum(getproperty.(model.agents, :production))
+    yprod = sum(map(c -> c.production, model.agents))
+    model.current.prod += yprod
+    cost = model.current.costs += model.mngpars.fixed_costs +
+        yprod * (model.mngpars.other_costs * (1.0 -  (model.current.shadeacc / 365.0) * mean(model.shade_map)) + 0.012)
+    model.current.shadeacc = 0.0
+    
+    # if sum(active, model.agents)/length(model.agents) < 0.1
+    #     model.current.inbusiness = false
+    # #elseif (years = div(model.current.days, model.mngpars.harvest_day)) > 1
+    # #    tot_in = model.current.prod * model.mngpars.coffee_price
+    # #    if (cost - tot_in) > (0.5 * tot_in * inv(years))
+    # #        model.current.inbusiness = false
+    # #    end
+    # end
 
-    if (years = div(model.current.days, model.mngpars.harvest_day)) > 1
-        tot_in = model.current.prod * model.mngpars.coffee_price
-        if (sum(active.(model.agents))/length(model.agents) < 0.1) || (model.current.costs - tot_in) > (0.5 * tot_in * inv(years)) # if deficit is more than half the av revenue
-            model.current.inbusiness = false
-        end
-    end
+    # if (years = div(model.current.days, model.mngpars.harvest_day)) > 1
+    #     tot_in = model.current.prod * model.mngpars.coffee_price
+    #     if (sum(active.(model.agents))/length(model.agents) < 0.1) || (model.current.costs - tot_in) > (0.5 * tot_in * inv(years)) # if deficit is more than half the av revenue
+    #         model.current.inbusiness = false
+    #     end
+    # end
 
     model.current.fung_count = 0
-    new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive, model.rustpars.max_lesions, model.rustpars.reset_age)
+    # new_harvest_cycle!.(model.agents, model.mngpars.lesion_survive)
+    map(a -> new_harvest_cycle!(a, model.mngpars.lesion_survive), model.agents)
+    return nothing
 end
 
-function new_harvest_cycle!(c::Coffee, surv_p::Float64, max_nl::Int, reset_age::Int)
+function new_harvest_cycle!(c::Coffee, surv_p::Float64)
     c.production = 0.0
     c.deposited *= surv_p
-    surv_n = c.n_lesions = trunc(Int, c.n_lesions * surv_p)
+    surv_n = trunc(Int, c.n_lesions * surv_p)
     if surv_n == 0
-        fill!(c.ages, reset_age)
-        fill!(c.areas, 0.0)
-        fill!(c.spores, false)
-        # if c.deposited < 0.1 
-        #     c.deposited = 0.0
-        #     delete!(rust.rusts, c)
-        # end
+        c.n_lesions = 0
+        empty!(c.ages)
+        empty!(c.areas)
+        empty!(c.spores)
+        if c.deposited < 0.05
+            c.deposited = 0.0
+            c.rusted = false
+        end
     else
-        fill_n = max_nl - surv_n
-        surv_sites = sortperm(ifzerothentwo.(c.areas))[1:surv_n]
-        c.ages = append!(c.ages[surv_sites], fill(reset_age, fill_n))
-        c.areas = append!(c.areas[surv_sites], zeros(fill_n))
-        c.spores = append!(c.spores[surv_sites], fill(false, fill_n))
+        lost = c.n_lesions - surv_n
+        c.n_lesions = surv_n
+        deleteat!(c.ages, 1:lost)
+        deleteat!(c.areas, 1:lost)
+        deleteat!(c.spores, 1:lost)
     end
+    return nothing
 end
+# 
+# ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
 
-ifzerothentwo(a::Float64) = a == 0.0 ? 2.0 : a
+# function prune_shades!(model::SpatialRustABM, prune_i::Int)
+#     prune_to = model.mngpars.post_prune[prune_i]
+#     if model.current.ind_shade > prune_to
+#         model.current.ind_shade = prune_to
+#     else
+#         model.current.ind_shade *= 0.9
+#     end
+#     model.current.costs += model.mngpars.tot_prune_cost
+# end
 
-function prune_shades!(model::SpatialRustABM, prune_i::Vector{Int})
-    prune_to = minimum(model.mngpars.target_shade[prune_i])
-    if model.current.ind_shade > prune_to
-        model.current.ind_shade .= prune_to
+function prune_shades!(model::SpatialRustABM, tshade::Float64)
+    if model.current.ind_shade > tshade
+        model.current.ind_shade = tshade
     else
-        model.current.ind_shade .*= 0.9
+        model.current.ind_shade *= 0.9
     end
     model.current.costs += model.mngpars.tot_prune_cost
 end
+
+# function prune_shades!(model::SpatialRustABM)
+#     if model.current.ind_shade > model.mngpars.post_prune
+#         model.current.ind_shade = model.mngpars.post_prune
+#     else
+#         model.current.ind_shade *= 0.9
+#     end
+#     model.current.costs += model.mngpars.tot_prune_cost
+# end
+
 
 # function prune!(model::SpatialRustABM)
 #     # n_pruned = trunc(model.pars.prune_effort * length(model.current.shade_ids))
@@ -52,62 +88,48 @@ end
 #     # pruned = partialsort(model.current.shade_ids, 1:n_pruned, rev=true, by = x -> model[x].shade)
 #     # for pr in pruned
 #     for pr in model.current.shade_ids
-#         model[pr].shade = model.pars.target_shade
+#         model[pr].shade = model.pars.post_prune
 #     end
 # end
 
 function inspect!(model::SpatialRustABM)
-    # exhausted coffees can be inspected in this version. They have a 100% chance of being regarded as infected.
-    inspected = sample(model.rng, model.agents, model.mngpars.n_inspected, replace = false)
     n_infected = 0
+    actv = filter(active, model.agents)
+    if model.mngpars.n_inspected < length(actv)
+        inspected = sample(model.rng, actv, model.mngpars.n_inspected, replace = false)
+    else
+        inspected = actv
+    end
 
+    rmles = model.mngpars.rm_lesions
     for c in inspected
-        if c.exh_countdown > 0
+        # lesion area of 0.05 means a diameter of ~0.25 cm, which is taken as minimum so grower can see it
+        nvis = sum(>(0.05), c.areas, init = 0.0)
+        # area of 0.8 means a diameter of ~1 cm
+        if nvis > 0  && (0.8 < maximum(c.areas, init = 0.0) || rand(model.rng) < nvis / 5)
+        # if nvis > 0 && rand(model.rng) < sum(visibleup, c.areas) / 25
+        # if (1.0 < maximum(c.areas, init = 0.0) || rand(model.rng) < maximum(c.areas, init = 0.0))
             n_infected += 1
-        # lesion area of 0.1 means a diameter of 0.36 cm, which is taken as a threshold for grower to spot it
-        elseif any(c.areas .> 0.1) && (rand(model.rng) < maximum(c.areas))
-            n_infected += 1
-            spotted = unique!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas[1:c.n_lesions])), 5))
-            fill_n = length(spotted)
-            c.n_lesions -= fill_n
-            c.ages = append!(c.ages[Not(spotted)], fill(model.rustpars.reset_age, fill_n))
-            c.areas = append!(c.areas[Not(spotted)], zeros(fill_n))
-            c.spores = append!(c.spores[Not(spotted)], fill(false, fill_n))
-            if c.n_lesions == 0 && (c.deposited < 0.1 )
+            spotted = unique!(sort!(sample(model.rng, 1:c.n_lesions, weights(visible.(c.areas)), rmles)))
+            deleteat!(c.ages, spotted)
+            deleteat!(c.areas, spotted)
+            deleteat!(c.spores, spotted)
+            c.n_lesions -= length(spotted)
+            if c.n_lesions == 0 && (c.deposited < 0.05)
                 c.deposited == 0.0
-                delete!(model.rusts, c)
+                c.rusted = false
             end
         end
- 
-        # cof = model[c]
-        # if c.hg_id != 0# && rand < model.pars.inspect_effort * (sum(model[hg_id].state[2,]) / 3)
-        #     #elimina las que sean > 2.5, * effort
-        #     @inbounds rust = model[c.hg_id]
-        #     @inbounds areas = rust.state[2, 1:rust.n_lesions]
-        #     if rand(model.rng) < maximum(areas)
-        #     # if any(areas .> 0.05)
-        #         # replace!(a -> ifelse(a .< 0.05, 0.0, a), areas) # areas < 0.05 have 0 chance of being spotted
-        #         spotted = unique!(sample(model.rng, 1:rust.n_lesions, weights(areas), 5))
-        #         newstate = @inbounds rust.state[:, Not(spotted)]
-        #         rust.n_lesions -= length(spotted)
-        #         rust.state = hcat(newstate, zeros(4, length(spotted)))
-        #         n_infected += 1
-        #     end
-        #     # rust.n_lesions = round(Int, model[cof.hg_id].n_lesions * 0.1)
-        #     # rust.area = round(Int, model[cof.hg_id].area * 0.1)
-        # end
     end
 
     model.current.costs += model.mngpars.tot_inspect_cost
     model.current.obs_incidence = n_infected / model.mngpars.n_inspected
 end
 
-# exhausted(c::Coffee)::Bool = c.exh_countdown > 0
-
-visible(a::Float64) = a > 0.1 ? a : 0.0
+visible(a::Float64) = a > 0.05 ? a : 0.0
 
 function fungicide!(model::SpatialRustABM)
     model.current.costs += model.mngpars.tot_fung_cost
-    model.current.fungicide = model.mngpars.fung_effect
+    model.current.fungicide = 1 # model.mngpars.fung_effect
     model.current.fung_count += 1
 end

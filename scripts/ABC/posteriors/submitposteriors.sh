@@ -13,6 +13,7 @@
 module purge
 module load julia/1.8.2
 
+echo `date +%F-%T`
 export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 julia --machine-file $SLURM_NODEFILE \
 ~/SpatialRust/scripts/ABC/posteriors/runPosteriorChecks.jl

@@ -1,8 +1,9 @@
 #!/bin/bash
-#SBATCH --array=1
-#SBATCH --ntasks=5
+#SBATCH --array=2
+#SBATCH --ntasks=2
 #SBATCH --ntasks-per-core=1
-# #SBATCH --mem=5G
+# #SBATCH --nodelist=c016
+#SBATCH --mem=2G
 #SBATCH -p htc
 #SBATCH -q debug
 #SBATCH -J debug-ABC
@@ -23,8 +24,13 @@ export SLURM_NODEFILE=`scripts/generate_pbs_nodefile.pl`
 # echo "pkg should be loaded"
 # julia --project=. --machine-file $SLURM_NODEFILE -e "using Pkg;println(Pkg.status())"
 
-julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl 5 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 200 #500
+echo `date +%F-%T`
+echo $SLURM_JOB_ID
+echo $SLURM_JOB_NODELIST
+ulimit -s 262144
 # ARGS: params file, slurm job array id, # cores, # sims per core
+julia --machine-file $SLURM_NODEFILE ~/SpatialRust/scripts/ABC/sims/runABC.jl 16 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 100 #500
+# julia ~/SpatialRust/scripts/ABC/sims/runABC.jl 9 $SLURM_ARRAY_TASK_ID $SLURM_NTASKS 400
 
 # julia --machine-file $SLURM_NODEFILE --sysimage src/PkgCompile/ABCSysimage.so -e 'u_t = @elapsed begin; @everywhere begin; using Pkg; Pkg.activate("."); end; @everywhere using SpatialRust; end; println(u_t)'
 

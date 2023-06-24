@@ -1,180 +1,289 @@
 # Calculate distances using FileTrees
 
 ## "Qualitative" variables
-function calc_l_dists(qualsdirname::String, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
+# function calc_l_dists(qualsdirname::String, dats::DataFrame, vars::DataFrameRow)::NTuple{2, DataFrame}
+function calc_l_dists(qualsdirname::String, dats)::DataFrame
     ft = FileTree(string("/scratch/mvanega1/ABC/sims/", qualsdirname))
     l_file_tree = FileTrees.load(ft; lazy = true) do file
         DataFrame(Arrow.Table(path(file)))
     end
-    lazy_dists = mapvalues(
-        x -> diff_quals(x, exh_min, exh_max, incidm, corm),
-        l_file_tree)
-    dists_l = exec(reducevalues(vcat, lazy_dists))
+    lazy_dists = mapvalues(x -> diff_quals(x, dats), l_file_tree)
+    # lazy_dists = mapvalues(x -> diff_quals(x, dats, vars), l_file_tree)
+    rowdists = exec(reducevalues(vcat, lazy_dists))
 
     # replace!(dists_l[!, :cor_d]) do cor
     #     isnan(cor) ? 1.0 : cor
     # end
-    rowdists = combine(
-        groupby(dists_l, :p_row),
-        Not(:p_row) .=> missum,
-        renamecols = false
-    )
+    # rowdists = combine(
+    #     groupby(dists_l, :p_row),
+    #     # Not(:p_row) .=> sum,
+    #     Not(:p_row) .=> missum,
+    #     renamecols = false
+    # )
     return rowdists
+    # return select(rowdists, :p_row, r"_dn"), select(rowdists, :p_row, r"_dv")
 end
 
-function missum(v)
-    nmis = sum(ismissing.(v))
-    if nmis == 0
-        return sum(v)
-    elseif nmis == 1
-        return sum(skipmissing(v))
-    else
-        return 2.8
-    end
-end
-
-function diff_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
-    dist_df = DataFrame(p_row = sims[:, :p_row])
-    dist_df[!, :exh_d] = accept_range.(sims[!, :exh], exh_min, exh_max)
-    dist_df[!, :incid_d] = max.(incidm .- sims[!, :incid], 0.0)
-    dist_df[!, :cor_d] = cor_diff.(corm, sims[!, :prod_clr])
-    dist_df[!, :frusts] = sims[:, :frusts]
-
-    return dist_df
-end
-
-function accept_range(out::Float64, minv::Float64, maxv::Float64)
-    if out < minv
-        return minv - out
-    elseif out < maxv
-        return 0.0
-    else
-        return out - maxv
-    end
-end
-
-function cor_diff(corm::Float64, sim::Float64)
-    if isnan(sim)
-        return missing
-    else
-        return max.(corm - sim, 0.0)
-    end
-end
-
-cor_diff(corm::Float64, sim::Missing) = missing
-
-## Quantitative variables
-function calc_nt_dists(quantsdirname::String, empdata::DataFrame)::NTuple{2, DataFrame}
-    ft = FileTree(string("/scratch/mvanega1/ABC/sims/", quantsdirname))
-    nt_file_tree = FileTrees.load(ft; lazy = true) do file
-        DataFrame(Arrow.Table(path(file)))
-    end
-    lazy_dists = mapvalues(x -> abs_norm_dist(x, empdata), nt_file_tree)
-    println("starting quants exec...")
-    flush(stdout)
-    dists_nt = exec(reducevalues(vcat, lazy_dists))
-    return select(dists_nt, :p_row, r"_d"), select(dists_nt, :p_row, r"_n")
-end
-
-function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
-    joined = leftjoin(empdata, sims, on = [:plot, :dayn, :age, :cycle])
-    # rename!(joined, :med_area => :area, :med_spore => :spore, :med_nl => :nl)
-    any(ismissing.(joined.p_row)) && error("missing rows $(first(skipmissing(joined.p_row)))")
-
-    dists = DataFrame(p_row = joined[:, :p_row])
-    for name in [:area, :spore, :nl, :occup]
-        dists[!, Symbol(name, :_d)] .= absdiff.(joined[!, Symbol(name, :_dat)], joined[!, name])
-        dists[!, Symbol(name, :_n)] .= findmissing.(joined[!, Symbol(name, :_dat)], joined[!, name])
-    end
-
-    if 1 in sims.p_row
-        CSV.write("results/ABC/dists/novar/samplerawjoined.csv", joined)
-        CSV.write("results/ABC/dists/novar/samplerawdists.csv", dists)
-    end
-
-    sumdists = combine(groupby(dists, :p_row), Not(:p_row) .=> sum, renamecols = false)
-    
-    globs = sims[(sims.dayn .== 196) .&& (sims.age .== 0), [:p_row, :plot, :dayn, :ar_sum, :nl_mn]]
-    globsun = subset(globs, :plot => ByRow(==(:sun)))
-    globsh = subset(globs, :plot => ByRow(==(:shade)))
-    globsun[!,[:ar_sum, :nl_mn]] = globsun[!,[:ar_sum, :nl_mn]] .- globsh[!,[:ar_sum, :nl_mn]]
-    globsun[!, :ar_sum_d] = globsun[!, :ar_sum] .> -0.1
-    globsun[!, :nl_mn_d] = globsun[!, :nl_mn] .< 0.1
-    coalesce.(globsun, false)
-
-    leftjoin!(sumdists, select(globsun, :p_row, :ar_sum_d, :nl_mn_d), on = :p_row)
-
-    return sumdists
-end
-
-function tglobs(sims::DataFrame)
-    globs = sims[(sims.dayn .== 196) .&& (sims.age .== 0), [:p_row, :plot, :dayn, :ar_sum, :nl_mn]]
-    globsun = subset(globs, :plot => ByRow(==(:sun)))
-    globsh = subset(globs, :plot => ByRow(==(:shade)))
-    globsun[!,[:ar_sum, :nl_mn]] = globsun[!,[:ar_sum, :nl_mn]] .- globsh[!,[:ar_sum, :nl_mn]]
-    globsun[!, :ar_sum_d] = globsun[!, :ar_sum] .> -0.1
-    globsun[!, :nl_mn_d] = globsun[!, :nl_mn] .< 0.1
-    coalesce.(globsun, false)
-    return globsun
-end
-
-absdiff(dat::Float64, sim::Float64) = dat == 0.0 ? sim : abs(sim / dat - 1.0)
-absdiff(dat::Float64, sim::Missing) = dat == 0.0 ? 10.0 : 1.0 / dat
-absdiff(dat::Missing, sim::Float64) = 0.0
-absdiff(dat::Missing, sim::Missing) = 0.0
-
-findmissing(dat::Float64, sim::Float64) = 0
-findmissing(dat::Float64, sim::Missing) = 1
-findmissing(dat::Missing, sim::Float64) = 0
-findmissing(dat::Missing, sim::Missing) = 0
-
-# sqdiff(dat::Float64, sim::Float64)::Float64 = (dat - sim) ^ 2
-# sqdiff(dat::Float64, sim::Missing)::Missing = missing
-# sqdiff(dat::Missing, sim::Float64)::Float64 = 0.0
-# sqdiff(dat::Missing, sim::Missing)::Float64 = 0.0
-
-# scale_sqdiff(diff::Float64, var::Float64)::Float64 = diff / ifelse(var == 0.0, 1.0, var)
-# function scale_sqdiff(diff::Missing, var::Float64)::Float64
-#     if var == 0.0
-#         return 1.0
-#     elseif var < 1e-8
-#         return 1000.0
-#     elseif var < 1e-4
-#         return 100.0
+# function missum(v)
+#     nmis = sum(ismissing.(v))
+#     if nmis == 0
+#         return sum(v)
+#     elseif nmis == 1
+#         return sum(skipmissing(v))
 #     else
-#         return 1.0 / var
+#         return 2.8
 #     end
 # end
 
-
-# 1.0 / ifelse(var == 0.0, 1.0, ifelse)
-
-# # sq_diff_var(sim::Float64, emp::Float64, norm::Float64)::Float64 = norm == 0 ? 0.0 : ((sim - emp)^2) / norm
-# sq_diff_var(sim::Float64, emp::Float64, norm::Float64)::Tuple{Float64, Int} = ((filtereach(sim, emp) - emp)^2) / ifelse(norm > 0.0, norm, 1.0), 0
-# sq_diff_var(sim::Float64, emp::Missing, norm::Float64)::Tuple{Float64, Int} = 0.0, 0
-# sq_diff_var(sim::Missing, emp::Missing, norm::Float64)::Tuple{Float64, Int} = 0.0, 0
-# # sq_diff_var(sim::Float64, emp::Missing, norm::Missing)::Float64 = 0.0
-# sq_diff_var(sim::Missing, emp::Float64, norm::Float64)::Tuple{Float64, Int} = 2.0 * ifelse(norm > 0.0, norm, 1.0), 1
-
-# naninfplus(x::Float64, y::Float64) = +(filtereach.(x,y))
-
-# filtereach(x::Float64, emp::Float64) = ifelse(isnan(x), 6.0 * emp, ifelse(x == Inf, 10e9, x))
-# filtereach(x::Float64) = ifelse(isnan(x), 100.0, ifelse(x == Inf, 10e10, x))
-
-## Utils
-
-function count_obs(df::DataFrame)
-    missingscount = describe(df)[5:8,[:variable,:nmissing]]
-    return nrow(df) .- unstack(missingscount, :variable, :nmissing)
-end
-
-function scale_dists!(dists::DataFrame, counts::DataFrame)
-    # df = copy(dists)
-    # df[!, :p_row] .= dists[:, :p_row]
-    # for c in names(counts)
-        # df[!, Regex(c)] .= dists[!, Regex(c)] ./ counts[1, c]
-    for c in 1:ncol(counts)
-        dists[!, c+1] .= dists[!, c+1] ./ counts[1, c]
+# function diff_quals(sims::DataFrame, exh_min::Float64, exh_max::Float64, incidm::Float64, corm::Float64)::DataFrame
+function diff_quals(sims::DataFrame, dats)::DataFrame
+    # sims[!, :rusts] .= collect(ismissing(r) ? r : Float64.(r) for r in sims[!, :rusts])
+    # sims[!, :rusts] .= Float64.(sims[!, :rusts])
+    dists = DataFrame(p_row = sims[:, :p_row])
+    for var in [:P12loss, :LP, :incid, :rusts, :meanlats, :exh]
+        # transform!(sims, var => ByRow(s -> sumtoldist(s, dats[var])), renamecols = false)
+        dists[!, var] = sumtoldist.(sims[!, var], Ref(dats[var]), var)
+    end
+    for var in [:depsdiff, :latentdiff, :cor]
+        dists[!, var] = toldist.(sims[!, var], Ref(dats[var]))
     end
     return dists
 end
+
+function toldist(sim::Float64, tol::Vector{Float64})
+    tmin, tmax = tol
+    if !isfinite(sim)
+        return 1e5
+    elseif sim > tmax
+        return (sim - tmax) ^ 2
+    elseif sim < tmin
+        return (tmin - sim) ^ 2
+    else
+        return 0.0
+    end
+end
+
+toldist(sim::Missing, tol::Vector{Float64}) = 1e5
+
+function sumtoldist(sim, tol::Vector{Float64}, var::Symbol)
+    if var == :P12loss
+        return toldist(sim[1], tol .+ [0.2,0.0]) + toldist(sim[2], tol .+ [0.2,0.0]) + toldist(sim[3], tol)
+    elseif var == :incid
+        return toldist(sim[1], tol) + toldist(sim[2], tol) + toldist(sim[3], tol .- [0.3,0.0])
+    elseif var == :exh
+        return toldist(sim[1], tol) + toldist(sim[2], tol) #+ toldist(sim[3], tol .- [0.2,0.0])
+    else
+        return toldist(sim[1], tol) + toldist(sim[2], tol) + toldist(sim[3], tol)
+    end
+end
+
+sumtoldist(sim::Missing, tol::Vector{Float64}, var::Symbol) = 1e5
+
+# function diff_quals(sims::DataFrame, dats::DataFrame, vars::DataFrameRow)::DataFrame
+
+#     # divide total production by number of coffees to get yield per coffee
+#     prodcols = [:P1att, :P12att, :P1obs, :P12obs, :plot]
+#     sims = transform(sims,
+#         prodcols => ByRow(ind_yield) => prodcols
+#     )
+
+#     # diffmetrics: metrics whose relevance is in the difference between sun and shade
+#     diffmetrics = select(sims, :p_row, :plot,
+#         [:P1att, :P12att] => ByRow(bienniality) => [:P1att, :bienniality, :P12att],
+#         :areas, :nls
+#     )
+
+#     dfsun = subset(diffmetrics, :plot => ByRow(==(:sun)), view = true)[!, Not(:plot)]
+#     dfsh = subset(diffmetrics, :plot => ByRow(==(:shade)), view = true)[!, Not(:plot)]
+#     widedf = outerjoin(dfsun, dfsh, on = :p_row, renamecols = "_sun" => "_sh")
+
+#     for m in [:P1att, :bienniality, :areas, :nls]
+#         widedf[!, m] = widedf[!, Symbol(m, :_sun)] - widedf[!, Symbol(m, :_sh)]
+#     end
+#     widedf[!, :Pattpct] = 1.0 .- widedf[!, :P12att_sh] ./ widedf[!, :P12att_sun]
+
+#     diffdists = DataFrame(p_row = widedf[:, :p_row])
+#     for name in [:Pattpct, :bienniality, :areas, :nls]
+#         diffdists[!, Symbol(name, :_dn)] = toldist.(widedf[!, name], Ref(dats[!, name]))
+#         diffdists[!, Symbol(name, :_dv)] = diffdists[!, Symbol(name, :_dn)] ./ vars[name]
+#     end
+#     diffdists[!, :P1att_dn] = toldist.(widedf[!, :P1att], widedf[!, :P1att_sun] .* Ref(dats[!, :P1att]))
+#     diffdists[!, :P1att_dv] = diffdists[!, :P1att_dn] ./ vars[:P1att]
+
+#     # metricsdiff = [:P1att, :bienniality, :areas, :nls]
+
+#     # dfsun[!, metricsdiff] = dfsun[!, metricsdiff] .- dfsh[!, metricsdiff]
+#     # dfsun[!, :Pattpct] = 1.0 .- dfsh[!, :P12att] ./ dfsun[!, :P12att]
+
+#     # diffdists = DataFrame(p_row = unique(sims[:, :p_row]))
+#     # for name in [:Pattpct, :bienniality, :areas, :nls]
+#     #     diffdists[!, Symbol(name, :_d)] .= toldist.(dfsun[!, name], Ref(dats[!, name]), vars[name])
+#     # end
+#     # diffdists[!, :P1att_d] = toldistsep.(dfsun[!, :P1att], dats[1, :P1att], dfsun[!, :P1att] .* dats[2, :P1att], vars[:P1att])
+
+
+
+#     # selfmetrics: metrics that are "self-relevant"
+#     # distance output is the mean of sun and shade dists
+#     selfmetrics = select(sims, :p_row,
+#         [:P1att, :P1obs, :P12att, :P12obs] => ByRow(yieldloss) => [:P1loss, :P12loss],
+#         :incidiff, :cor, :rusts, :active
+#     )
+    
+#     selfmetrics[!, :P1loss_dn] = baltoldist.(selfmetrics[!, :P1loss], dats[1, :P1loss], dats[2, :P1loss], 3.5) # dist from 0.65 to 1 is 3.5X dist from 0 to 0.1
+#     selfmetrics[!, :P1loss_dv] = selfmetrics[!, :P1loss_dn] ./ vars[:P1loss]
+
+#     selfmetrics[!, :P12loss_dn] = baltoldist.(
+#         selfmetrics[!, :P12loss],
+#         minloss.(0.2, selfmetrics[!, :P1loss] .* dats[1, :P12loss]),
+#         dats[2, :P12loss], 2.0) # double weight for losses that are too small
+#     selfmetrics[!, :P12loss_dv] = selfmetrics[!, :P12loss_dn] ./ vars[:P12loss]
+
+#     for name in [:incidiff, :cor]
+#         selfmetrics[!, Symbol(name, :_dn)] = toldist.(selfmetrics[!, name], Ref(dats[!, name]))
+#         selfmetrics[!, Symbol(name, :_dv)] = selfmetrics[!, Symbol(name, :_dn)] ./ vars[name]
+#     end
+#     # selfmetrics[!, :surv_dn] = selfmetrics[!, [:rusts]] .> 4 .&& selfmetrics[!, :active] .> 4
+#     transform!(selfmetrics, [:rusts, :active] => ByRow(survival) => :surv_dn)
+#     selfmetrics[!, :surv_dv] = selfmetrics[!, :surv_dn]
+    
+#     prowdists = combine(groupby(selfmetrics, :p_row),
+#     Cols(r"_d") .=> mean,
+#     renamecols = false)
+
+
+#     leftjoin!(prowdists, diffdists, on = :p_row)
+
+#     return prowdists
+# end
+
+# function ind_yield(P1att, P12att, P1obs, P12obs, plot::Symbol)
+#     ncofs = ifelse(plot == :sun, 5000, 4711)
+#     return P1att / ncofs, P12att / ncofs, P1obs / ncofs, P12obs / ncofs, plot
+# end
+
+# function yieldloss(y1att, y1obs, y12att, y12obs)
+#     # y1loss = (y1att - y1obs) / y1att
+#     return ((y1att - y1obs) / y1att), ((y12att - y12obs) / y12att)
+# end
+
+# function bienniality(Y1, Y12)
+#     return Y1, (abs(2.0 * Y1 - Y12) / Y1), Y12
+# end
+
+
+
+# function toldistsep(sim::Union{Missing, Float64}, tmin::Union{Missing, Float64}, tmax::Union{Missing, Float64})
+#     if ismissing(sim) || !isfinite(sim)
+#         return 1e5
+#     elseif sim > tmax
+#         return (sim - tmax) ^ 2
+#     elseif sim < tmin
+#         return (tmin - sim) ^ 2
+#     else
+#         return 0.0
+#     end
+# end
+
+# baltoldist(sim::Missing, tmin, tmax::Float64, bal::Float64) = 1e5
+
+# function baltoldist(sim::Float64, tmin::Float64, tmax::Float64, bal::Float64)
+#     if !isfinite(sim)
+#         return 1e5
+#     elseif sim > tmax
+#         return (sim - tmax) ^ 2
+#     elseif sim < tmin
+#         return (bal * (tmin - sim)) ^ 2
+#     else
+#         return 0.0
+#     end
+# end
+
+# minloss(tmin::Float64, sim::Float64) = max(tmin, sim)
+
+# minloss(tmin::Float64, sim::Missing) = missing
+
+# survival(rust::Int, cof::Int) = rust > 4 && cof > 4
+# survival(rust::Missing, cof::Missing) = false
+
+# ## Quantitative variables
+
+# function calc_nt_dists(quantsdirname::String, empdata::DataFrame)::NTuple{2, DataFrame}
+# # function calc_nt_dists(quantsdirname::String, empdata::DataFrame, vars::DataFrameRow)::NTuple{2, DataFrame}
+#     ft = FileTree(string("/scratch/mvanega1/ABC/sims/", quantsdirname))
+#     nt_file_tree = FileTrees.load(ft; lazy = true) do file
+#         DataFrame(Arrow.Table(path(file)))
+#     end
+#     lazy_dists = mapvalues(x -> abs_norm_dist(x, empdata), nt_file_tree)
+#     # lazy_dists = mapvalues(x -> abs_norm_dist(x, empdata, vars), nt_file_tree)
+#     println("starting quants exec...")
+#     flush(stdout)
+#     dists_nt = exec(reducevalues(vcat, lazy_dists))
+#     return select(dists_nt, :p_row, Not(r"_n")), select(dists_nt, :p_row, r"_n")
+# end
+
+# function abs_norm_dist(sims::DataFrame, empdata::DataFrame)::DataFrame
+#     joined = leftjoin(empdata, sims, on = [:dayn, :category])
+
+#     dists = DataFrame(p_row = joined[:, :p_row])
+#     for var in [:nlpct, :sporepct, :latentpct]
+#         dists[!, var] .= absdiff.(joined[!, var], joined[!, Symbol(var, :_dat)], joined[!, :category])
+#         dists[!, Symbol(var, :_n)] .= ismissing.(joined[!, var])
+#     end
+
+#     sumdists = combine(groupby(dists, :p_row), Not(:p_row) .=> sum, renamecols = false)
+
+#     return sumdists
+# end
+
+# absdiff(sim::Float64, dat::Float64, cat::Int) = (sim - dat)^2 * ifelse(cat == 5 && sim == 1, 2.0, 1.0)
+# absdiff(sim::Missing, dat::Float64, cat::Int) = 1.0 * ifelse(cat == 5, 2.0, 1.0)
+
+# function abs_norm_dist(sims::DataFrame, empdata::DataFrame, vars::DataFrameRow)::DataFrame
+#     joined = leftjoin(empdata, sims, on = [:plot, :dayn, :age, :cycle])
+
+#     any(ismissing.(joined.p_row)) && error("missing rows $(first(skipmissing(joined.p_row)))")
+
+#     dists = DataFrame(p_row = joined[:, :p_row])
+#     for name in [:area, :spore, :nl, :occup]
+#         dists[!, Symbol(name, :_d)] .= absdiff.(joined[!, name], joined[!, Symbol(name, :_dat)], vars[Symbol(name, :_var)])
+#         dists[!, Symbol(name, :_n)] .= findmissing.(joined[!, name], joined[!, Symbol(name, :_dat)])
+#     end
+
+#     # if 1 in sims.p_row
+#         # CSV.write("results/ABC/dists/sents/q8/samplerawjoined.csv", joined)
+#         # CSV.write("results/ABC/dists/sents/q8/samplerawdists.csv", dists)
+#     # end
+
+#     sumdists = combine(groupby(dists, :p_row), Not(:p_row) .=> sum, renamecols = false)
+
+#     return sumdists
+# end
+
+# absdiff(sim::Float64, dat::Float64, var::Float64) = (sim - dat)^2 / var
+# absdiff(sim::Missing, dat::Float64, var::Float64) = dat^2 / var
+# absdiff(sim::Float64, dat::Missing, var::Float64) = 0.0
+# absdiff(sim::Missing, dat::Missing, var::Float64) = 0.0
+
+# findmissing(sim::Float64, dat::Float64) = 0
+# findmissing(sim::Missing, dat::Float64) = 1
+# findmissing(sim::Float64, dat::Missing) = 0
+# findmissing(sim::Missing, dat::Missing) = 0
+
+## Utils
+
+# function count_obs(df::DataFrame)
+#     missingscount = describe(df)[5:8,[:variable,:nmissing]]
+#     return nrow(df) .- unstack(missingscount, :variable, :nmissing)
+# end
+
+# function scale_dists!(dists::DataFrame, counts::DataFrame)
+#     # df = copy(dists)
+#     # df[!, :p_row] .= dists[:, :p_row]
+#     # for c in names(counts)
+#         # df[!, Regex(c)] .= dists[!, Regex(c)] ./ counts[1, c]
+#     for c in 1:ncol(counts)
+#         dists[!, c+1] .= dists[!, c+1] ./ counts[1, c]
+#     end
+#     return dists
+# end

@@ -5,67 +5,35 @@ using Arrow, CSV, DataFrames, Distributions, Random
 
 Ns = 10^6 # number of parameter combinations to test
 
-newid = 5
-file_name = string("parameters_", newid, ".csv")
+newid = "16"
 arr_file_name = string("parameters_", newid, ".arrow")
-par_path = datadir("ABC", file_name)
 
-opt_temp_dist = truncated(Normal(22.0, 1.0), 14.0, 30.0)
-max_temp_dist = truncated(Normal(30.0, 1.0), 22.0, 38.0)
+opt_temp_distr = Normal(23.0, 0.5) # Motisi et al, 2022
+amp_temp_distr = Normal(5.0, 0.5) # Waller, 1982; Merle et al, 2020
+sporepct_distr = Normal(0.35, 0.05) # McCain & Hennen, 1984
+# tempcool_distr = Normal(4.0, 0.5) # Merle et al., 2022
 
 parameters = DataFrame(
     p_row = collect(1:Ns),
-    max_inf = rand(Uniform(), Ns),
-    host_spo_inh = rand(Uniform(0.0, 10.0), Ns),
-    rust_gr = rand(Uniform(0.0, 0.5), Ns),
-    opt_g_temp = rand(opt_temp_dist, Ns),
-    max_g_temp = rand(max_temp_dist, Ns),
-    rep_gro = rand(Uniform(0.0, 2.0), Ns),
-    spore_pct = rand(Uniform(), Ns),
-    rust_paras = rand(Uniform(), Ns),
-    exh_threshold = rand(Uniform(0.0, 1.5), Ns),
-    rain_distance = rand(Uniform(0.0, 10.0), Ns),
-    tree_block = rand(Uniform(), Ns),
-    wind_distance = rand(Uniform(0.0, 20.0), Ns),
     shade_block = rand(Uniform(), Ns),
-    lesion_survive = rand(Uniform(), Ns),
-    # temp_cooling = 
-    # light_inh = 
-    # rain_washoff = 
+    wind_dst = rand(Uniform(4.0, 8.0), Ns),
+    tree_block = rand(Uniform(), Ns),
+    rain_dst = rand(Uniform(0.0, 3.0), Ns),
+    les_surv = rand(Uniform(), Ns),
+    rust_paras = rand(Uniform(0.0, 0.5), Ns),  #(0.0,0.02)
+    spore_pct = rand(sporepct_distr, Ns),
+    rust_gr = rand(Uniform(0.0, 0.2), Ns), #()
+    rep_gro = rand(Uniform(0.0, 0.5), Ns), #(0,2)
+    pdry_spo = rand(Uniform(0.5, 1.0), Ns),
+    rep_spo = rand(Uniform(0, 1.0), Ns),
+    light_inh = rand(Uniform(), Ns),
+    rep_inf = rand(Uniform(0, 2.0), Ns),
+    max_inf = rand(Uniform(0.0, 2.0), Ns),
+    temp_cooling = rand(Uniform(0.5, 2.5), Ns),
+    temp_ampl = rand(amp_temp_distr, Ns),
+    opt_temp = rand(opt_temp_distr, Ns),
 )
 
-checktemps = true
+# parameters[!, :wind_dst] = parameters[!, :rain_dst] .* parameters[!, :wind_dst]
 
-while checktemps
-    filter!([:opt_g_temp, :max_g_temp] => (opt, max) -> opt < max, parameters)
-    remrows = nrow(parameters)
-    if remrows == Ns
-        checktemps = false
-    else
-        newrows = Ns - remrows
-        append!(parameters,
-        DataFrame(
-            p_row = filter(n -> n ∉ parameters[:, :p_row], 1:Ns),
-            max_inf = rand(Uniform(), newrows),
-            host_spo_inh = rand(Uniform(0.0, 20.0), newrows),
-            opt_g_temp = rand(opt_temp_dist, newrows),
-            max_g_temp = rand(max_temp_dist, newrows),
-            spore_pct = rand(Uniform(), newrows),
-            rust_paras = rand(Uniform(), newrows),
-            exh_threshold = rand(Uniform(0.0, 1.5), newrows),
-            rain_distance = rand(Uniform(0.0, 10.0), newrows),
-            tree_block = rand(Uniform(), newrows),
-            wind_distance = rand(Uniform(0.0, 20.0), newrows),
-            shade_block = rand(Uniform(), newrows),
-            lesion_survive = rand(Uniform(), newrows),
-        
-            # temp_cooling = 
-            # light_inh = 
-            # rain_washoff = 
-            # rep_gro = 
-        ))
-    end
-end
-
-CSV.write(par_path, parameters)
 Arrow.write(datadir("ABC", arr_file_name), parameters)

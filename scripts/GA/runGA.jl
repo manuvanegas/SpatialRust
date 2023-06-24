@@ -1,19 +1,13 @@
-# @everywhere begin
-#     using Pkg
-#     Pkg.activate(".")
-# end
-# @everywhere begin
+@everywhere begin
+    using Pkg
+    Pkg.activate(".")
+end
+@everywhere begin
     using CSV, DataFrames, SpatialRust
     using StatsBase: sample
     using Statistics: mean, std
     include("../../src/GA/Runner.jl")
-# end
-
-popsize = 10
-gens = 20
-reps = 3
-pcross = 0.5
-pmut = 0.1
+end
 
 parnames = [
     :row_d, :plant_d, :shade_d, :barriers, :barrier_rows, :prune_sch, :target_shade,
@@ -35,6 +29,10 @@ obj = ARGS[8]
 # obj = "shorttprofit"
 # obj = "minrustspores"
 pdir = mkpath(string("results/GA/", obj))
+
+sdirpop = mkpath(string("/scratch/mvanega1/GA/", obj, "/pops/"))
+sdirfit = mkpath(string("/scratch/mvanega1/GA/", obj, "/fitns/"))
+
 ftail = string(popsize, "-", gens, "-", pcross, "-", pmut, ".csv")
 
 finalpop, histbest, histfitm = GA(lnths, parnames, popsize, gens, reps, pcross, pmut, steps, coffee_price, obj)

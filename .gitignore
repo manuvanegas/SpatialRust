@@ -16,6 +16,7 @@ scripts/Old
 src/Older
 src/PkgCompile/*.so
 logs/*
+scratchspaces
 
 ################################################################################
 #                                    Julia                                     #
