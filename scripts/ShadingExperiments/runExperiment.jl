@@ -50,8 +50,9 @@ if shade_placemnt == 1
 else
     shade_d = 3 * shade_placemnt
     singlevals[!, :shade_d] .= shade_d
- 
+
     pruningopts = crossjoin(pruningopts, DataFrame(barriers = [(1,1), (0,0)]))
+
 end
 
 append!(pruningopts, noprunings)
