@@ -9,15 +9,17 @@ include("../../src/ShadingExperiments/Scatterplots.jl")
 temp = 22.0
 rain = 0.8
 wind = 0.7
-reps = 300
-savefigs = true
+reps = 50
+savefigs = false
 
 # Merge all dfs and write a single file
 # bfiles = readdir(string("results/Shading/ABCests2/exps2/"), join = true);
-# basedf = reduce(vcat, [CSV.read(f, DataFrame) for f in bfiles if (contains(f, "r-$reps") && !contains(f, "all"))])
+bfiles = readdir(string("results/Shading/ABCests2/exps3/exp3-5y"), join = true);
+basedf = reduce(vcat, [CSV.read(f, DataFrame) for f in bfiles if (contains(f, "r-$reps") && !contains(f, "all"))])
 # CSV.write("results/Shading/ABCests2/exps2/r-300-all-4y.csv", basedf)
+CSV.write("results/Shading/ABCests2/exps3/exp3-4y/r-$reps-all.csv", basedf)
 
-basedf = CSV.read("results/Shading/ABCests2/exps2/r-300-all-4y.csv", DataFrame)
+# basedf = CSV.read("results/Shading/ABCests2/exps2/r-300-all-4y.csv", DataFrame)
 
 transform!(basedf,
         [:obsprod, :attprod] => ByRow((o,e) -> (1.0 - o / e)) => :loss,
@@ -52,8 +54,8 @@ savefigs && savediss("shadehm3.png", hmfig)
 scloss = scbyprunefreqbarr(meanshading, :loss, "")
 colsize!(scloss.layout, 5, Relative(1/15))
 scmaxs = scbyprunefreqbarr(meanshading, :maxS, "")
-scmaxa = scbyprunefreqbarr(meanshading, :maxA, "", 20:5:35)
-scmaxe = scbyprunefreqbarr(meanshading, :maxE, "", 89:3:98)
+scmaxa = scbyprunefreqbarr(meanshading, :maxA, "")#, 20:5:35)
+scmaxe = scbyprunefreqbarr(meanshading, :maxE, "")#, 89:3:98)
 
 savefigs && savediss("maxAbyfreqbr2h.png", scmaxa)
 

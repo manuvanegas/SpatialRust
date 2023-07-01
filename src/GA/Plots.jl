@@ -386,7 +386,7 @@ function fitaxis!(fig, pos, dfsd)
 end
 
 function fitfigure(folder, exps, poss, gen)
-    fig = Figure(resolution = (860, 850))
+    fig = Figure(resolution = (860, 900))
     fitdfs = [readnstats(folder, exp, gen) for exp in exps]
     fitaxs = [fitaxis!(fig, pos, df) for (df, pos) in zip(fitdfs, poss)]
 

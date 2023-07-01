@@ -404,7 +404,7 @@ function addqnoise(v::Vector{Float64}, steps, rng)
     return v .+ rand(rng, Normal(0, 0.05), steps)
 end
 
-addqnoise(v::Vector{Float64}, steps, rng) = v .+ rand(rng, Normal(0, 0.05), steps)
+# addqnoise(v::Vector{Float64}, steps, rng) = v .+ rand(rng, Normal(0, 0.05), steps)
 
 # Calculate initial ind_shade
 function ind_shade_i(

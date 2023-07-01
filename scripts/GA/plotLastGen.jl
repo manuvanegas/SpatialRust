@@ -27,13 +27,13 @@ pars = collect(getbestind("results/GA/4/2/", e, 125) for e in exps);
 
 bestexppars = DataFrame(pars)
 
-CSV.write("results/GA/4/2/fittest/parsdf.csv", bestexppars)
+# CSV.write("results/GA/4/2/fittest/parsdf.csv", bestexppars)
 
 bestexpparsNF = deepcopy(bestexppars)
 bestexpparsNF.fungicide_sch .= [Int[]]
 bestexpparsNF.fung_stratg .= :cal
 
-CSV.write("results/GA/4/2/fittest/parsdfNF.csv", bestexpparsNF)
+# CSV.write("results/GA/4/2/fittest/parsdfNF.csv", bestexpparsNF)
 
 ###########################################################
 ##

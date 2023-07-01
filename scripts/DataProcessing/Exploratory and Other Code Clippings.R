@@ -333,3 +333,28 @@ remove.cycle <- function(d, rmcycle) {
     filter(branch.cycle != rmcycle) %>%
     mutate(branch.cycle = ifelse(branch.cycle > rmcycle, branch.cycle - 1, branch.cycle))
 }
+
+#################
+
+
+count.lesions <- function(d) {
+  d %>%
+    group_by(plot, fdate, cycle, dayn, leaf.id) %>%
+    mutate(leaf_nl = max(Lesion),
+           leaf_firstfound = min(firstfound),
+           leaf_maxage = max(age),
+           .groups = "drop")
+}
+
+summ.plot.date.cycle.age <- function(d){
+  d %>%
+    group_by(plot, fdate, dayn, age, firstfound, cycle) %>%
+    summarise(area_dat = median(num.area),
+              spore_dat = median(spore.area),
+              totlesions = n(),
+              leaves.sampled = mean(leaves.samp),
+              avail.sites = leaves.sampled * 25,
+              occup_dat = totlesions / avail.sites,
+              .groups = "drop") %>% 
+    filter(totlesions > 2)
+}

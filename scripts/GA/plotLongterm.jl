@@ -56,7 +56,7 @@ function boxplotfig(dfi, var, withscatt, bands = 10)
     df.label .= getlabel.(df.group)
     if var in [:p4, :p5, :p6, :p7]
         ylab = "Final Farm Profit (Arbitrary Units)"
-        scalph = 0.4
+        scalph = 0.2
     else
         ylab = rich("Mean Observed Rust Severity (cm",superscript("2"),")")
         scalph = 0.2
@@ -128,26 +128,32 @@ function boxplotfig(dfi, var, withscatt, bands = 10)
 end
 
 
-dfs = [CSV.read(f, DataFrame) for f in readdir("results/GA/4/2/fittest/100", join = true) if occursin("p_", f)];
+dfs = [CSV.read(f, DataFrame) for f in readdir("results/GA/4/2/fittest/100-nf", join = true) if occursin("p_", f)];
 df = reduce(vcat, dfs);
 df.scenario .= Symbol.(df.scenario);
 transform!(df, [:p4, :p5, :p6, :p7] .=> (p -> p / 1000) .=> [:p4, :p5, :p6, :p7]);
-# CSV.write("results/GA/4/2/fittest/100/all.csv", df)
+# CSV.write("results/GA/4/2/fittest/100-nf/all.csv", df)
 
-p4 = boxplotfig(df, :p4, true, 10)
-scatter!(p4[1,1], [1,2,3,4], [112, 112.1, 116.5, 111.8], marker = ['d', 'd', 'c', 'd'], color = :black, markersize = 14)
-scatter!(p4[1,2], [1,2,3,4], [115.5, 115.8, 122, 118], marker = ['c', 'c', 'a', 'b'], color = :black, markersize = 14)
+p6 = boxplotfig(df, :p6, true, 10)
+# scatter!(p4[1,1], [1,2,3,4], [112, 112.1, 116.5, 111.8], marker = ['d', 'd', 'c', 'd'], color = :black, markersize = 14)
+# scatter!(p4[1,2], [1,2,3,4], [115.5, 115.8, 122, 118], marker = ['c', 'c', 'a', 'b'], color = :black, markersize = 14)
+scatter!(p6[1,1], [1,2,3,4], [105, 105, 144, 148], marker = ['f', 'f', 'e', 'd'], color = :black, markersize = 14)
+scatter!(p6[1,2], [1,2,3,4], [170, 174, 186, 170], marker = ['c', 'b', 'a', 'c'], color = :black, markersize = 14)
 
-s4 = boxplotfig(df, :s4, true, 10)
-scatter!(s4[1,1], [1,2,3,4], [0.09, 0.08, 0.17, 0.165], marker = ['c', 'd', 'a', 'a'], color = :black, markersize = 14)
-scatter!(s4[1,2], [1,2,3,4], [0.08, 0.075, 0.03, 0.11], marker = ['d', 'e', 'f', 'b'], color = :black, markersize = 14)
-
+s6 = boxplotfig(df, :s6, true, 10)
+# scatter!(s4[1,1], [1,2,3,4], [0.09, 0.08, 0.17, 0.165], marker = ['c', 'd', 'a', 'a'], color = :black, markersize = 14)
+# scatter!(s4[1,2], [1,2,3,4], [0.08, 0.075, 0.03, 0.11], marker = ['d', 'e', 'f', 'b'], color = :black, markersize = 14)
+scatter!(s6[1,1], [1,2,3,4], [0.94, 0.94, 0.71, 0.68], marker = ['a', 'a', 'b', 'c'], color = :black, markersize = 14)
+scatter!(s6[1,2], [1,2,3,4], [0.36, 0.3, 0.12, 0.39], marker = ['e', 'f', 'g', 'd'], color = :black, markersize = 14)
+# s6.content[1].yticks = collect(0.0:0.2:1.0)
+# s6.content[2].yticks = collect(0.0:0.2:1.0)
 
 boxplotfig(df, :f4, true, 10)
 
-savedissGA("profit4.png", p4)
-savedissGA("severity4.png", s4)
-
+# savedissGA("profit4.png", p4)
+# savedissGA("severity4.png", s4)
+savedissGA("profit6-nf.png", p6)
+savedissGA("severity6-nf.png", s6)
 
 # ["Profit, Short Term, No Premiums", "Profit, Short Term, Premiums", "Profit, Medium Term, No Premiums", "Profit, Medium Term, Premiums",
 # "Profit + Severity, Short Term, No Premiums", "Profit + Severity, Short Term, Premiums", "Profit + Severity, Medium Term, No Premiums", "Profit + Severity, Medium Term, Premiums",]
