@@ -141,9 +141,7 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, r
             rain_dispersal(model, rust, spore_area)
             wind_dispersal(model, rust, spore_area)
         end
-    end
-
-    for rust in rusts
+        
         local_temp = model.current.temperature - (model.rustpars.temp_cooling * (1.0 - rust.sunlight))
 
         if rust.n_lesions > 0
@@ -160,7 +158,8 @@ function rust_step_schedule(model::SpatialRustABM, f_inf::Float64, f_day::Int, r
         else
             germinate_f(rust, model.rng, model.rustpars, local_temp, f_inf)
         end
-
+    end
+    for rust in rusts
         # update_rust!(rust)
         update_rust!(rust, model.rustpars.viab_loss)
     end
