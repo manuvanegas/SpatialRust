@@ -7,9 +7,9 @@ arrayid = parse(Int, ARGS[2])
 # years = parse(Int, ARGS[3])
 reps = parse(Int, ARGS[3])
 
-p = mkpath("results/GA4/fittest/$reps")
+p = mkpath("results/GA4/fittest/$reps-nf")
 
-rawpars = CSV.read(filepath, DataFrame)[arrayid, :]
+rawpars = CSV.read(filepath, DataFrame)[arrayid, 1:14]
 
 pars = DataFrame(
     prune_sch = [map(x -> parse(Int, x), split(rawpars.prune_sch[2:end-1], ','))],
@@ -21,7 +21,8 @@ pars = DataFrame(
     plant_d = rawpars.plant_d,
     shade_d = rawpars.shade_d,
     barriers = Tuple(map(x -> parse(Int, x), split(rawpars.barriers[2:end-1], ','))),
-    fungicide_sch = [map(x -> parse(Int, x), split(rawpars.fungicide_sch[2:end-1], ','))],
+    # fungicide_sch = [map(x -> parse(Int, x), split(rawpars.fungicide_sch[2:end-1], ','))],
+    fungicide_sch = [Int[]],
     fung_stratg = Symbol(rawpars.fung_stratg),
     incidence_thresh = rawpars.incidence_thresh,
     steps = rawpars.steps,
@@ -112,28 +113,30 @@ function runfittest(pars, reps)
         ls6 = sev / insps
         lf6 = fungs
 
-        while s < 2555
-            s += step_n!(model, everyn)
-            inspected = sample(allcofs, ninsp, replace = false)
-            sev += mean(map(c -> sum(visible, c.areas, init = 0.0), inspected))
-            insps += 1
+        # while s < 2555
+        #     s += step_n!(model, everyn)
+        #     inspected = sample(allcofs, ninsp, replace = false)
+        #     sev += mean(map(c -> sum(visible, c.areas, init = 0.0), inspected))
+        #     insps += 1
             
-            if s % 365 == 364
-                fungs += model.current.fung_count
-                step_model!(model)
-                s += 1
-            end
-        end
+        #     if s % 365 == 364
+        #         fungs += model.current.fung_count
+        #         step_model!(model)
+        #         s += 1
+        #     end
+        # end
 
-        lp7 = model.current.prod * cprice - model.current.costs
-        ls7 = sev / insps
-        lf7 = fungs
+        # lp7 = model.current.prod * cprice - model.current.costs
+        # ls7 = sev / insps
+        # lf7 = fungs
 
         push!(outs,
             [lp4, lp5, lp6, lp7, ls4, ls5, ls6, ls7, lf4, lf5, lf6, lf7]
         )
         if i % 25 == 0
             GC.gc()
+            println("rep $i")
+            flush(stdout)
         end
     end
     return outs
@@ -142,8 +145,6 @@ end
 println(scen)
 
 @time outs = runfittest(pars, reps)
-
-println("writing outs")
 
 df = hcat(DataFrame(scenario = scen, rep = 1:reps), outs)
 CSV.write(joinpath(p, "$(scen).csv"), df)
